@@ -156,6 +156,10 @@ The app's replay scrubber draws kept frames while you drag, because that is inst
 - **Recalled officers go back to standby, not on scene**: their post is kept only to route them home and cleared on arrival, and arriving home does not raise `officer_instruction` — they are not instructing anyone there.
 - **A live redirect raises `officer_instruction` around officers on station directly** in `sim.ts`, because the plan's standing order lives privately in `world/src/hooks.ts`.
 
+## Spoken and typed orders
+
+`app/src/voice-commands.ts` is the pure core and `CommandBar.tsx` the box above the map. There is no speech recogniser in the app: dictation (Handy, macOS dictation, anything that types into the focused box) fills it, and after a 0.9 s pause or Enter the box shows what it understood. Matching is plain code against the map's own names, never a model: a gate by its number ("gate to" and "gate for" are dictation slips for 2 and 4), anything else by its distinctive words (all of them, or two of three, so "northeast lot" finds Stadium Lot Northeast). A command that names nothing is refused with a "did you mean". Every command is confirmed: **Order now on plan X** sends a live `PoliceOrder` through `sendOrder` (the plan on the map only, like the Orders panel); **Add to plan X** appends a step built by the same `buildStep` the dropdowns use and marks the plans dirty. Officers sent live are the nearest standby or patrolling ones. Sending officers to a street is a live order only, since a plan step's target is a place. **Read back** speaks a radio-style confirmation through the browser's speech synthesis.
+
 ## App screens
 
 `app/src/App.tsx` holds the whole commander view: incident panel, playbook with a per-step plan editor, three runs side by side, scorecards, replay scrubber, briefing, and dot detail. Two things worth knowing:

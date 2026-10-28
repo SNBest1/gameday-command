@@ -16,6 +16,7 @@ import { Inspector, type EditRequest } from './Inspector.tsx';
 import { applyDisabled, describeAction, PlanEditor } from './PlanEditor.tsx';
 import { CommandPanel, Ranking } from './CommandPanel.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
+import { CommandBar } from './CommandBar.tsx';
 import { StartScreen } from './StartScreen.tsx';
 import { applyTheme } from './theme.ts';
 import { rankByPriority, stoppedPerStreet, streetIndex, type HistorySample, type Priority } from './command.ts';
@@ -1005,6 +1006,21 @@ export function App() {
               Restart
             </button>
           </div>
+          {loaded && !officerRole && planStates.length === 3 && (
+            <CommandBar
+              map={loaded.map}
+              labels={LABELS}
+              planOnMap={closeRun}
+              officers={runs[closeRun]!.scene.current?.officers ?? []}
+              canOrderNow={!ordersDisabled}
+              onOrder={sendOrder}
+              onAddStep={(i, step) => {
+                // Appended, so the plan's switched-off step indexes stay right.
+                setPlanStates((prev) => prev.map((p, j) => (j === i ? { plan: { ...p.plan, actions: [...p.plan.actions, step] }, disabled: p.disabled } : p)));
+                setPlansDirty(true);
+              }}
+            />
+          )}
           {loaded && (
             <>
               <div className={`canvas-wrap${view === 'close' ? ' close' : view === 'plan' ? ' plan' : ''}`}>
