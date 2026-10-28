@@ -844,3 +844,27 @@ main { min-width: 0; min-height: 0; overflow: auto; padding: 16px 16px 20px 20px
 }
 
 .roadblocks {list-style:none;padding:0;font-size:12px;}.roadblocks li {display:grid;gap:6px;border-bottom:1px solid var(--rule);padding:8px 0;}.roadblocks button {min-height:44px;text-align:left;}
+
+/* ── Spoken and typed orders (CommandBar.tsx) ───────────────────── */
+.command { flex: none; display: flex; flex-direction: column; gap: 6px; }
+.command-bar { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius); }
+.command-bar:focus-within { border-color: var(--info); box-shadow: 0 0 0 2px color-mix(in srgb, var(--info) 25%, transparent); }
+.command-mic { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--inverse-bg); }
+.command-mic svg { width: 16px; height: 16px; fill: var(--inverse-ink); }
+.command-bar:focus-within .command-mic { background: var(--stop); }
+.command-bar:focus-within .command-mic svg { fill: #fff; }
+.command-bar input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 6px 2px; font-size: 15px; color: var(--ink); }
+.command-bar input:focus { outline: none; }
+.command-bar input::placeholder { color: var(--dim); }
+.command-tip { margin: 0 2px; font-size: 12px; color: var(--dim); }
+.command-card { padding: 12px 14px; background: var(--paper); border: 1px solid var(--rule); border-left: 5px solid var(--go); border-radius: var(--radius); display: flex; flex-direction: column; gap: 8px; animation: command-in 0.18s ease-out; }
+.command-card.refused { border-left-color: var(--caution); }
+@keyframes command-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .command-card { animation: none; } }
+.command-heard { margin: 0; font-size: 13px; color: var(--dim); }
+.command-heard q { color: var(--ink-2); }
+.command-summary { margin: 0; font-family: var(--display); font-size: 18px; font-weight: 700; line-height: 1.3; }
+.command-card.refused .command-summary { font-family: var(--text); font-size: 14px; font-weight: 500; }
+.command-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.command-note { margin: 0; font-size: 12.5px; color: var(--dim); }
+.command-done { margin: 0 2px; font-size: 13px; font-weight: 600; color: var(--ok); }
