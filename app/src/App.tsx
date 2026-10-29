@@ -913,6 +913,16 @@ export function App() {
   const demoUnits=loaded?(liveScene?.officers??makeOfficers(loaded.map,OFFICERS)).map(o=>({id:o.id,unit:o.unit,post:loaded.map.places.find(p=>p.cells.includes('homeCell' in o?o.homeCell:o.cell))?.name??'Outdoor post'})):[];
   const chooseRole=(choice:DemoRole)=>{saveRole(choice);markSignedIn();setRoleChoice(choice);setShowRole(false);setFollowing(true);};
   const roleDialog=showRole?<DemoAccess choice={roleChoice} units={demoUnits} onChoose={chooseRole} onSkip={()=>chooseRole({role:'supervisor',unitId:roleChoice.unitId})}/>:null;
+  // How many Kev answers the server has cached: shown on About.
+  const [kevAnswers, setKevAnswers] = useState<number | null>(null);
+  useEffect(() => {
+    if (railTab !== 'about') return;
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then((h: { cachedDecisions?: number }) => setKevAnswers(typeof h.cachedDecisions === 'number' ? h.cachedDecisions : null))
+      .catch(() => setKevAnswers(null));
+  }, [railTab]);
+
   // Keyboard: 1-3 put a plan on the map, P runs or pauses, ? shows every shortcut.
   // Space (talk) and / (type) live in the command box. Ignored while typing.
   const [showKeys, setShowKeys] = useState(false);
@@ -1789,6 +1799,12 @@ export function App() {
                   <dd>{(totalDecisions - guessed).toLocaleString()}{kev > 0 && <span className="muted"> ({kev.toLocaleString()} live)</span>}</dd>
                   <dt>Guessed from defaults</dt>
                   <dd className={guessed > 0 ? 'warn' : undefined}>{guessed.toLocaleString()}</dd>
+                  {kevAnswers !== null && (
+                    <>
+                      <dt>Kev answers on file</dt>
+                      <dd title="Decisions the Kev model has already given, cached so runs need not wait for it">{kevAnswers.toLocaleString()}</dd>
+                    </>
+                  )}
                   {cards.some((c) => c) && (
                     <>
                       <dt>Crush-risk cell minutes</dt>
