@@ -17,6 +17,8 @@ import { applyDisabled, describeAction, PlanEditor } from './PlanEditor.tsx';
 import { CommandPanel, Ranking } from './CommandPanel.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { CommandBar } from './CommandBar.tsx';
+import { lastUndoable } from './after-action.ts';
+import { describeUndo } from './voice-answers.ts';
 import { StartScreen } from './StartScreen.tsx';
 import { applyTheme } from './theme.ts';
 import { rankByPriority, stoppedPerStreet, streetIndex, type HistorySample, type Priority } from './command.ts';
@@ -1028,6 +1030,86 @@ export function App() {
                 setPlanStates((prev) => prev.map((p, j) => (j === i ? { plan: { ...p.plan, actions: [...p.plan.actions, step] }, disabled: p.disabled } : p)));
                 setPlansDirty(true);
               }}
+              onRemoveStep={(i, step) => {
+                const k = planStates[i]?.plan.actions.lastIndexOf(step) ?? -1;
+                if (k < 0) return false;
+                // Switched-off steps after it move up one.
+                setPlanStates((prev) =>
+                  prev.map((p, j) =>
+                    j === i
+                      ? { plan: { ...p.plan, actions: p.plan.actions.filter((_, x) => x !== k) }, disabled: new Set([...p.disabled].filter((d) => d !== k).map((d) => (d > k ? d - 1 : d))) }
+                      : p,
+                  ),
+                );
+                setPlansDirty(true);
+                return true;
+              }}
+              onUndoLive={(i) => {
+                if (scrub !== null || !started || runs[i]!.scorecard !== null) return null;
+                const last = lastUndoable(runs[i]!.scene.current ?? null);
+                if (!last) return null;
+                runs[i]!.send({ type: 'order', order: last.inverse });
+                setCloseRun(i);
+                return describeUndo(last.inverse, loaded.map);
+              }}
+              onControl={(c) => {
+                const w = loaded.map.width;
+                switch (c.kind) {
+                  case 'play':
+                    if (allDone) return 'All three plans have finished. Say “restart” to run them again.';
+                    setPlaying(true);
+                    return started ? 'Resuming all three plans.' : 'Running all three plans.';
+                  case 'pause':
+                    setPlaying(false);
+                    return 'Paused.';
+                  case 'speed': {
+                    const at = SPEEDS.indexOf(speed as (typeof SPEEDS)[number]);
+                    const next =
+                      c.to === 'up'
+                        ? SPEEDS[Math.min(SPEEDS.length - 1, at + 1)]!
+                        : c.to === 'down'
+                          ? SPEEDS[Math.max(0, at - 1)]!
+                          : [...SPEEDS].sort((a, b) => Math.abs(a - (c.to as number)) - Math.abs(b - (c.to as number)))[0]!;
+                    setSpeed(next);
+                    return `Speed ${next} times.`;
+                  }
+                  case 'view':
+                    setView(c.view);
+                    return c.view === 'close' ? 'Showing the 3D view.' : c.view === 'plan' ? 'Showing the 2D plan.' : 'Showing all three plans side by side.';
+                  case 'tab':
+                    setRailTab(c.tab);
+                    return `Opened the ${RAIL_TABS.find((x) => x.id === c.tab)!.label} tab.`;
+                  case 'restart':
+                    restart();
+                    return 'Restarting all three plans.';
+                  case 'whole_map':
+                    setFocusBox({ x0: 0, y0: 0, x1: w - 1, y1: loaded.map.height - 1, nonce: Date.now() });
+                    return 'Showing the whole map.';
+                  case 'zoom': {
+                    const cells = (c.street ? loaded.map.closables : loaded.map.places).find((x) => x.id === c.place.id)?.cells ?? [];
+                    if (cells.length === 0) return `I can't find ${c.place.label} on the map.`;
+                    const xs = cells.map((k) => k % w);
+                    const ys = cells.map((k) => Math.floor(k / w));
+                    // Loops, not spreads: a lot can be thousands of cells.
+                    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+                    for (let k = 0; k < xs.length; k++) {
+                      x0 = Math.min(x0, xs[k]!); x1 = Math.max(x1, xs[k]!); y0 = Math.min(y0, ys[k]!); y1 = Math.max(y1, ys[k]!);
+                    }
+                    const pad = 12;
+                    setFocusBox({ x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad, nonce: Date.now() });
+                    return `Showing ${c.place.label}.`;
+                  }
+                }
+              }}
+              facts={() => ({
+                map: loaded.map,
+                plan: LABELS[closeRun]!,
+                clock: clockText(runs[closeRun]!.t),
+                started,
+                gates: runs[closeRun]!.scene.current?.gates ?? [],
+                officers: runs[closeRun]!.scene.current?.officers ?? [],
+                hotspots: police[closeRun] ?? [],
+              })}
             />
           )}
           {loaded && (
