@@ -3,7 +3,9 @@ import type { MapBundle, PlanAction } from '../../contracts.ts';
 import type { OfficerStatus, PoliceOrder } from '../../engine/src/edits.ts';
 import { stepChoices } from './plan-steps.ts';
 import { listen, speechSupported, type Listening } from './speech.ts';
-import { parseCommand, planSwitch, readBack, toLiveOrder, toPlanStep, type Parsed } from './voice-commands.ts';
+import { answer, type Facts } from './voice-answers.ts';
+import { readBack, toLiveOrder, toPlanStep, type Parsed } from './voice-commands.ts';
+import { parseUtterance, type Control } from './voice-intents.ts';
 
 /** How long dictation has to pause before the box shows what it understood. */
 const DICTATION_PAUSE_MS = 900;
@@ -16,42 +18,46 @@ const loadReadBack = () => {
   }
 };
 
-function speak(text: string) {
+/**
+ * Speak, then run `then` once the speaker has finished, so the mic opened
+ * after it does not hear the app's own voice. With no speech synthesis, or
+ * read-back off, `then` runs straight away.
+ */
+function speak(text: string, on: boolean, then?: () => void) {
+  const synth = typeof window !== 'undefined' ? window.speechSynthesis : undefined;
+  if (!on || !synth) {
+    if (then) window.setTimeout(then, 0);
+    return;
+  }
+  let finished = false;
+  const done = () => {
+    if (finished) return;
+    finished = true;
+    then?.();
+  };
   try {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
     synth.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1.05;
+    u.onend = done;
+    u.onerror = done;
     synth.speak(u);
+    // Some browsers never fire onend: go on after about how long it takes to say.
+    if (then) window.setTimeout(done, 1500 + text.length * 75);
   } catch {
-    // no speech synthesis here: the written confirmation is enough
+    done();
   }
 }
 
-/**
- * Orders in plain words, typed or spoken. The mic button listens through the
- * browser's recogniser (`speech.ts`) and shows the words as they come; outside
- * dictation (Handy, macOS dictation, anything that types into the focused box)
- * fills the box too; after a short pause,
- * or on Enter, the box shows what it understood. Nothing happens until the
- * commander picks: order it now, or add it to a plan. An order goes to the plan
- * it names ("on plan B"), else the plan on the map. "Shift to plan B" on its own
- * only changes the view, so it happens straight away.
- */
-export function CommandBar({
-  map,
-  labels,
-  planOnMap,
-  officersOf,
-  canOrderOn,
-  onOrder,
-  onAddStep,
-  onShowPlan,
-}: {
+const firstSentence = (s: string) => s.split(/(?<=\.)\s/)[0] ?? s;
+
+type Done = { text: string; tone: 'ok' | 'answer' | 'warn' };
+type Undoable = { kind: 'live'; plan: number } | { kind: 'step'; plan: number; step: PlanAction };
+
+export interface CommandBarProps {
   map: MapBundle;
   labels: readonly string[];
-  /** Index of the plan on the map, the one a live order goes to. */
+  /** Index of the plan on the map, the one an order without a plan name goes to. */
   planOnMap: number;
   officersOf: (plan: number) => OfficerStatus[];
   /** Live orders need a running, live (not replayed) plan. */
@@ -59,47 +65,227 @@ export function CommandBar({
   /** A live order for one plan; that plan is put on the map with it. */
   onOrder: (plan: number, order: PoliceOrder) => void;
   onAddStep: (plan: number, step: PlanAction) => void;
+  /** Take back a step this box added; false if it is no longer there. */
+  onRemoveStep: (plan: number, step: PlanAction) => boolean;
+  /** Undo the newest live order on a plan; what it did, or null if nothing could be undone. */
+  onUndoLive: (plan: number) => string | null;
   onShowPlan: (plan: number) => void;
-}) {
+  /** Carry out a control ("pause", "show 2D"); what happened, for the read-back. */
+  onControl: (control: Control) => string;
+  /** The numbers spoken answers are built from, for the plan on the map now. */
+  facts: () => Facts;
+}
+
+/**
+ * Orders and questions in plain words, typed or spoken. The mic button, or
+ * holding Space, listens through the browser's recogniser (`speech.ts`).
+ * Spoken orders are hands-free: the box reads the order back, asks for a yes,
+ * and listens again by itself; "yes" gives it, "cancel" drops it. Typed orders
+ * are confirmed with the buttons. Controls ("pause", "show 2D") and plan
+ * switches happen straight away, since they only change the view or the clock;
+ * questions are answered aloud from the app's own numbers; "undo that" takes
+ * back the last order. An order goes to the plan it names ("on plan B"), else
+ * the plan on the map.
+ */
+export function CommandBar(props: CommandBarProps) {
+  const { map, labels, planOnMap, officersOf, canOrderOn } = props;
   const [text, setText] = useState('');
-  const [parsed, setParsed] = useState<Parsed | null>(null);
+  const [parsed, setParsedState] = useState<Parsed | null>(null);
   const [heard, setHeard] = useState('');
-  const [done, setDone] = useState<string | null>(null);
+  const [done, setDone] = useState<Done | null>(null);
   const [readAloud, setReadAloud] = useState(loadReadBack);
-  const [listening, setListening] = useState(false);
+  const [listening, setListening] = useState<null | 'command' | 'confirm'>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const timer = useRef<number | null>(null);
   const session = useRef<Listening | null>(null);
+  const history = useRef<Undoable[]>([]);
   const choices = useMemo(() => stepChoices(map), [map]);
 
-  const understand = (value = text) => {
-    if (timer.current) window.clearTimeout(timer.current);
-    if (!value.trim()) return;
-    const show = planSwitch(value);
-    if (show !== null) {
-      onShowPlan(show);
-      setParsed(null);
-      setText('');
-      setDone(`Showing plan ${labels[show]} on the map.`);
-      if (readAloud) speak(`Showing plan ${labels[show]}.`);
-      return;
-    }
-    setHeard(value.trim());
-    setParsed(parseCommand(value, map));
-    setDone(null);
+  // Speech callbacks fire long after the render that started them, so they read
+  // everything through refs that every render keeps current.
+  const parsedRef = useRef<Parsed | null>(null);
+  const live = useRef({ props, readAloud });
+  live.current = { props, readAloud };
+  const setParsed = (p: Parsed | null) => {
+    parsedRef.current = p;
+    setParsedState(p);
   };
 
-  // "/" jumps to the box from anywhere that is not already a text field.
+  const say = (message: string, tone: Done['tone'], spoken = message, then?: () => void) => {
+    setDone({ text: message, tone });
+    speak(spoken, live.current.readAloud, then);
+  };
+
+  /** Where an order on the card goes, and what can be done with it right now. */
+  const options = (p: Parsed | null) => {
+    const { planOnMap, canOrderOn, officersOf, map } = live.current.props;
+    if (!p?.ok) return null;
+    const named = p.plan;
+    const target = named ?? planOnMap;
+    const step = toPlanStep(p.intent, choices);
+    const order = toLiveOrder(p.intent, map, officersOf(target));
+    const liveOk = canOrderOn(target) && 'order' in order;
+    return { named, target, step, order, liveOk };
+  };
+
+  const giveLive = (p: Parsed & { ok: true }, target: number, order: PoliceOrder) => {
+    live.current.props.onOrder(target, order);
+    history.current.push({ kind: 'live', plan: target });
+    setParsed(null);
+    say(`Ordered on plan ${labels[target]}: ${p.summary.replace(/, now$/, '')}.`, 'ok', readBack(p.intent, true));
+  };
+  const addStep = (p: Parsed & { ok: true }, plan: number, step: PlanAction) => {
+    live.current.props.onAddStep(plan, step);
+    history.current.push({ kind: 'step', plan, step });
+    setParsed(null);
+    say(`Added to plan ${labels[plan]}. Restart with your changes to run it.`, 'ok', readBack(p.intent, false));
+  };
+
+  /** "Yes" to the order on the card: give it live if the plan is running, else add it to the plan. */
+  const confirm = () => {
+    const p = parsedRef.current;
+    const o = options(p);
+    if (!p?.ok || !o) {
+      say('There is no order waiting to confirm.', 'warn');
+      return;
+    }
+    if (o.liveOk && 'order' in o.order) giveLive(p, o.target, o.order.order);
+    else if (o.step) addStep(p, o.target, o.step);
+    else say('That one needs the plans running. Say “run the plans”, then give it again.', 'warn');
+  };
+
+  const undo = () => {
+    const last = history.current.pop();
+    if (last?.kind === 'step') {
+      const ok = live.current.props.onRemoveStep(last.plan, last.step);
+      say(ok ? `Took that step back out of plan ${labels[last.plan]}.` : 'That step is already gone.', ok ? 'ok' : 'warn');
+      return;
+    }
+    const what = live.current.props.onUndoLive(last?.plan ?? live.current.props.planOnMap);
+    say(what ? `Undone. ${what}` : 'There is no order to undo.', what ? 'ok' : 'warn');
+  };
+
+  function startListening(mode: 'command' | 'confirm') {
+    if (session.current) return;
+    try {
+      window.speechSynthesis?.cancel();
+    } catch {
+      // nothing speaking
+    }
+    if (timer.current) window.clearTimeout(timer.current);
+    setMicError(null);
+    if (mode === 'command') {
+      setParsed(null);
+      setDone(null);
+    }
+    setText('');
+    const s = listen(
+      (words, final) => {
+        setText(words);
+        if (final && words) handle(words, true);
+      },
+      (error) => {
+        session.current = null;
+        setListening(null);
+        // Silence after "say yes" is not an error: the card's buttons are still there.
+        if (error && !(mode === 'confirm' && /hear anything/.test(error))) setMicError(error);
+      },
+    );
+    if (!s) {
+      setMicError('This browser has no speech recognition. Use Chrome or Safari, or your dictation key.');
+      return;
+    }
+    session.current = s;
+    setListening(mode);
+  }
+
+  /** Whatever was said or typed: confirm, cancel, undo, switch, control, question or order. */
+  function handle(value: string, spoken: boolean) {
+    if (timer.current) window.clearTimeout(timer.current);
+    if (!value.trim()) return;
+    const u = parseUtterance(value, live.current.props.map);
+    setText('');
+    setMicError(null);
+    switch (u.type) {
+      case 'confirm':
+        confirm();
+        return;
+      case 'cancel':
+        if (parsedRef.current) {
+          setParsed(null);
+          say('Cancelled.', 'warn');
+        }
+        return;
+      case 'undo':
+        undo();
+        return;
+      case 'show_plan':
+        live.current.props.onShowPlan(u.plan);
+        say(`Showing plan ${labels[u.plan]} on the map.`, 'ok', `Showing plan ${labels[u.plan]}.`);
+        return;
+      case 'control':
+        say(live.current.props.onControl(u.control), 'ok');
+        return;
+      case 'question':
+        say(answer(u.question, live.current.props.facts()), 'answer');
+        return;
+      case 'order': {
+        setHeard(value.trim());
+        setParsed(u.parsed);
+        setDone(null);
+        if (!spoken) return;
+        if (!u.parsed.ok) {
+          speak(firstSentence(u.parsed.error), live.current.readAloud);
+          return;
+        }
+        // Hands-free: read it back, ask for a yes, then listen for it.
+        const o = options(u.parsed);
+        const how = o?.liveOk ? 'Say yes to order it now' : o?.step ? `Say yes to add it to plan ${labels[o.target]}` : null;
+        if (!how) return;
+        speak(`${u.parsed.summary}. ${how}, or cancel.`, live.current.readAloud, () => {
+          if (parsedRef.current === u.parsed) startListening('confirm');
+        });
+      }
+    }
+  }
+
+  const toggleMic = () => {
+    if (session.current) session.current.stop();
+    else startListening('command');
+  };
+
+  // "/" jumps to the box; holding Space anywhere outside a field is push-to-talk.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (e.key !== '/' || t?.closest('input, textarea, select, [contenteditable]')) return;
-      e.preventDefault();
-      input.current?.focus();
+    let ptt = false;
+    const inField = (t: EventTarget | null) => !!(t as HTMLElement | null)?.closest?.('input, textarea, select, button, [contenteditable]');
+    const down = (e: KeyboardEvent) => {
+      if (e.key === '/' && !inField(e.target)) {
+        e.preventDefault();
+        input.current?.focus();
+      } else if (e.code === 'Space' && !e.repeat && !inField(e.target)) {
+        e.preventDefault();
+        ptt = true;
+        startListening('command');
+      } else if (e.key === 'Escape' && session.current) {
+        session.current.stop();
+      }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const up = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && ptt) {
+        e.preventDefault();
+        ptt = false;
+        session.current?.stop();
+      }
+    };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+    };
+    // startListening reads everything through refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(
@@ -110,57 +296,12 @@ export function CommandBar({
     [],
   );
 
-  const toggleMic = () => {
-    if (listening) {
-      session.current?.stop();
-      return;
-    }
-    // Stop any read-back first, or the mic hears it.
-    try {
-      window.speechSynthesis?.cancel();
-    } catch {
-      // no speech synthesis: nothing to stop
-    }
-    if (timer.current) window.clearTimeout(timer.current);
-    setParsed(null);
-    setDone(null);
-    setMicError(null);
-    setText('');
-    const s = listen(
-      (words, final) => {
-        setText(words);
-        if (final && words) understand(words);
-      },
-      (error) => {
-        session.current = null;
-        setListening(false);
-        if (error) setMicError(error);
-      },
-    );
-    if (!s) {
-      setMicError('This browser has no speech recognition. Use Chrome or Safari, or your dictation key.');
-      return;
-    }
-    session.current = s;
-    setListening(true);
-  };
-
-  const finish = (message: string, said: string) => {
-    setDone(message);
-    setParsed(null);
-    setText('');
-    if (readAloud) speak(said);
-  };
-
-  const intent = parsed?.ok ? parsed.intent : null;
-  const named = parsed?.ok ? parsed.plan : undefined;
-  const target = named ?? planOnMap;
-  const canOrderNow = canOrderOn(target);
-  const step = intent ? toPlanStep(intent, choices) : null;
-  const live = intent ? toLiveOrder(intent, map, officersOf(target)) : null;
-  const liveOk = canOrderNow && live !== null && 'order' in live;
+  const o = parsed?.ok ? { named: parsed.plan, target: parsed.plan ?? planOnMap } : null;
+  const step = parsed?.ok ? toPlanStep(parsed.intent, choices) : null;
+  const order = parsed?.ok && o ? toLiveOrder(parsed.intent, map, officersOf(o.target)) : null;
+  const liveOk = !!o && canOrderOn(o.target) && order !== null && 'order' in order;
   // A command that names a plan only offers that plan.
-  const addTo = named === undefined ? labels.map((_, i) => i) : [named];
+  const addTo = o?.named === undefined ? labels.map((_, i) => i) : [o.named];
 
   return (
     <div className="command">
@@ -168,16 +309,16 @@ export function CommandBar({
         className="command-bar"
         onSubmit={(e) => {
           e.preventDefault();
-          understand();
+          handle(text, false);
         }}
       >
         <button
           type="button"
           className={`command-mic${listening ? ' on' : ''}`}
           onClick={toggleMic}
-          aria-pressed={listening}
+          aria-pressed={!!listening}
           aria-label={listening ? 'Stop listening' : 'Speak an order'}
-          title={speechSupported() ? (listening ? 'Listening. Click to stop.' : 'Click and speak an order') : 'This browser has no speech recognition'}
+          title={speechSupported() ? (listening ? 'Listening. Click to stop.' : 'Click and speak, or hold Space') : 'This browser has no speech recognition'}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-2.07A7 7 0 0 0 19 12h-2Z" /></svg>
         </button>
@@ -185,14 +326,20 @@ export function CommandBar({
           ref={input}
           value={text}
           aria-label="Order in plain words"
-          placeholder={listening ? 'Listening… say an order' : 'Say or type an order: “close gate 3 in 2 minutes”, “send 4 officers to gate 2”, “PA: use gate 1”'}
+          placeholder={
+            listening === 'confirm'
+              ? 'Listening for “yes” or “cancel”…'
+              : listening
+                ? 'Listening… say an order or ask a question'
+                : 'Say or type an order or a question: “close gate 3”, “what’s the worst gate?”, “show 2D”'
+          }
           onChange={(e) => {
             setText(e.target.value);
             setDone(null);
             // Dictation drops in whole phrases; once it pauses, show what it understood.
             if (timer.current) window.clearTimeout(timer.current);
             const value = e.target.value;
-            if (value.trim().split(/\s+/).length >= 2) timer.current = window.setTimeout(() => understand(value), DICTATION_PAUSE_MS);
+            if (value.trim().split(/\s+/).length >= 2) timer.current = window.setTimeout(() => handle(value, false), DICTATION_PAUSE_MS);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
@@ -204,7 +351,7 @@ export function CommandBar({
         <button type="submit" disabled={!text.trim()}>
           Check
         </button>
-        <label className="toggle" title="Speak each confirmed order back, radio style">
+        <label className="toggle" title="Speak confirmations and answers aloud">
           <input
             type="checkbox"
             checked={readAloud}
@@ -221,9 +368,11 @@ export function CommandBar({
         </label>
       </form>
       <p className="command-tip">
-        {listening
-          ? 'Listening. Stop talking when you’re done, or click the mic again.'
-          : 'Click the mic and speak, or type. Say “shift to plan B” to switch plans, or add “on plan C” to an order. Press / to jump here.'}
+        {listening === 'confirm'
+          ? 'Say “yes” to go ahead or “cancel”. Or use the buttons.'
+          : listening
+            ? 'Listening. Stop talking when you’re done.'
+            : 'Hold Space or click the mic to talk. Try “close gate 3”, “shift to plan B”, “pause”, “what’s the worst gate?” or “undo that”. Press / to type.'}
       </p>
       {micError && (
         <p className="command-mic-error" role="alert">
@@ -232,54 +381,47 @@ export function CommandBar({
       )}
 
       {parsed && (
-        <div className={`command-card${parsed.ok ? '' : ' refused'}`} role="status">
+        <div className={`command-card${parsed.ok ? '' : ' refused'}${listening === 'confirm' ? ' asking' : ''}`} role="status">
           <p className="command-heard">
             Heard <q>{heard}</q>
           </p>
-          {parsed.ok ? (
+          {parsed.ok && o ? (
             <>
               <p className="command-summary">{parsed.summary}</p>
               <div className="command-actions">
-                {liveOk && (
-                  <button
-                    className="go"
-                    onClick={() => {
-                      onOrder(target, live.order);
-                      finish(`Ordered on plan ${labels[target]}: ${parsed.summary.replace(/, now$/, '')}.`, readBack(parsed.intent, true));
-                    }}
-                  >
-                    Order now on plan {labels[target]}
+                {liveOk && order && 'order' in order && (
+                  <button className="go" onClick={() => giveLive(parsed, o.target, order.order)}>
+                    Order now on plan {labels[o.target]}
                   </button>
                 )}
                 {step &&
                   addTo.map((i, k) => (
-                    <button
-                      key={labels[i]}
-                      className={!liveOk && k === 0 ? 'go' : undefined}
-                      onClick={() => {
-                        onAddStep(i, step);
-                        finish(`Added to plan ${labels[i]}. Restart with your changes to run it.`, readBack(parsed.intent, false));
-                      }}
-                    >
+                    <button key={labels[i]} className={!liveOk && k === 0 ? 'go' : undefined} onClick={() => addStep(parsed, i, step)}>
                       Add to plan {labels[i]}
                     </button>
                   ))}
-                <button className="ghost" onClick={() => setParsed(null)}>
+                <button
+                  className="ghost"
+                  onClick={() => {
+                    session.current?.stop();
+                    setParsed(null);
+                  }}
+                >
                   Cancel
                 </button>
               </div>
               {!step && <p className="command-note">Plans send officers to gates and named places, so this one is a live order only.</p>}
-              {step && !canOrderNow && live && 'order' in live && <p className="command-note">Run the plans to give it as a live order too.</p>}
-              {canOrderNow && live && 'error' in live && <p className="command-note">{live.error}</p>}
+              {step && !liveOk && order && 'order' in order && <p className="command-note">Run the plans to give it as a live order too.</p>}
+              {o && canOrderOn(o.target) && order && 'error' in order && <p className="command-note">{order.error}</p>}
             </>
           ) : (
-            <p className="command-summary">{parsed.error}</p>
+            !parsed.ok && <p className="command-summary">{parsed.error}</p>
           )}
         </div>
       )}
       {done && (
-        <p className="command-done" role="status">
-          {done}
+        <p className={`command-done ${done.tone}`} role="status">
+          {done.text}
         </p>
       )}
     </div>
