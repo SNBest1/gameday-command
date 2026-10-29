@@ -20,7 +20,8 @@ export type Intent =
   | { kind: 'alert'; channel: 'pa' | 'phone'; message: string; atMin: number }
   | { kind: 'shelter_order'; atMin: number };
 
-export type Parsed = { ok: true; intent: Intent; summary: string } | { ok: false; error: string };
+/** `plan` is the plan the command named ("on plan B"), 0 for A; absent when it named none. */
+export type Parsed = { ok: true; intent: Intent; summary: string; plan?: number } | { ok: false; error: string };
 
 const NUMBER_WORDS: Record<string, number> = {
   zero: 0, one: 1, a: 1, an: 1, single: 1, two: 2, couple: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
@@ -133,14 +134,41 @@ export function describe(intent: Intent): string {
   }
 }
 
+// Plans by letter or number, and the ways dictation spells the letters.
+const PLAN_WORD = '(a|b|c|1|2|3|ay|be|bee|see|sea)';
+const PLAN_INDEX: Record<string, number> = { a: 0, ay: 0, '1': 0, b: 1, be: 1, bee: 1, '2': 1, c: 2, see: 2, sea: 2, '3': 2 };
+
+/**
+ * The plan a command asks to put on the map ("shift to plan B", "show plan C",
+ * "plan bee"), or null when the command is not just that.
+ */
+export function planSwitch(text: string): number | null {
+  const s = normalise(text);
+  const verbs = '(?:switch|shift|change|go|move|jump|flip|show|view|open|display|look at|bring up|put up|take me)';
+  const m =
+    new RegExp(`^(?:(?:please|ok|okay|now) )?(?:${verbs}(?: me| us)?(?: (?:over|back))?(?: to)? )+(?:the )?plan ${PLAN_WORD}(?: on the map| please| now)?$`).exec(s) ??
+    new RegExp(`^plan ${PLAN_WORD}$`).exec(s);
+  return m ? PLAN_INDEX[m[1]!]! : null;
+}
+
+/** The plan an order names ("close gate 3 on plan B"), and the order with that phrase taken out. */
+export function planTarget(text: string): { plan: number | null; rest: string } {
+  const re = /[,\s]*\b(?:on|for|in|to|into)\s+(?:the\s+)?plan\s+(a|b|c|1|2|3|one|two|three|ay|be|bee|see|sea)\b[.!,]?/i;
+  const m = re.exec(text);
+  if (!m) return { plan: null, rest: text };
+  const word = normalise(m[1]!);
+  return { plan: PLAN_INDEX[word] ?? null, rest: text.replace(re, ' ').replace(/\s+/g, ' ').trim() };
+}
+
 const HINT = 'Try “close gate 3”, “send 4 officers to gate 2”, “redirect gate 1 to gate 5” or “PA: use the west gates”.';
 
-export function parseCommand(text: string, map: MapBundle): Parsed {
+export function parseCommand(said: string, map: MapBundle): Parsed {
+  const { plan, rest: text } = planTarget(said);
   const s = normalise(text);
   if (!s) return { ok: false, error: HINT };
   const choices = stepChoices(map);
   const atMin = minutesIn(s);
-  const done = (intent: Intent): Parsed => ({ ok: true, intent, summary: describe(intent) });
+  const done = (intent: Intent): Parsed => ({ ok: true, intent, summary: describe(intent), ...(plan === null ? {} : { plan }) });
 
   // Alerts first: their own words may say "close" or "gate" without being an order to.
   const alert = /^(?:make an? |send an? |do an? )?(pa|announce(?:ment)?|tell (?:everyone|the crowd|fans)|phone|text|sms|push)\b(?: (?:alert|announcement|message))?(?: (?:saying|that|to say))?:?\s*(.*)$/.exec(s);
