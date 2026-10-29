@@ -36,8 +36,12 @@ function recognitionCtor(): RecognitionCtor | null {
 
 export const speechSupported = () => recognitionCtor() !== null;
 
-/** A sentence for the commander for each way listening can fail. */
-export function speechErrorText(code: string): string {
+/**
+ * A sentence for the commander for each way listening can fail. Brave ships the
+ * recogniser but blocks Google's speech service, so there it always fails as
+ * `network`: say so rather than blame the connection.
+ */
+export function speechErrorText(code: string, brave = false): string {
   switch (code) {
     case 'not-allowed':
     case 'service-not-allowed':
@@ -47,7 +51,9 @@ export function speechErrorText(code: string): string {
     case 'no-speech':
       return 'I didn’t hear anything. Click the mic and speak right away.';
     case 'network':
-      return 'The speech service could not be reached. Chrome needs an internet connection for this; you can still type.';
+      return brave
+        ? 'Brave blocks the speech service this button uses. Open the app in Safari or Google Chrome, or use your Mac’s dictation (press Fn twice) in this box.'
+        : 'The speech service could not be reached. Chrome needs an internet connection for this; you can still type.';
     case 'aborted':
       return '';
     default:
@@ -82,8 +88,9 @@ export function listen(onWords: (text: string, final: boolean) => void, onEnd: (
     }
     onWords(text.trim(), final);
   };
+  const brave = 'brave' in navigator;
   rec.onerror = (e) => {
-    error = speechErrorText(e.error) || null;
+    error = speechErrorText(e.error, brave) || null;
   };
   rec.onend = () => {
     if (ended) return;

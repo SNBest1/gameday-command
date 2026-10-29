@@ -133,6 +133,7 @@ describe('speech errors', () => {
     const { speechErrorText } = await import('./speech.ts');
     expect(speechErrorText('not-allowed')).toContain('microphone is blocked');
     expect(speechErrorText('network')).toContain('internet');
+    expect(speechErrorText('network', true)).toContain('Brave blocks');
     expect(speechErrorText('no-speech')).toContain('didn’t hear');
     expect(speechErrorText('aborted')).toBe('');
   });
