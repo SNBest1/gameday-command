@@ -120,17 +120,23 @@ export function CommandPanel(props: CommandPanelProps) {
       <div className="brief-source">
         {conditions ? (
           <>
-            <span className="src live">Real conditions</span> {conditions.source}
-            {conditions.at && <em>, as of {new Date(conditions.at).toLocaleTimeString()}</em>}
-            {feedMinute === null ? <em>. No time to kickoff given, so fixed thresholds.</em> : <em>, {Math.abs(feedMinute)} min {feedMinute < 0 ? 'before' : 'after'} kickoff</em>}
+            <span className="src live">Real conditions</span>
+            <span>
+              {conditions.source}
+              {conditions.at && `, as of ${new Date(conditions.at).toLocaleTimeString()}`}
+              {feedMinute === null ? '. No time to kickoff given, so fixed thresholds.' : `, ${Math.abs(feedMinute)} min ${feedMinute < 0 ? 'before' : 'after'} kickoff`}
+            </span>
             <button className="small ghost" onClick={() => setConditions(null)}>
               Back to simulation
             </button>
           </>
         ) : (
           <>
-            <span className="src sim">Simulation</span> Plan {label}
-            {history.runs > 0 ? <em>, compared with {history.runs} past runs</em> : <em>. No history yet, so fixed thresholds.</em>}
+            <span className="src sim">Simulation</span>
+            <span>
+              Plan {label}
+              {history.runs > 0 ? `, compared with ${history.runs} past runs` : '. No history yet, so fixed thresholds.'}
+            </span>
           </>
         )}
       </div>
