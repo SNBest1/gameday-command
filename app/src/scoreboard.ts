@@ -41,3 +41,10 @@ export function resultRows(cards: Scorecard[]): ScoreRow[] {
     { label: 'Officer time', hint: 'Officers committed, times how long', cells: cards.map((c) => `${n(c.officerMinutesUsed)} min`), best: bestOf(cards.map((c) => c.officerMinutesUsed)) },
   ];
 }
+
+/** The comparison as plain text, for a radio log, an email or a report. */
+export function summaryText(heading: string, labels: readonly string[], names: string[], verdict: string, rows: ScoreRow[]): string {
+  const plans = labels.map((l, i) => `  ${l}: ${names[i]}`).join('\n');
+  const table = rows.map((r) => `  ${r.label}: ${r.cells.map((c, i) => `${labels[i]} ${c}`).join(', ')}`).join('\n');
+  return `${heading}\n\nPlans\n${plans}\n\nResults\n${table}\n\n${verdict}\n\nSimulated crowd and traffic: an assumption, not a forecast. The commander makes the call.\n`;
+}

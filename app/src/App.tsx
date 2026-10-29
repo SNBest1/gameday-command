@@ -17,7 +17,7 @@ import { applyDisabled, describeAction, PlanEditor } from './PlanEditor.tsx';
 import { CommandPanel, Ranking } from './CommandPanel.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { CommandBar } from './CommandBar.tsx';
-import { liveRows, resultRows } from './scoreboard.ts';
+import { liveRows, resultRows, summaryText } from './scoreboard.ts';
 import { lastUndoable } from './after-action.ts';
 import { describeUndo } from './voice-answers.ts';
 import { StartScreen } from './StartScreen.tsx';
@@ -152,6 +152,27 @@ function PlanScoreboard({ runs, map, incident, labels, cards, allDone }: { runs:
         ))}
       </tbody>
     </table>
+  );
+}
+
+/** Copies the comparison as text; says so for a moment. */
+function CopySummary({ text }: { text: () => string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      className="small copy-summary"
+      onClick={() => {
+        navigator.clipboard
+          ?.writeText(text())
+          .then(() => {
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1800);
+          })
+          .catch(() => setCopied(false));
+      }}
+    >
+      {copied ? 'Copied' : 'Copy summary'}
+    </button>
   );
 }
 
@@ -1626,6 +1647,17 @@ export function App() {
                           zoneName,
                         )}
                       </p>
+                      <CopySummary
+                        text={() =>
+                          summaryText(
+                            `${loaded ? loaded.map.name.replace(/ \+ 0\.5 mi$/, '') : 'Stadium'}, ${INCIDENT_LABELS[incident.kind].toLowerCase()}`,
+                            LABELS,
+                            planStates.map((p) => p.plan.name),
+                            verdictText(LABELS, planStates.map((p) => p.plan.name), cards.filter((c): c is Scorecard => c !== null), zoneName),
+                            resultRows(cards.filter((c): c is Scorecard => c !== null)),
+                          )
+                        }
+                      />
                       {briefingBusy && <p className="muted">Writing the commander's briefing…</p>}
                       {briefing && (
                         <details className="briefing" open={!briefing.canned}>

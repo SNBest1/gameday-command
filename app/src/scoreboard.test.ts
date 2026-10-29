@@ -20,3 +20,11 @@ describe('plan scoreboard', () => {
     expect(resultRows([card({ timeToClearMin: null }), card({ timeToClearMin: null }), card({ timeToClearMin: null })])[0]!.best).toBeNull();
   });
 });
+
+describe('copied summary', () => {
+  it('lists the plans, the results and the verdict as plain text', async () => {
+    const { summaryText, resultRows } = await import('./scoreboard.ts');
+    const text = summaryText('Ohio Stadium, gate surge', ['A', 'B'], ['Officers', 'Open Gate 1'], 'Plan A cleared it fastest.', resultRows([card({ timeToClearMin: 11.3 }), card({ timeToClearMin: 20.4 })]).slice(0, 1));
+    expect(text).toBe('Ohio Stadium, gate surge\n\nPlans\n  A: Officers\n  B: Open Gate 1\n\nResults\n  Time to clear: A 11.3 min, B 20.4 min\n\nPlan A cleared it fastest.\n\nSimulated crowd and traffic: an assumption, not a forecast. The commander makes the call.\n');
+  });
+});
