@@ -125,10 +125,10 @@ export function verdictText(labels: readonly string[], names: string[], cards: S
     .map((i) => `${labels[i]} ${clearText(cards[i]!)}`)
     .join(', ');
   const danger = order
-    .map((i) => `${labels[i]} ${(cards[i]?.dangerMinutes ?? 0).toFixed(1)}`)
+    .map((i) => `${labels[i]} ${Math.round(cards[i]?.dangerMinutes ?? 0).toLocaleString('en-US')}`)
     .join(', ');
   return (
     `Plan ${labels[best]} (${names[best]}) cleared the crowd at ${zoneName} fastest, in ${clearText(card)}. ` +
-    `Weighted danger near the incident plus spillover: ${danger}. Others: ${others}.`
+    `Then ${others}. Crush-risk minutes near the incident and spillover: ${danger}.`
   );
 }

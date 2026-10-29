@@ -17,6 +17,7 @@ import { applyDisabled, describeAction, PlanEditor } from './PlanEditor.tsx';
 import { CommandPanel, Ranking } from './CommandPanel.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { CommandBar } from './CommandBar.tsx';
+import { liveRows, resultRows } from './scoreboard.ts';
 import { lastUndoable } from './after-action.ts';
 import { describeUndo } from './voice-answers.ts';
 import { StartScreen } from './StartScreen.tsx';
@@ -122,6 +123,35 @@ function Info({ children }: { children: ReactNode }) {
     <span className="info" tabIndex={0}>
       ?<span className="info-pop">{children}</span>
     </span>
+  );
+}
+
+/** A, B and C in one table: live while they run, results once all three finish. */
+function PlanScoreboard({ runs, map, incident, labels, cards, allDone }: { runs: RunHandle[]; map: MapBundle; incident: Incident; labels: readonly string[]; cards: (Scorecard | null)[]; allDone: boolean }) {
+  const rows = allDone
+    ? resultRows(cards.filter((c): c is Scorecard => c !== null))
+    : liveRows(runs.map((run) => liveStats(run.latest.current?.density?.peoplePerM2, incident.cells, DANGER, run.latest.current?.frame, map.width)));
+  return (
+    <table className="scoreboard" aria-label={allDone ? 'Results for each plan' : 'Each plan right now'}>
+      <thead>
+        <tr>
+          <th scope="col">{allDone ? 'Result' : 'Right now'}</th>
+          {labels.map((l) => (
+            <th key={l} scope="col"><span className="label">{l}</span></th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.label}>
+            <th scope="row" title={r.hint}>{r.label}</th>
+            {r.cells.map((c, i) => (
+              <td key={i} className={r.best === i ? 'best' : undefined}>{c}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -1526,6 +1556,9 @@ export function App() {
 
             {railTab === 'plans' && (
               <>
+                {loaded && incident && planStates.length === 3 && started && (
+                  <PlanScoreboard runs={runs} map={loaded.map} incident={incident} labels={LABELS} cards={cards} allDone={allDone} />
+                )}
                 <section className="block verdict">
                   <h2>Verdict</h2>
                   {/* Who wrote this, at the top: a template summary folded into grey
