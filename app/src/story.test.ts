@@ -56,6 +56,14 @@ describe('commander screen words', () => {
     );
   });
 
+  it('does not call the lowest-risk plan fastest when another plan cleared sooner', () => {
+    const cards = [card('A', 12.3, 135327), card('B', 13.2, 124960), card('C', 12.6, 134177)];
+    expect(verdictText(['A', 'B', 'C'], ['Shelter now', 'Open every gate', 'Phone first'], cards, 'Stands')).toBe(
+      'Plan B (Open every gate) kept crush risk lowest near the incident and spillover: B 124,960, C 134,177, A 135,327 crush-risk minutes. ' +
+        'Plan A (Shelter now) cleared the crowd at Stands fastest, in 12.3 min; B took 13.2 min.',
+    );
+  });
+
   it('counts people from density', () => {
     const rho = new Float32Array([0, 1, 5, 0.5]);
     const stats = liveStats(rho, [1, 2], 4);
