@@ -955,7 +955,7 @@ export function App() {
 
       {showSynthetic && (
         <div className="banner notice">
-          <p>Crowd, traffic and sensors are synthetic. The forecast is a model output, not an observation.</p>
+          <p><span className="notice-tag">Synthetic data</span>Crowd, traffic and sensors are simulated. Forecasts are model output, not observations.</p>
           <button className="small ghost" onClick={() => setShowSynthetic(false)} aria-label="Dismiss the synthetic-data note">
             Dismiss
           </button>
@@ -1002,7 +1002,7 @@ export function App() {
               <input type="checkbox" checked={trafficOn} onChange={(e) => setTrafficOn(e.target.checked)} disabled={!loaded || !hasRoads(loaded.map)} />
               Vehicles
             </label>
-            {loaded && trafficOn && <span className="muted">{policeCopy.roadCapacity(trafficCapacity(loaded.map).stalls, trafficCapacity(loaded.map).vehicles)}</span>}
+            {loaded && trafficOn && <span className="muted" title="Synthetic traffic. Buildings and off-map parking are not counted.">{policeCopy.roadCapacity(trafficCapacity(loaded.map).stalls, trafficCapacity(loaded.map).vehicles)}</span>}
             <label className="toggle"><input type="checkbox" checked={showCoverage} onChange={e=>setShowCoverage(e.target.checked)}/>{policeCopy.coverage}</label>
             <button onClick={restart} disabled={!loaded}>
               Restart
@@ -1454,7 +1454,7 @@ export function App() {
                 {tab.id === 'brief' && (police[closeRun]?.filter((h) => h.level === 'critical').length ?? 0) > 0 && (
                   <b className="tab-count">{police[closeRun]!.filter((h) => h.level === 'critical').length}</b>
                 )}
-                {tab.id === 'orders' && suggestionCount > 0 && <b>{suggestionCount}</b>}
+                {tab.id === 'orders' && suggestionCount > 0 && <b className="tab-count info" title={`${suggestionCount} suggested responses`}>{suggestionCount}</b>}
                 {tab.id === 'plans' && allDone && <b className="tab-dot" title="Results are in" />}
               </button>
             ))}
