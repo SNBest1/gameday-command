@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { ThemeToggle } from './ThemeToggle.tsx';
+import { orderStadiums, whereText } from './start-list.ts';
 
 interface Place {
   city?: string;
@@ -196,11 +197,11 @@ export function StartScreen({ onPick }: { onPick: (id: string) => void }) {
 
         <h2>Your stadiums</h2>
         <div className="start-maps">
-          {maps.map((m) => (
+          {orderStadiums(maps).map((m) => (
             <button key={m.id} className="start-map" onClick={() => onPick(m.id)} style={m.theme ? ({ '--edge': m.theme.primary } as CSSProperties) : undefined}>
               <strong>{m.name.replace(/ \+ 0\.5 mi$/, '')}</strong>
               {m.imported ? (
-                <em>{[placeText(m), 'imported from OpenStreetMap'].filter(Boolean).join(' · ')}</em>
+                <em>{[whereText(m.name, placeText(m)), 'imported from OpenStreetMap'].filter(Boolean).join(', ')}</em>
               ) : (
                 <em>{m.id === 'test-3gate' ? 'small practice map' : 'ready to run'}</em>
               )}
