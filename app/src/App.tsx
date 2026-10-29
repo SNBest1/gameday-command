@@ -1011,9 +1011,18 @@ export function App() {
               map={loaded.map}
               labels={LABELS}
               planOnMap={closeRun}
-              officers={runs[closeRun]!.scene.current?.officers ?? []}
-              canOrderNow={!ordersDisabled}
-              onOrder={sendOrder}
+              officersOf={(i) => runs[i]!.scene.current?.officers ?? []}
+              canOrderOn={(i) => scrub === null && started && runs[i]!.scorecard === null}
+              onOrder={(i, order) => {
+                // Like the Orders panel: an order goes to one plan, the one put on the map.
+                if (scrub !== null || !started || runs[i]!.scorecard !== null) return;
+                runs[i]!.send({ type: 'order', order });
+                setCloseRun(i);
+              }}
+              onShowPlan={(i) => {
+                setCloseRun(i);
+                if (view === 'compare') setView('close');
+              }}
               onAddStep={(i, step) => {
                 // Appended, so the plan's switched-off step indexes stay right.
                 setPlanStates((prev) => prev.map((p, j) => (j === i ? { plan: { ...p.plan, actions: [...p.plan.actions, step] }, disabled: p.disabled } : p)));

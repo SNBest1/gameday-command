@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MapBundle, PlanAction } from '../../contracts.ts';
 import type { OfficerStatus, PoliceOrder } from '../../engine/src/edits.ts';
 import { stepChoices } from './plan-steps.ts';
-import { parseCommand, readBack, toLiveOrder, toPlanStep, type Parsed } from './voice-commands.ts';
+import { parseCommand, planSwitch, readBack, toLiveOrder, toPlanStep, type Parsed } from './voice-commands.ts';
 
 /** How long dictation has to pause before the box shows what it understood. */
 const DICTATION_PAUSE_MS = 900;
@@ -32,26 +32,31 @@ function speak(text: string) {
  * Orders in plain words, typed or spoken. Dictation (Handy, macOS dictation,
  * anything that types into the focused box) fills the box; after a short pause,
  * or on Enter, the box shows what it understood. Nothing happens until the
- * commander picks: order it now on the plan on the map, or add it to a plan.
+ * commander picks: order it now, or add it to a plan. An order goes to the plan
+ * it names ("on plan B"), else the plan on the map. "Shift to plan B" on its own
+ * only changes the view, so it happens straight away.
  */
 export function CommandBar({
   map,
   labels,
   planOnMap,
-  officers,
-  canOrderNow,
+  officersOf,
+  canOrderOn,
   onOrder,
   onAddStep,
+  onShowPlan,
 }: {
   map: MapBundle;
   labels: readonly string[];
   /** Index of the plan on the map, the one a live order goes to. */
   planOnMap: number;
-  officers: OfficerStatus[];
+  officersOf: (plan: number) => OfficerStatus[];
   /** Live orders need a running, live (not replayed) plan. */
-  canOrderNow: boolean;
-  onOrder: (order: PoliceOrder) => void;
+  canOrderOn: (plan: number) => boolean;
+  /** A live order for one plan; that plan is put on the map with it. */
+  onOrder: (plan: number, order: PoliceOrder) => void;
   onAddStep: (plan: number, step: PlanAction) => void;
+  onShowPlan: (plan: number) => void;
 }) {
   const [text, setText] = useState('');
   const [parsed, setParsed] = useState<Parsed | null>(null);
@@ -65,6 +70,15 @@ export function CommandBar({
   const understand = (value = text) => {
     if (timer.current) window.clearTimeout(timer.current);
     if (!value.trim()) return;
+    const show = planSwitch(value);
+    if (show !== null) {
+      onShowPlan(show);
+      setParsed(null);
+      setText('');
+      setDone(`Showing plan ${labels[show]} on the map.`);
+      if (readAloud) speak(`Showing plan ${labels[show]}.`);
+      return;
+    }
     setHeard(value.trim());
     setParsed(parseCommand(value, map));
     setDone(null);
@@ -92,8 +106,14 @@ export function CommandBar({
   };
 
   const intent = parsed?.ok ? parsed.intent : null;
+  const named = parsed?.ok ? parsed.plan : undefined;
+  const target = named ?? planOnMap;
+  const canOrderNow = canOrderOn(target);
   const step = intent ? toPlanStep(intent, choices) : null;
-  const live = intent ? toLiveOrder(intent, map, officers) : null;
+  const live = intent ? toLiveOrder(intent, map, officersOf(target)) : null;
+  const liveOk = canOrderNow && live !== null && 'order' in live;
+  // A command that names a plan only offers that plan.
+  const addTo = named === undefined ? labels.map((_, i) => i) : [named];
 
   return (
     <div className="command">
@@ -118,7 +138,7 @@ export function CommandBar({
             // Dictation drops in whole phrases; once it pauses, show what it understood.
             if (timer.current) window.clearTimeout(timer.current);
             const value = e.target.value;
-            if (value.trim().split(/\s+/).length >= 3) timer.current = window.setTimeout(() => understand(value), DICTATION_PAUSE_MS);
+            if (value.trim().split(/\s+/).length >= 2) timer.current = window.setTimeout(() => understand(value), DICTATION_PAUSE_MS);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
@@ -146,7 +166,7 @@ export function CommandBar({
           Read back
         </label>
       </form>
-      <p className="command-tip">Speak with your dictation key (Handy, or Fn twice for Mac dictation) while the box is selected. Press / to jump here.</p>
+      <p className="command-tip">Speak with your dictation key (Handy, or Fn twice for Mac dictation) while the box is selected. Say “shift to plan B” to switch plans, or add “on plan C” to an order. Press / to jump here.</p>
 
       {parsed && (
         <div className={`command-card${parsed.ok ? '' : ' refused'}`} role="status">
@@ -157,28 +177,28 @@ export function CommandBar({
             <>
               <p className="command-summary">{parsed.summary}</p>
               <div className="command-actions">
-                {canOrderNow && live && 'order' in live && (
+                {liveOk && (
                   <button
                     className="go"
                     onClick={() => {
-                      onOrder(live.order);
-                      finish(`Ordered on plan ${labels[planOnMap]}: ${parsed.summary.replace(/, now$/, '')}.`, readBack(parsed.intent, true));
+                      onOrder(target, live.order);
+                      finish(`Ordered on plan ${labels[target]}: ${parsed.summary.replace(/, now$/, '')}.`, readBack(parsed.intent, true));
                     }}
                   >
-                    Order now on plan {labels[planOnMap]}
+                    Order now on plan {labels[target]}
                   </button>
                 )}
                 {step &&
-                  labels.map((l, i) => (
+                  addTo.map((i, k) => (
                     <button
-                      key={l}
-                      className={canOrderNow && live && 'order' in live ? undefined : i === 0 ? 'go' : undefined}
+                      key={labels[i]}
+                      className={!liveOk && k === 0 ? 'go' : undefined}
                       onClick={() => {
                         onAddStep(i, step);
-                        finish(`Added to plan ${l}. Restart with your changes to run it.`, readBack(parsed.intent, false));
+                        finish(`Added to plan ${labels[i]}. Restart with your changes to run it.`, readBack(parsed.intent, false));
                       }}
                     >
-                      Add to plan {l}
+                      Add to plan {labels[i]}
                     </button>
                   ))}
                 <button className="ghost" onClick={() => setParsed(null)}>

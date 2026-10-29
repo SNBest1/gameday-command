@@ -3,7 +3,7 @@ import type { MapBundle } from '../../contracts.ts';
 import type { OfficerStatus } from '../../engine/src/edits.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
 import { stepChoices } from './plan-steps.ts';
-import { findChoice, minutesIn, normalise, parseCommand, readBack, toLiveOrder, toPlanStep } from './voice-commands.ts';
+import { findChoice, minutesIn, normalise, parseCommand, planSwitch, planTarget, readBack, toLiveOrder, toPlanStep } from './voice-commands.ts';
 
 // The test map, plus the kind of names a real stadium has.
 const base = makeTestMap();
@@ -99,6 +99,27 @@ describe('voice and typed commands', () => {
     expect(live).toMatchObject({ order: { type: 'dispatch', officerIds: ['near'] } });
     expect(toLiveOrder(intent('send 2 officers to gate 1').intent, map, [busy])).toEqual({ error: 'Every officer is already on a job.' });
     expect('error' in toLiveOrder(intent('everyone shelter now').intent, map, [])).toBe(true);
+  });
+
+  it('switches the plan on the map, however dictation spells the letter', () => {
+    expect(planSwitch('shift to plan B')).toBe(1);
+    expect(planSwitch('Show plan C')).toBe(2);
+    expect(planSwitch('go back to plan a')).toBe(0);
+    expect(planSwitch('switch over to plan bee')).toBe(1);
+    expect(planSwitch('plan see')).toBe(2);
+    expect(planSwitch('plan two')).toBe(1);
+    expect(planSwitch('close gate 3 on plan B')).toBeNull();
+    expect(planSwitch('send officers to gate 2')).toBeNull();
+  });
+
+  it('aims an order at the plan it names', () => {
+    expect(planTarget('Close gate 3 on plan B')).toEqual({ plan: 1, rest: 'Close gate 3' });
+    const p = intent('send 4 officers to gate 2 for plan C');
+    expect(p.plan).toBe(2);
+    expect(p.intent).toMatchObject({ kind: 'send_officers', count: 4, place: { id: 'test-gate-b' } });
+    expect(intent('close gate 1, add to plan bee in 2 minutes')).toMatchObject({ plan: 1, intent: { kind: 'close', atMin: 2 } });
+    expect(intent('PA: please use gate 3 on plan A')).toMatchObject({ plan: 0, intent: { message: 'Please use gate 3' } });
+    expect(intent('close gate 3').plan).toBeUndefined();
   });
 
   it('reads back radio style', () => {
