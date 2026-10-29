@@ -485,7 +485,7 @@ main { min-width: 0; min-height: 0; overflow: auto; padding: 16px 16px 20px 20px
 .gates .door { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 12px; font-weight: 700; }
 .gates .door.open { background: var(--ok-soft); color: var(--ok); }
 .gates .door.closed { background: var(--stop); color: #fff; }
-.gates .bar { display: inline-block; width: 56px; height: 6px; background: var(--rule-soft); border-radius: 3px; overflow: hidden; vertical-align: middle; }
+.gates .bar { display: inline-block; width: 40px; height: 6px; background: var(--rule-soft); border-radius: 3px; overflow: hidden; vertical-align: middle; }
 .gates .bar i { display: block; height: 100%; background: var(--go); }
 .gates .cops { font-size: 12px; }
 .gates .ok { color: var(--ok); }
@@ -936,3 +936,8 @@ main { min-width: 0; min-height: 0; overflow: auto; padding: 16px 16px 20px 20px
 .keys-card dt { white-space: nowrap; color: var(--dim); }
 .keys-card dd { margin: 0; }
 kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; background: var(--paper-2); color: var(--ink); font-family: var(--text); font-size: 12px; font-weight: 600; text-align: center; }
+/* The gates table fits the rail: tighter cells, a shorter use bar. */
+.gates table { font-size: 12.5px; }
+.gates th, .gates td { padding-left: 4px; padding-right: 4px; }
+.gates .bar { width: 30px; }
+.gates .gate-order { margin-left: 4px; padding: 3px 6px; }

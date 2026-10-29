@@ -16,8 +16,8 @@ export function ZoneTable({ map, run }: { map: MapBundle; run: RunHandle }) {
     history.current = { t, rows: Object.fromEntries(rows.map((r) => [r.id, { people: r.people, peak: r.peak }])) };
   }
   return (
-    <section className="panel">
-      <h2>Zones <span className="muted">· people, 15-min trend, time to 4 p/m²</span></h2>
+    <section className="block">
+      <h2>Zones <span className="muted-inline">People, trend over 15 minutes, time to 4 per m²</span></h2>
       {rows.length === 0 ? (
         <p className="muted">Run the plans to fill the zone table.</p>
       ) : (
@@ -45,8 +45,8 @@ export function ZoneTable({ map, run }: { map: MapBundle; run: RunHandle }) {
 export function LotBoard({ map, run }: { map: MapBundle; run: RunHandle }) {
   const rows = lotRows(map, run.latest.current?.density);
   return (
-    <section className="panel">
-      <h2>Lots <span className="muted">· occupancy from the crowd grid</span></h2>
+    <section className="block">
+      <h2>Lots <span className="muted-inline">Occupancy from the crowd grid</span></h2>
       {rows.length === 0 ? (
         <p className="muted">Run the plans to fill the lot board.</p>
       ) : (
