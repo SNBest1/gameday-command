@@ -779,7 +779,7 @@ main { min-width: 0; min-height: 0; overflow: auto; padding: 16px 16px 20px 20px
 .police-log { max-height: 220px; overflow: auto; list-style: none; padding: 0; margin: 0; }
 .police-log li { padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 12px; overflow-wrap: anywhere; }
 .police-log .muted { display: block; margin: 0 0 3px; }
-.gates .gate-order { display: block; margin-top: 3px; }
+.gates .gate-order { display: inline-block; margin: 0 0 0 6px; padding: 3px 8px; min-height: 28px; vertical-align: middle; }
 .police-pick {
   position: absolute; z-index: 5; top: 100px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 24px);
   background: rgba(13, 17, 23, 0.94); border: 1px solid #4a7ab8; border-radius: 7px;
