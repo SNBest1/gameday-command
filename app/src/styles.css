@@ -897,3 +897,13 @@ main { min-width: 0; min-height: 0; overflow: auto; padding: 16px 16px 20px 20px
 .scoreboard td.best { color: var(--ok); box-shadow: inset 0 -3px 0 var(--ok); }
 
 .rail-tabs button { padding-left: 7px; padding-right: 7px; font-size: 13.5px; }
+/* One line of controls: the vehicle note gives way before Restart wraps. */
+@media (min-width: 1280px) {
+  .controls.transport { flex-wrap: nowrap; }
+  .controls.transport > .muted { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .controls.transport .live-sky { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+}
+@media (min-width: 1280px) {
+  .controls.transport > :not(.muted):not(.live-sky) { flex: none; }
+  .controls.transport .live-sky { max-width: 150px; white-space: nowrap; }
+}
