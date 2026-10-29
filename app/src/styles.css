@@ -182,12 +182,8 @@ header.top {
   background: var(--paper);
   border-bottom: 1px solid var(--rule);
 }
-.brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.brand h1 { font-size: 16px; margin: 0; letter-spacing: 0.04em; text-transform: uppercase; }
-.brand h1::before { content: ''; display: inline-block; width: 9px; height: 9px; background: var(--scarlet); border-radius: 2px; margin-right: 8px; vertical-align: 1px; }
-.brand .sub { color: var(--dim); font-size: 12.5px; }
 /* The dot scale: one permanent line of data, not part of the dismissible help. */
-.brand .scale, .venue .scale { color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+.venue .scale { color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; }
 .venue { display: flex; align-items: stretch; gap: 14px; min-width: 0; }
 .venue-stripe { width: 8px; align-self: stretch; margin: -10px 0; background: linear-gradient(var(--team) 0 62%, var(--team2) 62% 100%); }
 .venue h1 { font-size: 21px; line-height: 1.15; white-space: nowrap; }
@@ -737,30 +733,6 @@ main { min-width: 0; min-height: 0; overflow: auto; padding: 16px 16px 20px 20px
 .theme-toggle { flex: none; padding: 6px 12px; }
 .start-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 
-/* ─── 2D plan, traffic key, police list ─── */
-.canvas-wrap.plan { background: #05070a; }
-.canvas-wrap.plan .maps-stack { width: min(100%, calc(100vh - 230px)); margin: 0 auto; }
-.flow-key { display: inline-flex; align-items: center; gap: 10px; padding: 4px 10px; border-radius: 999px; margin-right: 8px; font-size: 11.5px; color: var(--dim); }
-.flow-key span { display: inline-flex; align-items: center; gap: 4px; }
-.flow-key i { width: 18px; height: 5px; border-radius: 3px; display: inline-block; }
-.flow-key.on { border-color: #3d4854; color: var(--ink); }
-.flow-key:not(.on) { opacity: 0.5; }
-.panel.police { border-color: #5a1f2a; background: linear-gradient(180deg, #1b1216, var(--panel)); }
-.police-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
-.police-tabs button { flex: 1; padding: 4px 6px; font-size: 11.5px; position: relative; }
-.police-tabs button.on { border-color: #e6edf3; background: #222a35; }
-.police-tabs .crit-count { position: absolute; top: -6px; right: -4px; background: #ff3b5c; color: #fff; border-radius: 999px; font-size: 10px; padding: 0 5px; line-height: 15px; }
-.hotspots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
-.hotspots button { width: 100%; display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 8px; text-align: left; padding: 6px 8px; }
-.hotspots .rank { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #0b0f14; font-weight: 800; font-size: 12px; border: 2px solid #fff; }
-.hotspots .what { display: flex; flex-direction: column; min-width: 0; }
-.hotspots .what strong { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hotspots .what em { font-style: normal; color: var(--dim); font-size: 11px; }
-.hotspots .level { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 4px; font-weight: 700; }
-.hotspots .level.critical { background: #ff3b5c33; color: #ff8aa0; }
-.hotspots .level.high { background: #ff9b2b33; color: #ffbf73; }
-.hotspots .level.watch { background: #f5d54726; color: #f5d547; }
-.hotspots li.critical button { border-color: #ff3b5c88; }
 
 /* ORD-008 — honest labels: the live sky beside the scenario picker, and the
    template-briefing label at the top of the verdict. New rules only. */
@@ -877,3 +849,40 @@ main { min-width: 0; min-height: 0; overflow: auto; padding: 16px 16px 20px 20px
 .command-done.answer { padding: 8px 12px; background: var(--info-soft); border-left: 4px solid var(--info); border-radius: 0 var(--radius) var(--radius) 0; color: var(--ink); font-size: 15px; font-weight: 500; }
 .command-done.warn { color: var(--warn); }
 .command-card.asking { border-left-color: var(--stop); }
+
+/* ── Header on one row, quiet data note, tab counts (overnight polish) ── */
+@media (min-width: 1280px) {
+  header.top { flex-wrap: nowrap; }
+  .clock { min-width: 220px; }
+  .situations button { padding: 6px 11px; }
+}
+.role-switch { display: flex; align-items: center; gap: 8px; color: var(--dim); }
+.role-switch button { min-height: 0; padding: 6px 10px; font-size: 13px; }
+.banner.notice { padding: 6px 20px; background: var(--paper); border-bottom: 1px solid var(--rule-soft); color: var(--dim); font-size: 13px; }
+.notice-tag { display: inline-block; margin-right: 8px; padding: 1px 7px; border-radius: 3px; background: var(--caution); color: #3d2c00; font-family: var(--display); font-size: 12px; font-weight: 700; }
+.rail-tabs .tab-count.info { background: var(--info); color: var(--paper); }
+.controls .muted { font-size: 12px; }
+
+/* Sign-in: a console picker, left-aligned like the rest of the board. */
+.demo-card { width: min(100%, 560px); padding: 28px 30px 24px; text-align: left; border-top: 6px solid var(--team); }
+.demo-head { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+.demo-head h1 { font-size: 26px; margin: 0; }
+.demo-head p { margin: 2px 0 0; color: var(--dim); font-size: 13.5px; }
+.demo-card .demo-seal { width: 46px; flex: none; stroke-width: 6; }
+.demo-card h2 { font-size: 16px; margin: 0 0 10px; }
+.demo-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.demo-card .demo-roles button { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 0; padding: 14px 16px; text-align: left; background: var(--paper-2); }
+.demo-roles button strong { font-family: var(--display); font-size: 17px; }
+.demo-roles button span { color: var(--dim); font-size: 13px; line-height: 1.35; }
+.demo-roles button.on { border-color: var(--go); box-shadow: inset 0 0 0 1px var(--go); }
+.demo-go { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; }
+.demo-card .demo-go button.primary { padding: 0 22px; font-size: 14.5px; }
+.demo-card .muted { margin: 0; }
+@media (max-width: 520px) { .demo-roles { grid-template-columns: 1fr; } }
+/* Keep header and tab labels on one line; the dot scale steps aside on narrower desktops. */
+.situations button strong, .situations button span, .clock strong, .clock .status, .role-switch, .role-switch button, .rail-tabs button { white-space: nowrap; }
+.rail-tabs { overflow-x: auto; scrollbar-width: none; }
+.rail-tabs button { padding: 12px 9px 10px; display: inline-flex; align-items: center; }
+.rail-tabs .tab-count { margin-left: 5px; }
+@media (max-width: 1700px) { .venue .scale { display: none; } }
+@media (min-width: 1280px) and (max-width: 1500px) { .clock .status { display: none; } }

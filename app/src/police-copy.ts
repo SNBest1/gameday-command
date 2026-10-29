@@ -48,5 +48,5 @@ export const policeCopy = {
   assignment: 'Response assignments',
   mission: 'Officers direct nearby fans toward an open gate ranked by queue and walking cost. Traffic points alternate junction entry directions. These are simulation assumptions, not a guaranteed resolution.',
   duration: (s: number) => `Work for ${Math.round(s / 60)} simulated minutes after arrival, then return to the original post.`,
-  roadCapacity: (stalls: number, vehicles: number) => `Synthetic traffic: ${vehicles.toLocaleString()} vehicles for ${stalls.toLocaleString()} mapped surface parking stalls. Buildings and off-map parking are not counted.`,
+  roadCapacity: (stalls: number, vehicles: number) => `${vehicles.toLocaleString()} vehicles for ${stalls.toLocaleString()} mapped parking stalls`,
 };
