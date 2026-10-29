@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MapBundle, PlanAction } from '../../contracts.ts';
 import type { OfficerStatus, PoliceOrder } from '../../engine/src/edits.ts';
 import { stepChoices } from './plan-steps.ts';
+import { listen, speechSupported, type Listening } from './speech.ts';
 import { parseCommand, planSwitch, readBack, toLiveOrder, toPlanStep, type Parsed } from './voice-commands.ts';
 
 /** How long dictation has to pause before the box shows what it understood. */
@@ -29,8 +30,10 @@ function speak(text: string) {
 }
 
 /**
- * Orders in plain words, typed or spoken. Dictation (Handy, macOS dictation,
- * anything that types into the focused box) fills the box; after a short pause,
+ * Orders in plain words, typed or spoken. The mic button listens through the
+ * browser's recogniser (`speech.ts`) and shows the words as they come; outside
+ * dictation (Handy, macOS dictation, anything that types into the focused box)
+ * fills the box too; after a short pause,
  * or on Enter, the box shows what it understood. Nothing happens until the
  * commander picks: order it now, or add it to a plan. An order goes to the plan
  * it names ("on plan B"), else the plan on the map. "Shift to plan B" on its own
@@ -63,8 +66,11 @@ export function CommandBar({
   const [heard, setHeard] = useState('');
   const [done, setDone] = useState<string | null>(null);
   const [readAloud, setReadAloud] = useState(loadReadBack);
+  const [listening, setListening] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const timer = useRef<number | null>(null);
+  const session = useRef<Listening | null>(null);
   const choices = useMemo(() => stepChoices(map), [map]);
 
   const understand = (value = text) => {
@@ -96,7 +102,48 @@ export function CommandBar({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) window.clearTimeout(timer.current);
+      session.current?.stop();
+    },
+    [],
+  );
+
+  const toggleMic = () => {
+    if (listening) {
+      session.current?.stop();
+      return;
+    }
+    // Stop any read-back first, or the mic hears it.
+    try {
+      window.speechSynthesis?.cancel();
+    } catch {
+      // no speech synthesis: nothing to stop
+    }
+    if (timer.current) window.clearTimeout(timer.current);
+    setParsed(null);
+    setDone(null);
+    setMicError(null);
+    setText('');
+    const s = listen(
+      (words, final) => {
+        setText(words);
+        if (final && words) understand(words);
+      },
+      (error) => {
+        session.current = null;
+        setListening(false);
+        if (error) setMicError(error);
+      },
+    );
+    if (!s) {
+      setMicError('This browser has no speech recognition. Use Chrome or Safari, or your dictation key.');
+      return;
+    }
+    session.current = s;
+    setListening(true);
+  };
 
   const finish = (message: string, said: string) => {
     setDone(message);
@@ -124,14 +171,21 @@ export function CommandBar({
           understand();
         }}
       >
-        <span className="command-mic" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-2.07A7 7 0 0 0 19 12h-2Z" /></svg>
-        </span>
+        <button
+          type="button"
+          className={`command-mic${listening ? ' on' : ''}`}
+          onClick={toggleMic}
+          aria-pressed={listening}
+          aria-label={listening ? 'Stop listening' : 'Speak an order'}
+          title={speechSupported() ? (listening ? 'Listening. Click to stop.' : 'Click and speak an order') : 'This browser has no speech recognition'}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-2.07A7 7 0 0 0 19 12h-2Z" /></svg>
+        </button>
         <input
           ref={input}
           value={text}
           aria-label="Order in plain words"
-          placeholder="Say or type an order: “close gate 3 in 2 minutes”, “send 4 officers to gate 2”, “PA: use gate 1”"
+          placeholder={listening ? 'Listening… say an order' : 'Say or type an order: “close gate 3 in 2 minutes”, “send 4 officers to gate 2”, “PA: use gate 1”'}
           onChange={(e) => {
             setText(e.target.value);
             setDone(null);
@@ -166,7 +220,16 @@ export function CommandBar({
           Read back
         </label>
       </form>
-      <p className="command-tip">Speak with your dictation key (Handy, or Fn twice for Mac dictation) while the box is selected. Say “shift to plan B” to switch plans, or add “on plan C” to an order. Press / to jump here.</p>
+      <p className="command-tip">
+        {listening
+          ? 'Listening. Stop talking when you’re done, or click the mic again.'
+          : 'Click the mic and speak, or type. Say “shift to plan B” to switch plans, or add “on plan C” to an order. Press / to jump here.'}
+      </p>
+      {micError && (
+        <p className="command-mic-error" role="alert">
+          {micError}
+        </p>
+      )}
 
       {parsed && (
         <div className={`command-card${parsed.ok ? '' : ' refused'}`} role="status">
