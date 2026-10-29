@@ -849,10 +849,16 @@ main { min-width: 0; min-height: 0; overflow: auto; padding: 16px 16px 20px 20px
 .command { flex: none; display: flex; flex-direction: column; gap: 6px; }
 .command-bar { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius); }
 .command-bar:focus-within { border-color: var(--info); box-shadow: 0 0 0 2px color-mix(in srgb, var(--info) 25%, transparent); }
-.command-mic { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--inverse-bg); }
-.command-mic svg { width: 16px; height: 16px; fill: var(--inverse-ink); }
-.command-bar:focus-within .command-mic { background: var(--stop); }
-.command-bar:focus-within .command-mic svg { fill: #fff; }
+.command-mic { position: relative; flex: none; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: var(--inverse-bg); cursor: pointer; }
+.command-mic svg { width: 18px; height: 18px; fill: var(--inverse-ink); }
+.command-mic:hover:not(:disabled) { background: var(--go); }
+.command-mic:hover:not(:disabled) svg { fill: #fff; }
+.command-mic.on, .command-mic.on:hover:not(:disabled) { background: var(--stop); }
+.command-mic.on svg { fill: #fff; }
+.command-mic.on::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid var(--stop); animation: mic-pulse 1.1s ease-out infinite; }
+@keyframes mic-pulse { from { transform: scale(0.85); opacity: 0.9; } to { transform: scale(1.35); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .command-mic.on::after { animation: none; } }
+.command-mic-error { margin: 0 2px; font-size: 13px; color: var(--bad); }
 .command-bar input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 6px 2px; font-size: 15px; color: var(--ink); }
 .command-bar input:focus { outline: none; }
 .command-bar input::placeholder { color: var(--dim); }

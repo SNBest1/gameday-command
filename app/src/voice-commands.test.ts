@@ -127,3 +127,13 @@ describe('voice and typed commands', () => {
     expect(readBack(intent('send 4 officers to gate 2').intent, false)).toBe('Copy. 4 officers to Gate 2, added to the plan.');
   });
 });
+
+describe('speech errors', () => {
+  it('explains each way listening fails in plain words', async () => {
+    const { speechErrorText } = await import('./speech.ts');
+    expect(speechErrorText('not-allowed')).toContain('microphone is blocked');
+    expect(speechErrorText('network')).toContain('internet');
+    expect(speechErrorText('no-speech')).toContain('didn’t hear');
+    expect(speechErrorText('aborted')).toBe('');
+  });
+});
