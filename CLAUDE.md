@@ -181,6 +181,12 @@ The app's replay scrubber draws kept frames while you drag, because that is inst
 - The plan on the map is switched from the map itself (A/B/C in its top-left corner). The map key folds to a "Key" button and remembers it (`gd-legend`).
 - `Ranking` (priority, best plan, feedback) sits on the Plans tab under the verdict; `CommandPanel` on Brief is only the current levels and plan builder. The rail jumps to Plans once when all three runs finish.
 
+- **Plan scoreboard** (`app/src/scoreboard.ts`, top of the Plans tab once the runs start): A, B and C in one table, live counts while running, then time to clear, crush-risk minutes and officer time. Lower is better on every row; the best is marked only when strictly better than another plan (a tie marks nothing; never-cleared is worst). **Copy summary** under the verdict puts the same comparison and the verdict on the clipboard as plain text.
+- **The verdict ranks crush risk first** (`rankPlans`: danger minutes, then time to clear). It only says "fastest" of the plan that was: when the lowest-risk plan is not the fastest, it names both (the lightning delay had B lowest-risk at 13.2 min while A cleared in 12.3).
+- **Keyboard** (`App.tsx`): `1` `2` `3` put a plan on the map, `P` runs or pauses, `?` toggles the shortcuts card; Space (hold, talk) and `/` (type) belong to the command box. All ignored while a field has focus.
+- **Laptop widths.** The header stays one row from 1280 px up (`flex-wrap: nowrap`); under 1500 px the sky line and vehicle count in the controls bar step aside rather than truncate to stray characters.
+- **Stale rules come back in merges.** An old dark-theme block (uppercase `.brand h1`, `.hotspots .level`) reappeared after a merge and overrode the tokens; check `styles.css` for `uppercase` and hard-coded hex after merging.
+
 - **Words live in `app/src/story.ts`** (clock text, incident status, live stats, ranking, the verdict sentence), so the phrasing and the ranking are tested in `story.test.ts`. Plan steps are shown with names, not ids, through `describeAction(action, map)`.
 - **Ranking:** clearing the zone sooner wins, never-cleared loses to cleared, and ties go to fewer danger minutes.
 - **Plan cards show only numbers that differ between plans.** These are time to clear, first officer and officer time (when the plan sends officers), and fans the alert reached (when it has one). Danger minutes and peak density sit under "How the AI and the numbers work". See "Danger scoring" below for why they still barely separate the plans.
