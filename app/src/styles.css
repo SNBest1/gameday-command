@@ -154,7 +154,7 @@ button.link { background: none; border: 0; padding: 4px 0; color: var(--info); f
 button.link:hover:not(:disabled) { text-decoration-color: currentColor; }
 button.wide { width: 100%; margin-top: 10px; padding: 9px 12px; }
 
-select, input[type='number'], input[type='text'], input[type='url'], input[type='search'], textarea {
+select, input:not([type]), input[type='number'], input[type='text'], input[type='url'], input[type='search'], textarea {
   background: var(--paper-2);
   color: var(--ink);
   border: 1px solid var(--rule);
