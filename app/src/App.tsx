@@ -1434,7 +1434,7 @@ export function App() {
                     <button className="primary" onClick={() => setPlaying(true)} disabled={!runs.every((r) => r.ready)}>
                       Run all three plans
                     </button>
-                    <span className="muted">Then scroll to zoom in and click any fan to see why they move.</span>
+                    <span className="muted">Then scroll to zoom in and click any fan to see why they move. Or hold <kbd>Space</kbd> and say “run the plans”.</span>
                   </div>
                 )}
               </div>
