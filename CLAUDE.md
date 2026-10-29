@@ -251,7 +251,7 @@ The first request pays MLX warm-up and will exceed the timeout; it falls back on
 
 ## The cache ships warm
 
-`server/data/decision-seed.json` holds 737 answers the real Kev-4B already gave (115 KB). `openDb()` loads them into an empty `decision_cache`, so a fresh clone is model-driven from the first click rather than guessing its way through the first run of every scenario. Measured on a brand-new database with the earlier 544-answer seed: a lightning delay runs **54,253 decisions, all from the model, zero fallbacks**, with the pause down to 0.4 s.
+`server/data/decision-seed.json` holds 1,582 answers the real Kev-4B already gave (239 KB): 605 in clear weather, 527 in lightning and 450 in rain. Weather is part of the key, so the earlier 737-answer seed (all clear) left a rainy or stormy demo on defaults; `WARM_WEATHER=rain-at-kickoff` / `thunderstorm npm run warm` fill those, and `WARM_FANS=60000` reaches other crowd and wait buckets. On a 16 GB Mac under memory pressure Kev took ~18 s per answer, so the script's quiet spell is `WARM_SETTLE_S` (default 15 s); the server's background warmer keeps filling after the script exits, so export the seed once `/api/health`'s `cachedDecisions` stops growing. `openDb()` loads them into an empty `decision_cache`, so a fresh clone is model-driven from the first click rather than guessing its way through the first run of every scenario. Measured on a brand-new database with the earlier 544-answer seed: a lightning delay runs **54,253 decisions, all from the model, zero fallbacks**, with the pause down to 0.4 s.
 
 Regenerate after changing fan types, situations or the `decisionKey` context — those change the keys and the old ones stop matching.
 
