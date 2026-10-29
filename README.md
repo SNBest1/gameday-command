@@ -191,6 +191,15 @@ The map is now zoomable (scroll, drag, double-click, or Fit / Stadium / Incident
 - **What do you think?** After a comparison, the commander records the plan they would pick, whether they agree with the ranking, and a note.
 - **Plan-step dropdowns.** Add any step from menus: close or open a gate or street, send officers, redirect, alert, shelter.
 
+### Spoken orders, the plan scoreboard and shortcuts
+
+- **Orders in plain words.** The box above the map takes typed or spoken orders: "close gate 3 in 2 minutes", "send 4 officers to gate 2", "redirect gate 1 to gate 5", "PA: use the west gates", "close Woody Hayes Drive". Names are matched against the map's own gates, streets and places in plain code, never a model, and an order that names nothing is refused with a "did you mean". Nothing happens until the commander confirms, either as a live order on the plan on the map or as a step added to a plan.
+- **Hands-free.** Hold Space (or click the mic) and speak. A spoken order is read back with "say yes to confirm", and the mic opens again for the answer. The same box runs the app ("run the plans", "pause", "show 2D", "shift to plan B"), answers questions from the plan's own numbers ("what's the worst gate?", "how many officers are free?", "status") and undoes ("undo that").
+- **Where the audio goes.** The mic uses the browser's own speech recognition: Chrome sends the audio to Google's speech service, Safari uses Apple's, and Brave blocks it (the app says so). Any dictation tool that types into the box (macOS dictation, Handy) also works and keeps audio on the laptop. Only `app/src/speech.ts` would change for a local recogniser.
+- **Plan scoreboard.** The Plans tab opens with A, B and C side by side: who is in the zone and dangerously packed while they run, then time to clear, crush-risk minutes and officer time, the best of each marked.
+- **Keyboard.** Space (hold) to talk, `/` to type, `1` `2` `3` to put a plan on the map, `P` to run or pause, `?` for the list.
+- **Decision cache in every weather.** Weather is part of each fan decision's key, so `WARM_WEATHER=rain-at-kickoff npm run warm` (or `thunderstorm`) fills the answers a rainy or stormy demo needs; `WARM_SETTLE_S` waits longer for a Kev short of memory.
+
 ## Rules this project holds to
 
 - No Claude API and no paid API. Models run locally: Kev via MLX, the briefing via Apple's on-device `fm serve`.
