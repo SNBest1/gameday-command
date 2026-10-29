@@ -372,7 +372,7 @@ export function CommandBar(props: CommandBarProps) {
           ? 'Say “yes” to go ahead or “cancel”. Or use the buttons.'
           : listening
             ? 'Listening. Stop talking when you’re done.'
-            : 'Hold Space or click the mic to talk. Try “close gate 3”, “shift to plan B”, “pause”, “what’s the worst gate?” or “undo that”. Press / to type.'}
+            : 'Hold Space or click the mic to talk. Try “close gate 3”, “shift to plan B”, “pause”, “what’s the worst gate?” or “undo that”. Press / to type, ? for all shortcuts.'}
       </p>
       {micError && (
         <p className="command-mic-error" role="alert">

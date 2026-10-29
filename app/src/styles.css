@@ -927,3 +927,12 @@ main { min-width: 0; min-height: 0; overflow: auto; padding: 16px 16px 20px 20px
 .oc-nearby li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--rule-soft); font-size: 13.5px; }
 .oc-nearby b { font-variant-numeric: tabular-nums; }
 .oc-foot { margin-top: 14px; font-size: 12.5px; }
+
+/* Keyboard shortcuts card ("?") */
+.keys-card { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; background: rgba(8, 12, 16, 0.55); }
+.keys-card > div { width: min(92vw, 460px); padding: 20px 22px 18px; background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-top: 5px solid var(--ink); border-radius: var(--radius); }
+.keys-card h2 { font-size: 18px; margin: 0 0 12px; }
+.keys-card dl { display: grid; grid-template-columns: auto 1fr; gap: 9px 16px; margin: 0 0 16px; font-size: 13.5px; }
+.keys-card dt { white-space: nowrap; color: var(--dim); }
+.keys-card dd { margin: 0; }
+kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; background: var(--paper-2); color: var(--ink); font-family: var(--text); font-size: 12px; font-weight: 600; text-align: center; }

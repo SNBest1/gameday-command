@@ -913,6 +913,44 @@ export function App() {
   const demoUnits=loaded?(liveScene?.officers??makeOfficers(loaded.map,OFFICERS)).map(o=>({id:o.id,unit:o.unit,post:loaded.map.places.find(p=>p.cells.includes('homeCell' in o?o.homeCell:o.cell))?.name??'Outdoor post'})):[];
   const chooseRole=(choice:DemoRole)=>{saveRole(choice);markSignedIn();setRoleChoice(choice);setShowRole(false);setFollowing(true);};
   const roleDialog=showRole?<DemoAccess choice={roleChoice} units={demoUnits} onChoose={chooseRole} onSkip={()=>chooseRole({role:'supervisor',unitId:roleChoice.unitId})}/>:null;
+  // Keyboard: 1-3 put a plan on the map, P runs or pauses, ? shows every shortcut.
+  // Space (talk) and / (type) live in the command box. Ignored while typing.
+  const [showKeys, setShowKeys] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (e.metaKey || e.ctrlKey || e.altKey || t?.closest?.('input, textarea, select, [contenteditable]')) return;
+      if (e.key === '?') {
+        e.preventDefault();
+        setShowKeys((v) => !v);
+      } else if (e.key === 'Escape') {
+        setShowKeys(false);
+      } else if (loaded && ['1', '2', '3'].includes(e.key)) {
+        setCloseRun(Number(e.key) - 1);
+        if (view === 'compare') setView('close');
+      } else if (loaded && (e.key === 'p' || e.key === 'P') && !allDone) {
+        setPlaying((p) => !p);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [loaded, allDone, view]);
+  const keysCard = showKeys && (
+    <div className="keys-card" role="dialog" aria-label="Keyboard shortcuts" onClick={() => setShowKeys(false)}>
+      <div onClick={(e) => e.stopPropagation()}>
+        <h2>Keyboard shortcuts</h2>
+        <dl>
+          <dt><kbd>Space</kbd> (hold)</dt><dd>Talk: say an order, a question or a control</dd>
+          <dt><kbd>/</kbd></dt><dd>Type an order</dd>
+          <dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>Put plan A, B or C on the map</dd>
+          <dt><kbd>P</kbd></dt><dd>Run or pause the plans</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Cancel what you were doing, or close this</dd>
+          <dt><kbd>?</kbd></dt><dd>Show or hide these shortcuts</dd>
+        </dl>
+        <button onClick={() => setShowKeys(false)}>Close</button>
+      </div>
+    </div>
+  );
   if (!mapId) {
     return (
       <>{roleDialog}<StartScreen
@@ -929,6 +967,7 @@ export function App() {
   return (
     <>
       {roleDialog}
+      {keysCard}
       <header className="top">
         <div className="venue">
           <span className="venue-stripe" aria-hidden="true" />
