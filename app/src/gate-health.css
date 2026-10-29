@@ -5,4 +5,4 @@
 .gates .gate-alerts { display: flex; flex-direction: column; gap: 3px; margin: 0 0 8px; }
 .gates .gate-alerts .alert { color: #ff8589; font-size: 12px; font-weight: 600; line-height: 1.35; }
 .gates .gate-alerts .alert.unused { color: #ffb3b5; }
-.gates .gate-alerts .alert strong { text-transform: uppercase; letter-spacing: 0.04em; font-size: 10.5px; }
+.gates .gate-alerts .alert strong { font-family: var(--display); font-size: 12.5px; }
