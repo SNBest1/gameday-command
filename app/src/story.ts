@@ -127,8 +127,19 @@ export function verdictText(labels: readonly string[], names: string[], cards: S
   const danger = order
     .map((i) => `${labels[i]} ${Math.round(cards[i]?.dangerMinutes ?? 0).toLocaleString('en-US')}`)
     .join(', ');
+  // The ranking puts crush risk first. Only say "fastest" of the plan that was.
+  const fastest = order
+    .filter((i) => cards[i]!.timeToClearMin !== null)
+    .sort((x, y) => cards[x]!.timeToClearMin! - cards[y]!.timeToClearMin!)[0]!;
+  if (fastest === best || cards[fastest]!.timeToClearMin === card.timeToClearMin) {
+    return (
+      `Plan ${labels[best]} (${names[best]}) cleared the crowd at ${zoneName} fastest, in ${clearText(card)}. ` +
+      `Then ${others}. Crush-risk minutes near the incident and spillover: ${danger}.`
+    );
+  }
   return (
-    `Plan ${labels[best]} (${names[best]}) cleared the crowd at ${zoneName} fastest, in ${clearText(card)}. ` +
-    `Then ${others}. Crush-risk minutes near the incident and spillover: ${danger}.`
+    `Plan ${labels[best]} (${names[best]}) kept crush risk lowest near the incident and spillover: ${danger} crush-risk minutes. ` +
+    `Plan ${labels[fastest]} (${names[fastest]}) cleared the crowd at ${zoneName} fastest, in ${clearText(cards[fastest]!)}; ` +
+    `${labels[best]} took ${clearText(card)}.`
   );
 }
