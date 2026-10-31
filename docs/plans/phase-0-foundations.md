@@ -73,7 +73,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
 
 ### Stream A: CI
 
-- [ ] **A1.** Gate the two throughput tests so they run only when asked. Shared CI machines are slower and busier than a laptop, and `CLAUDE.md` says these assertions are load-sensitive.
+- [x] **A1.** Gate the two throughput tests so they run only when asked. Shared CI machines are slower and busier than a laptop, and `CLAUDE.md` says these assertions are load-sensitive.
   - In `engine/src/perf.test.ts`, change `describe('engine throughput', ...)` to `describe.skipIf(!process.env.PERF)('engine throughput', ...)`. Change nothing else in the file.
   - Create `vitest.perf.config.ts`: the same as `vitest.config.ts`, but with `include: ['engine/src/perf.test.ts']` and `test.env: { PERF: '1' }`. Setting the variable inside the config, not on the command line, is what makes it work the same on Windows and macOS.
 

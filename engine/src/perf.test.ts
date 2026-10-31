@@ -81,7 +81,7 @@ function makeBigMap(size = 800, gateCount = 12): MapBundle {
 const breathe = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 const YIELD_EVERY = 250;
 
-describe('engine throughput', () => {
+describe.skipIf(!process.env.PERF)('engine throughput', () => {
   it('runs 20,000 dots at better than 10x real time in one worker', async () => {
     const bundle = makeBigMap();
     const fans = 100_000;
