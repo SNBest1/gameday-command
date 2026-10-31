@@ -116,7 +116,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
   - `npm run format:check` exits 0;
   - `npm run typecheck && npm test && npm run build` pass;
   - `git show --stat HEAD` lists only formatting and line-ending changes.
-- [ ] **B4.** Add `npm run lint` and `npm run format:check` steps to `.github/workflows/ci.yml`, after `npm ci`.
+- [x] **B4.** Add `npm run lint` and `npm run format:check` steps to `.github/workflows/ci.yml`, after `npm ci`.
   Verify: CI green on all three operating systems.
 
 ### Stream C: Doc drift
