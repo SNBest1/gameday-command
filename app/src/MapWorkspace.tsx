@@ -297,14 +297,14 @@ export function MapWorkspace(props: MapWorkspaceProps) {
           )}
         </div>
         <div className="view-toggle">
-          <button className={view === 'close' ? 'on' : undefined} onClick={() => setView('close')}>
-            3D
+          <button className={view === 'ops' ? 'on' : undefined} onClick={() => setView('ops')}>
+            Map
           </button>
-          <button className={view === 'plan' ? 'on' : undefined} onClick={() => setView('plan')}>
-            2D plan
+          <button className={view === 'close' ? 'on' : undefined} onClick={() => setView('close')}>
+            Close-up
           </button>
           <button className={view === 'compare' ? 'on' : undefined} onClick={() => setView('compare')}>
-            All three
+            Side by side
           </button>
         </div>
         {deciding > 0 && (

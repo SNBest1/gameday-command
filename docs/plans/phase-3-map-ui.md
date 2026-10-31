@@ -161,7 +161,7 @@ Run the waves in this order:
 ### Stream D: Wiring and interactions
 
 - [x] **D1.** Add `'ops'` to the view union in `App.tsx` and `MapWorkspace.tsx`, and make it the default. Keep `?view=close`, `?view=plan` and `?view=compare` working, and add `?view=ops`. In `MapWorkspace`, mount exactly one of `OpsMap`, `CrowdView` or `ComparisonMaps`.
-- [ ] **D2.** Update the view switch (find where `setView` is offered to the commander; it is passed to `TransportBar` and `MapWorkspace`). The names become **Map** (ops, default), **Close-up** (the old close view) and **Side by side**. `app/src/useShortcuts.ts` has `setView` typed as `'close' | 'plan' | 'compare'` and sends `compare` back to `close`. Widen the type to include `'ops'`, and send `compare` back to `ops`, the new default (add `useShortcuts.ts` to Stream D's files).
+- [x] **D2.** Update the view switch (find where `setView` is offered to the commander; it is passed to `TransportBar` and `MapWorkspace`). The names become **Map** (ops, default), **Close-up** (the old close view) and **Side by side**. `app/src/useShortcuts.ts` has `setView` typed as `'close' | 'plan' | 'compare'` and sends `compare` back to `close`. Widen the type to include `'ops'`, and send `compare` back to `ops`, the new default (add `useShortcuts.ts` to Stream D's files).
 - [ ] **D3.** Police pick modes and street picks (`onPickStreet`, the armed pick in `App.tsx`) work the same on the Map view. Check by hand: arm a barricade on the Orders tab, click a street on the Map view, and see the barricade drawn.
 - [ ] **D4.** Browser check (`npm run serve`, `npm run dev`, http://localhost:5173/?autorun=1):
   1. The Map view loads with tiles; the crowd, vehicles, officers, gates and incident are drawn; zoom in and fans appear.
