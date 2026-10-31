@@ -249,13 +249,8 @@ export function vehicleRows(
     const driving = isDriving(vehicles.state[i]!);
     if (!driving && zoom < 15) continue;
     const level = flowLevel(vehicles.state[i]!, vehicles.speed[i]!);
-    const colour = driving
-      ? showFlow
-        ? (FLOW_RGB[level] ?? [190, 195, 200])
-        : [190, 195, 200]
-      : [150, 155, 160];
-    const alpha =
-      focus !== null && focus !== kind ? 60 : i === selected ? 255 : driving ? 220 : 120;
+    const colour = driving ? (showFlow ? (FLOW_RGB[level] ?? [190, 195, 200]) : [190, 195, 200]) : [150, 155, 160];
+    const alpha = focus !== null && focus !== kind ? 60 : i === selected ? 255 : driving ? 220 : 120;
     rows.push({
       vehicle: i,
       kind,
