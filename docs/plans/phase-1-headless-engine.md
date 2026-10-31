@@ -111,7 +111,7 @@ Run the waves in this order:
     2. a UTF-8 JSON header: the message with each typed array replaced by `{ "$ta": "<Float32Array|Uint8Array|...>", "offset": n, "length": n }`;
     3. the arrays' bytes, each aligned to 8 bytes.
   - Pure functions; no Node- or browser-only APIs.
-- [ ] **B2.** `engine/src/wire.test.ts`: a round trip of a real frame, scene, scorecard and snapshot taken from a short run on `test-3gate` must decode `toEqual` the original, with typed-array types preserved.
+- [x] **B2.** `engine/src/wire.test.ts`: a round trip of a real frame, scene, scorecard and snapshot taken from a short run on `test-3gate` must decode `toEqual` the original, with typed-array types preserved.
 - [ ] **B3.** Write `docs/wire-protocol.md`: the endpoint, the frame format above, which messages travel in which direction, and the version string `gameday-wire.1` sent as the first server message (`{ "type": "hello", "protocol": "gameday-wire.1" }`).
   Verify: `npx vitest run engine/src/wire.test.ts`.
 
