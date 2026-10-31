@@ -136,7 +136,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
 
 ### Stream D: Engine public entry point
 
-- [ ] **D1.** Create `engine/src/index.ts`. It re-exports exactly what the app uses today, and nothing more:
+- [x] **D1.** Create `engine/src/index.ts`. It re-exports exactly what the app uses today, and nothing more:
   - from `./edits.ts`, types only: `Barricade`, `DotInfo`, `EditIn`, `EditOut`, `GateStat`, `OfficerStatus`, `PoliceOrder`, `SceneInfo`;
   - from `./traffic.ts`: `trafficCapacity`, `roadNetFor`;
   - from `./motion.ts`: `MotionRecorder`, `poseOnPath`;
