@@ -89,7 +89,7 @@ Run the waves in this order:
   Verify: `world/src/osm/georef.test.ts` round-trips:
   - five OSM points from `world/data/ohio-stadium.osm.json`: `xyOf` then the inverse must land within one cell;
   - the bounding box corners.
-- [ ] **A2.** Add `GET /api/maps/:id/geo`:
+- [x] **A2.** Add `GET /api/maps/:id/geo`:
   - for the Ohio map (`STADIUM_MAP_ID`), from `loadExtract()`;
   - for an imported stadium, from its saved extract (see how `server/src/command.ts` rebuilds a map from `saved.extract`);
   - for the test map, return `404` with `{ error: 'no location' }`.

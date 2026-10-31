@@ -16,8 +16,9 @@ import { oddsAreValid } from '../../brain/src/sample.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
 import { playbookFor } from '../../world/src/playbook.ts';
 import { buildStadiumMap, extractExists, loadExtract, STADIUM_MAP_ID } from '../../world/src/osm/stadium.ts';
+import { georefOf } from '../../world/src/osm/georef.ts';
 import { openDb, type Db } from './db.ts';
-import { addCommandRoutes, importedMap } from './command.ts';
+import { addCommandRoutes, importedMap, importedExtract } from './command.ts';
 import { addRunRoutes, injectRunWebSocket } from './runs.ts';
 import { OHIO_THEME } from '../../world/src/teams.ts';
 import { askKev } from './kev.ts';
@@ -148,6 +149,12 @@ export function createApp(db: Db): Hono {
     const id = c.req.param('id');
     const map = id === 'default' ? defaultMap() : mapById(id);
     return map ? c.json(map) : c.json({ error: 'no such map' }, 404);
+  });
+
+  app.get('/api/maps/:id/geo', (c) => {
+    const id = c.req.param('id') ?? '';
+    const extract = id === STADIUM_MAP_ID && extractExists() ? loadExtract() : importedExtract(id);
+    return extract ? c.json(georefOf(extract)) : c.json({ error: 'no location' }, 404);
   });
 
   app.get('/api/decision-defaults', (c) => c.json(DECISION_DEFAULTS));
