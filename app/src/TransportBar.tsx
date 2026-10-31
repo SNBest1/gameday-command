@@ -53,11 +53,7 @@ export function TransportBar({
       </span>
       <label className="field">
         <span>Weather</span>
-        <select
-          value={weatherId}
-          onChange={(e) => onWeather(e.target.value)}
-          title="The same for all three plans"
-        >
+        <select value={weatherId} onChange={(e) => onWeather(e.target.value)} title="The same for all three plans">
           {WEATHER_TIMELINES.map((w) => (
             <option key={w.id} value={w.id}>
               {w.label}

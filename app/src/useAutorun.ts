@@ -1,11 +1,5 @@
 import { useEffect, useRef } from 'react';
-import {
-  VEHICLE_KINDS,
-  VEHICLE_STATES,
-  type Briefing,
-  type IncidentKind,
-  type MapBundle,
-} from '../../contracts.ts';
+import { VEHICLE_KINDS, VEHICLE_STATES, type Briefing, type IncidentKind, type MapBundle } from '../../contracts.ts';
 import { LABELS } from './app-config.ts';
 import type { RunHandle } from './useRun.ts';
 
