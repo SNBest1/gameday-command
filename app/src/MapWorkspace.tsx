@@ -152,7 +152,9 @@ export function MapWorkspace(props: MapWorkspaceProps) {
 
   return (
     <>
-      <div className={`canvas-wrap${view === 'ops' ? ' ops' : view === 'close' ? ' close' : view === 'plan' ? ' plan' : ''}`}>
+      <div
+        className={`canvas-wrap${view === 'ops' ? ' ops' : view === 'close' ? ' close' : view === 'plan' ? ' plan' : ''}`}
+      >
         {/* Only one of these is mounted at a time, so the page holds a
                     single WebGL context. ComparisonMaps draws all three runs in
                     one PixiJS Application for the same reason. */}
