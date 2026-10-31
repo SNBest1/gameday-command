@@ -15,7 +15,7 @@ import { makeOfficers } from '../../world/src/officers.ts';
 import { INCIDENT_LABELS, incidentsFor, windowFor } from '../../world/src/incidents.ts';
 import { playbookFor } from '../../world/src/playbook.ts';
 import { VEHICLE_TYPES, VEHICLE_TYPE_LIST } from '../../world/src/vehicles.ts';
-import { WEATHER_LABELS, WEATHER_TIMELINES, weatherTimeline } from '../../world/src/weather.ts';
+import { WEATHER_LABELS, weatherTimeline } from '../../world/src/weather.ts';
 import type { PoliceOrder } from '../../engine/src/index.ts';
 import {
   AUTORUN,
@@ -46,6 +46,7 @@ import { Inspector, type EditRequest } from './Inspector.tsx';
 import { applyDisabled } from './PlanEditor.tsx';
 import { CommandPanel, Ranking } from './CommandPanel.tsx';
 import { AppHeader } from './AppHeader.tsx';
+import { TransportBar } from './TransportBar.tsx';
 import { CommandBar } from './CommandBar.tsx';
 import { resultRows, summaryText } from './scoreboard.ts';
 import { lastUndoable } from './after-action.ts';
@@ -57,7 +58,6 @@ import { OfficerPanel } from './OfficerPanel.tsx';
 import { OfficerRoster, ZoneTable, LotBoard } from './SideBoards.tsx';
 import { GatesPanel } from './GatesPanel.tsx';
 import { trafficCapacity } from '../../engine/src/index.ts';
-import { policeCopy } from './police-copy.ts';
 import { responseTargets, dispatchSuggestions } from './suggestions.ts';
 import { DemoAccess } from './DemoAccess.tsx';
 import { OfficerConsole } from './OfficerConsole.tsx';
@@ -806,65 +806,24 @@ export function App() {
 
       <div className={`layout${officerRole ? ' officer-layout' : ''}`}>
         <main>
-          <div className="controls transport">
-            <button className="go play" onClick={() => setPlaying((p) => !p)} disabled={!loaded || allDone}>
-              {allDone ? 'Finished' : playing ? 'Pause' : started ? 'Resume' : 'Run all three plans'}
-            </button>
-            <span
-              className="speed"
-              role="group"
-              aria-label="Simulation speed"
-              title="How fast the simulated clock runs"
-            >
-              {SPEEDS.map((s) => (
-                <button key={s} className={speed === s ? 'on' : undefined} onClick={() => setSpeed(s)}>
-                  {s}×
-                </button>
-              ))}
-            </span>
-            <label className="field">
-              <span>Weather</span>
-              <select
-                value={weatherId}
-                onChange={(e) => setWeatherId(e.target.value)}
-                title="The same for all three plans"
-              >
-                {WEATHER_TIMELINES.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {/* What the sky is doing on the map now, beside the scenario that was
-                picked: the two differ once an incident changes the weather. */}
-            {liveSky && (
-              <span className="live-sky" title="The sky in the run on the map right now">
-                On the map: {liveSky}
-              </span>
-            )}
-            <label className="toggle" title="Simulate vehicle traffic alongside the crowd">
-              <input
-                type="checkbox"
-                checked={trafficOn}
-                onChange={(e) => setTrafficOn(e.target.checked)}
-                disabled={!loaded || !hasRoads(loaded.map)}
-              />
-              Vehicles
-            </label>
-            {loaded && trafficOn && (
-              <span className="muted" title="Synthetic traffic. Buildings and off-map parking are not counted.">
-                {policeCopy.roadCapacity(trafficCapacity(loaded.map).stalls, trafficCapacity(loaded.map).vehicles)}
-              </span>
-            )}
-            <label className="toggle">
-              <input type="checkbox" checked={showCoverage} onChange={(e) => setShowCoverage(e.target.checked)} />
-              {policeCopy.coverage}
-            </label>
-            <button onClick={restart} disabled={!loaded}>
-              Restart
-            </button>
-          </div>
+          <TransportBar
+            loaded={loaded}
+            allDone={allDone}
+            playing={playing}
+            started={started}
+            onPlay={() => setPlaying((p) => !p)}
+            speed={speed}
+            onSpeed={setSpeed}
+            weatherId={weatherId}
+            onWeather={setWeatherId}
+            liveSky={liveSky}
+            trafficOn={trafficOn}
+            onTraffic={setTrafficOn}
+            roads={loaded ? hasRoads(loaded.map) : false}
+            showCoverage={showCoverage}
+            onCoverage={setShowCoverage}
+            onRestart={restart}
+          />
           {loaded && !officerRole && planStates.length === 3 && (
             <CommandBar
               map={loaded.map}
