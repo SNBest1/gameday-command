@@ -606,7 +606,7 @@ export class TrafficModel {
     const end = this.init.gameEndAt;
     if (end === undefined) return;
     const u = this.rng.next();
-    this.departT[i] = end + (6 + 50 * Math.pow(u, 1.3)) * 60;
+    this.departT[i] = end + (6 + 50 * u ** 1.3) * 60;
   }
 
   /** How many stalls vehicle i needs in a row starting at s, or 0 if they are not free. */

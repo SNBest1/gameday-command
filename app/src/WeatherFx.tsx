@@ -248,7 +248,7 @@ export function WeatherFx({ weathers, panelW, panelH, gap, totalW }: WeatherFxPr
               ctx.stroke();
               ctx.shadowBlur = 0;
             }
-            f.alpha *= Math.pow(0.02, dt);
+            f.alpha *= 0.02 ** dt;
           }
         }
         ctx.restore();

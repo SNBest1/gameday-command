@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { type Container, Graphics } from 'pixi.js';
 import { diagonalZ } from './depth.ts';
 
 /** Reusable diagonal batches that stay attached to the depth-sorted container. */

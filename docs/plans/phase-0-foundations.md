@@ -105,7 +105,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
   Create `.gitattributes` containing `* text=auto eol=lf`. Windows checkouts with `core.autocrlf=true` currently have CRLF files; this makes every OS see LF.
 
   Verify: `npx biome --version` prints a 2.x version.
-- [ ] **B2.** Run `npm run lint`. For each rule that reports errors, decide:
+- [x] **B2.** Run `npm run lint`. For each rule that reports errors, decide:
   - If fixing it is mechanical and cannot change behaviour (an unused import, `let` that should be `const`, a missing `type` keyword on an import), apply Biome's safe fixes with `npx biome lint --write .`.
   - Otherwise, set that rule to `"off"` in `biome.jsonc` with a comment saying how many findings it had. Add the rule to the "Lint rules turned off" list at the end of this file.
   - Never use `--unsafe`.
@@ -215,4 +215,22 @@ Today `App.tsx` is 1,871 lines. `App()` runs from about line 420 to the end, and
 
 ## Lint rules turned off
 
-Filled in during B2: rule name and finding count.
+These reported errors that needed a logic or markup decision, so they are off rather than unsafe-fixed:
+
+- `a11y/useButtonType` — 105
+- `a11y/useSemanticElements` — 5
+- `a11y/noStaticElementInteractions` — 5
+- `a11y/useKeyWithClickEvents` — 4
+- `a11y/noAriaHiddenOnFocusable` — 1
+- `a11y/noNoninteractiveTabindex` — 1
+- `correctness/useExhaustiveDependencies` — 71
+- `suspicious/noArrayIndexKey` — 8
+- `suspicious/useIterableCallbackReturn` — 6
+- `suspicious/noAssignInExpressions` — 4
+- `suspicious/noShadowRestrictedNames` — 1
+- `suspicious/noImplicitAnyLet` — 1
+
+Warnings left on (they do not fail the gate): `style/noNonNullAssertion` 1,342,
+`style/noDescendingSpecificity` 82, `complexity/useOptionalChain` 3,
+`complexity/useMathMinMax` 1 and `complexity/noCommaOperator` 1. The remaining
+diagnostics are infos.
