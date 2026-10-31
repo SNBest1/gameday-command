@@ -127,11 +127,13 @@ export function useCommandBarProps({
         }
         case 'view':
           setView(c.view);
-          return c.view === 'close'
-            ? 'Showing the close-up.'
-            : c.view === 'plan'
-              ? 'Showing the 2D plan.'
-              : 'Showing all three plans side by side.';
+          return c.view === 'ops'
+            ? 'Showing the operations map.'
+            : c.view === 'close'
+              ? 'Showing the close-up.'
+              : c.view === 'plan'
+                ? 'Showing the 2D plan.'
+                : 'Showing all three plans side by side.';
         case 'tab':
           setRailTab(c.tab);
           return `Opened the ${railTabs.find((x) => x.id === c.tab)!.label} tab.`;

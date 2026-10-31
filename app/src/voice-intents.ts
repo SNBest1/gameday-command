@@ -16,7 +16,7 @@ export type Control =
   | { kind: 'play' }
   | { kind: 'pause' }
   | { kind: 'speed'; to: 'up' | 'down' | number }
-  | { kind: 'view'; view: 'close' | 'plan' | 'compare' }
+  | { kind: 'view'; view: 'ops' | 'close' | 'plan' | 'compare' }
   | { kind: 'tab'; tab: RailTabId }
   | { kind: 'restart' }
   | { kind: 'zoom'; place: Choice; street: boolean }
