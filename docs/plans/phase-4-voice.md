@@ -132,7 +132,7 @@ Run the waves in this order:
 
 ### Stream B: Tool schema and resolver
 
-- [ ] **B1.** `app/src/voice-tools.ts`:
+- [x] **B1.** `app/src/voice-tools.ts`:
   - **`voiceTools(map)`** returns the OpenAI `tools` array. One function per kind the box already understands; arguments carry names as plain strings and numbers, never cell ids:
     - orders, one function per `Intent` kind in `voice-commands.ts`: `close`, `open`, `send_officers`, `redirect`, `alert`, `shelter_order`, each with optional `atMin` and optional `plan` (`"A"|"B"|"C"`);
     - one function per `Control` kind in `voice-intents.ts`;
