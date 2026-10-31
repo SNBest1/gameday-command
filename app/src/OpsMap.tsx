@@ -52,11 +52,19 @@ function currentTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-/** The configured style, or '' when the deployment wants the built-in grid only. */
-function configuredStyle(): string {
+/** The configured styles. `dark` is null unless VITE_MAP_STYLE_DARK is set. */
+function configuredStyles(): { light: string; dark: string | null } {
   const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
   const value = env?.VITE_MAP_STYLE;
-  return value === undefined ? DEFAULT_STYLE : value.trim();
+  const dark = env?.VITE_MAP_STYLE_DARK?.trim();
+  return {
+    light: value === undefined ? DEFAULT_STYLE : value.trim(),
+    dark: dark ? dark : null,
+  };
+}
+
+function styleForTheme(theme: 'light' | 'dark', styles: { light: string; dark: string | null }): string {
+  return theme === 'dark' && styles.dark ? styles.dark : styles.light;
 }
 
 function blankStyle(theme: 'light' | 'dark'): StyleSpecification {
@@ -313,10 +321,12 @@ export function OpsMap(props: CrowdViewProps) {
       if (disposed) return;
       georefRef.current = fetched ?? flatGeoref(bundle.width);
       const bounds = mapBounds(georefRef.current, bundle.width, bundle.height);
-      const style = configuredStyle();
-      const gridOnly = fetched === null || style === '' || navigator.onLine === false;
+      const styles = configuredStyles();
+      const gridOnly = fetched === null || styles.light === '' || navigator.onLine === false;
       fallback = gridOnly;
       theme = currentTheme();
+      const initialStyle = gridOnly ? blankStyle(theme) : styleForTheme(theme, styles);
+      let currentStyle = initialStyle;
       addProtocol('pmtiles', new Protocol().tile);
 
       const [west, south] = bounds[0];
@@ -327,7 +337,7 @@ export function OpsMap(props: CrowdViewProps) {
 
       map = new MapLibreMap({
         container: host,
-        style: gridOnly ? blankStyle(theme) : style,
+        style: initialStyle,
         center: [lon, lat],
         bounds,
         fitBoundsOptions: { padding: 24, maxZoom: 18 },
@@ -368,8 +378,16 @@ export function OpsMap(props: CrowdViewProps) {
         const next = currentTheme();
         if (next === theme) return;
         theme = next;
-        if (fallback) map?.setPaintProperty('bg', 'background-color', themeColour(theme));
-        setBasemap();
+        if (fallback) {
+          map?.setPaintProperty('bg', 'background-color', themeColour(theme));
+          setBasemap();
+          return;
+        }
+        const nextStyle = styleForTheme(theme, styles);
+        if (nextStyle && nextStyle !== currentStyle) {
+          currentStyle = nextStyle;
+          map?.setStyle(nextStyle);
+        }
       };
       const observer = new MutationObserver(setTheme);
       observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
