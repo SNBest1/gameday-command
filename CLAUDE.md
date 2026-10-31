@@ -404,9 +404,11 @@ switch, and `?view=close|plan|compare` still selects them directly.
   one frame and scene (standing density, fans at zoom 17, vehicles, officers and
   dashed routes, closures, gates, incident outline, hotspots, coverage).
   `app/src/ops-symbols.ts` is the single neutral symbol and colour table; a
-  department standard replaces that file, not the layers. Picking runs officers,
-  then vehicles, then fans, and a police pick mode keeps the close-up's
-  non-blocked cell rule in `app/src/street-pick.ts`.
+  department standard replaces that file, not the layers. Map text (gate labels,
+  unit codes, incident label) takes the current theme: dark text with a light SDF
+  outline on light tiles, light text with a dark outline on dark tiles. Picking
+  runs officers, then vehicles, then fans, and a police pick mode keeps the
+  close-up's non-blocked cell rule in `app/src/street-pick.ts`.
 
 Kev (optional — without it every decision is a fallback, by design):
 
@@ -416,7 +418,7 @@ uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
 
 ## Current state
 
-Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **403 checks in 68 files (398 pass, 5 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
+Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **404 checks in 68 files (399 pass, 5 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
 
 Measured on the stadium map (800x800 cells at 2 m, 100,000 fans as 20,000 dots). These are development-Mac numbers, not a controlled benchmark; `engine/src/perf.test.ts` asserts only the 10x bar, and a Windows run of this suite measured ~310x.
 

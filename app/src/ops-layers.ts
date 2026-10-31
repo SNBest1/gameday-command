@@ -13,7 +13,14 @@ import { coverage } from './coverage.ts';
 import { flowLevel, FLOW_RGB, isDriving, standingDensity, type PoliceHotspot } from './congestion.ts';
 import { bandOf, HEAT_FLOOR, heatBands } from './heat.ts';
 import { mapBounds, metresToLngLat } from './ops-geo.ts';
-import { BARRICADE_SYMBOL, COVERAGE_SYMBOLS, HOTSPOT_SYMBOLS, INCIDENT_SYMBOL, UNIT_SYMBOLS } from './ops-symbols.ts';
+import {
+  BARRICADE_SYMBOL,
+  COVERAGE_SYMBOLS,
+  HOTSPOT_SYMBOLS,
+  INCIDENT_SYMBOL,
+  TEXT_SYMBOLS,
+  UNIT_SYMBOLS,
+} from './ops-symbols.ts';
 import { STATE_RGB } from './people.ts';
 
 /**
@@ -95,8 +102,9 @@ export interface TextsProps {
   getColor: [number, number, number, number];
   getSize: number;
   sizeUnits: 'pixels';
-  getHaloColor: [number, number, number, number];
-  getHaloWidth: number;
+  fontSettings: { sdf: true };
+  outlineWidth: number;
+  outlineColor: [number, number, number, number];
   visible: boolean;
   pickable: boolean;
 }
@@ -117,6 +125,13 @@ const INCIDENT: Rgba = [...INCIDENT_SYMBOL.rgb, 235];
 const FAN_ALPHA = 220;
 
 const rgba = (rgb: [number, number, number], alpha = 255): Rgba => [rgb[0], rgb[1], rgb[2], alpha];
+
+const textLook = (theme: 'light' | 'dark') => ({
+  getColor: TEXT_SYMBOLS[theme].fill,
+  fontSettings: { sdf: true } as const,
+  outlineWidth: 2,
+  outlineColor: TEXT_SYMBOLS[theme].outline,
+});
 
 const cellToLngLat = (geo: MapGeoref, width: number, cell: number): LngLat =>
   cellCentreLngLat(geo, width, cell % width, Math.floor(cell / width));
@@ -409,17 +424,20 @@ export function unitLabelRows(map: MapBundle, geo: MapGeoref, scene: SceneInfo |
   }));
 }
 
-export function unitLabelsProps(map: MapBundle, geo: MapGeoref, scene: SceneInfo | null): TextsProps {
+export function unitLabelsProps(
+  map: MapBundle,
+  geo: MapGeoref,
+  scene: SceneInfo | null,
+  theme: 'light' | 'dark',
+): TextsProps {
   return {
     id: 'ops-unit-labels',
     data: unitLabelRows(map, geo, scene),
     getPosition: (d) => d.position,
     getText: (d) => d.text,
-    getColor: [255, 255, 255, 255],
+    ...textLook(theme),
     getSize: 12,
     sizeUnits: 'pixels',
-    getHaloColor: [0, 0, 0, 180],
-    getHaloWidth: 1,
     visible: true,
     pickable: false,
   };
@@ -494,17 +512,21 @@ export function gateLabelRows(map: MapBundle, geo: MapGeoref, scene: SceneInfo |
   return rows;
 }
 
-export function gatesProps(map: MapBundle, geo: MapGeoref, scene: SceneInfo | null, zoom: number): TextsProps {
+export function gatesProps(
+  map: MapBundle,
+  geo: MapGeoref,
+  scene: SceneInfo | null,
+  zoom: number,
+  theme: 'light' | 'dark',
+): TextsProps {
   return {
     id: 'ops-gates',
     data: gateLabelRows(map, geo, scene, zoom),
     getPosition: (d) => d.position,
     getText: (d) => d.text,
-    getColor: [24, 27, 30, 255],
+    ...textLook(theme),
     getSize: 12,
     sizeUnits: 'pixels',
-    getHaloColor: [255, 255, 255, 230],
-    getHaloWidth: 2,
     visible: true,
     pickable: false,
   };
@@ -582,6 +604,47 @@ export function incidentProps(
     filled: true,
     getLineWidth: 2,
     lineWidthUnits: 'pixels',
+    visible: true,
+    pickable: false,
+  };
+}
+
+export function incidentLabelRows(
+  cells: number[] | undefined,
+  map: MapBundle,
+  geo: MapGeoref,
+  label: string | undefined,
+): TextDatum[] {
+  if (!cells || cells.length === 0) return [];
+  let x = 0;
+  let y = 0;
+  for (const cell of cells) {
+    x += cell % map.width;
+    y += Math.floor(cell / map.width);
+  }
+  return [
+    {
+      position: cellCentreLngLat(geo, map.width, x / cells.length, y / cells.length),
+      text: label ?? 'Incident',
+    },
+  ];
+}
+
+export function incidentLabelProps(
+  cells: number[] | undefined,
+  map: MapBundle,
+  geo: MapGeoref,
+  label: string | undefined,
+  theme: 'light' | 'dark',
+): TextsProps {
+  return {
+    id: 'ops-incident-label',
+    data: incidentLabelRows(cells, map, geo, label),
+    getPosition: (d) => d.position,
+    getText: (d) => d.text,
+    ...textLook(theme),
+    getSize: 13,
+    sizeUnits: 'pixels',
     visible: true,
     pickable: false,
   };
@@ -692,6 +755,7 @@ export interface OpsLayerProps {
   closures: PolygonsProps;
   gates: TextsProps;
   incident: PolygonsProps;
+  incidentText: TextsProps;
   hotspots: ScatterProps;
   coverage: PolygonsProps;
 }
@@ -703,6 +767,7 @@ export interface OpsLayersInput {
   density: DensityGrid | undefined;
   scene: SceneInfo | null;
   zoom: number;
+  theme: 'light' | 'dark';
   dangerDensity: number;
   selectedBand: number | null;
   showVehicles: boolean;
@@ -726,6 +791,7 @@ export function opsLayerProps(input: OpsLayersInput): OpsLayerProps {
     density,
     scene,
     zoom,
+    theme,
     dangerDensity,
     selectedBand,
     showVehicles,
@@ -744,11 +810,12 @@ export function opsLayerProps(input: OpsLayersInput): OpsLayerProps {
     fans: fansProps(map, geo, frame, zoom, selected),
     vehicles: vehiclesProps(map, geo, frame, zoom, showVehicles, showFlow, vehicleFocus, selectedVehicle),
     officers: officersProps(map, geo, scene, selectedOfficer),
-    unitLabels: unitLabelsProps(map, geo, scene),
+    unitLabels: unitLabelsProps(map, geo, scene, theme),
     routes: routesProps(map, geo, scene),
     closures: closuresProps(map, geo, scene),
-    gates: gatesProps(map, geo, scene, zoom),
+    gates: gatesProps(map, geo, scene, zoom, theme),
     incident: incidentProps(incidentCells, map, geo, incidentLabel),
+    incidentText: incidentLabelProps(incidentCells, map, geo, incidentLabel, theme),
     hotspots: hotspotsProps(geo, map.width, hotspots),
     coverage: coverageProps(map, geo, scene?.officers ?? [], hotspots, showCoverage),
   };

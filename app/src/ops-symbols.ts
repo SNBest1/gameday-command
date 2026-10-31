@@ -59,3 +59,12 @@ export const COVERAGE_SYMBOLS = {
     rgb: [80, 140, 200] as [number, number, number],
   },
 };
+
+/** Map text: dark on light tiles, light on dark tiles, each with a contrasting outline. */
+export const TEXT_SYMBOLS: Record<
+  'light' | 'dark',
+  { fill: [number, number, number, number]; outline: [number, number, number, number] }
+> = {
+  light: { fill: [15, 19, 23, 255], outline: [255, 255, 255, 235] },
+  dark: { fill: [248, 250, 252, 255], outline: [8, 10, 12, 235] },
+};
