@@ -45,11 +45,17 @@ describe('commander screen words', () => {
     for (const order of [
       rankPlans([card('A', null, 1), card('B', null, 1)]),
       rankPlans([card('A', null, 1), card('B', 4, 1)]),
-    ]) expect(order.every(Number.isInteger)).toBe(true);
+    ])
+      expect(order.every(Number.isInteger)).toBe(true);
   });
 
   it('writes a verdict a judge can read out', () => {
-    const text = verdictText(['A', 'B', 'C'], ['Officers', 'Open Gate 2', 'Close Gate 1'], [card('A', 6.2, 1), card('B', 8.6, 1), card('C', null, 1)], 'Gate 1');
+    const text = verdictText(
+      ['A', 'B', 'C'],
+      ['Officers', 'Open Gate 2', 'Close Gate 1'],
+      [card('A', 6.2, 1), card('B', 8.6, 1), card('C', null, 1)],
+      'Gate 1',
+    );
     expect(text).toBe(
       'Plan A (Officers) cleared the crowd at Gate 1 fastest, in 6.2 min. ' +
         'Then B 8.6 min, C never cleared. Crush-risk minutes near the incident and spillover: A 1, B 1, C 1.',

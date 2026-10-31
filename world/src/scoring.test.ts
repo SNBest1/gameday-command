@@ -21,8 +21,22 @@ describe('Scorer against a hand count', () => {
     });
 
     // Two 30 second samples. Cells at 5.0 and 4.5 are over 4; 1.0 and 0 are not.
-    scorer.observe({ t: 30, dt: 30, density: grid([5, 1, 4.5, 0], 30), dotsInZone: 10, officerInZone: false, officersCommitted: 3 });
-    scorer.observe({ t: 60, dt: 30, density: grid([5, 1, 4.5, 0], 60), dotsInZone: 0, officerInZone: true, officersCommitted: 3 });
+    scorer.observe({
+      t: 30,
+      dt: 30,
+      density: grid([5, 1, 4.5, 0], 30),
+      dotsInZone: 10,
+      officerInZone: false,
+      officersCommitted: 3,
+    });
+    scorer.observe({
+      t: 60,
+      dt: 30,
+      density: grid([5, 1, 4.5, 0], 60),
+      dotsInZone: 0,
+      officerInZone: true,
+      officersCommitted: 3,
+    });
 
     scorer.noteDecision('kev');
     scorer.noteDecision('default');
@@ -64,7 +78,14 @@ describe('Scorer against a hand count', () => {
 
   it('counts danger only from the incident onward, when the plans start to differ', () => {
     const late: Incident = { ...incident, at: 120 };
-    const scorer = new Scorer({ runId: 'r', planId: 'p', label: 'A', incident: late, dangerDensity: 4, totalDots: 100 });
+    const scorer = new Scorer({
+      runId: 'r',
+      planId: 'p',
+      label: 'A',
+      incident: late,
+      dangerDensity: 4,
+      totalDots: 100,
+    });
     const packed = { density: grid([5, 5, 0, 0]), dotsInZone: 0, officerInZone: false, officersCommitted: 0 };
     scorer.observe({ ...packed, t: 60, dt: 60 }); // before the incident: ignored
     scorer.observe({ ...packed, t: 120, dt: 60, density: grid([4.5, 0, 0, 0]) });
@@ -75,7 +96,14 @@ describe('Scorer against a hand count', () => {
 
   it('reports null when the zone never clears', () => {
     const scorer = new Scorer({ runId: 'r', planId: 'p', label: 'B', incident, dangerDensity: 4, totalDots: 1 });
-    scorer.observe({ t: 30, dt: 30, density: grid([1, 1, 1, 1], 30), dotsInZone: 4, officerInZone: false, officersCommitted: 0 });
+    scorer.observe({
+      t: 30,
+      dt: 30,
+      density: grid([1, 1, 1, 1], 30),
+      dotsInZone: 4,
+      officerInZone: false,
+      officersCommitted: 0,
+    });
     const card = scorer.finish();
     expect(card.timeToClearMin).toBeNull();
     expect(card.firstOfficerMin).toBeNull();

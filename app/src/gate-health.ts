@@ -71,10 +71,7 @@ interface Tracked {
  *   `capacityPerMin`, measured at the current sample only.
  * - ok: everything else.
  */
-export function classifyGates(
-  history: readonly GateSample[],
-  current: GateSample | null | undefined,
-): GateHealth[] {
+export function classifyGates(history: readonly GateSample[], current: GateSample | null | undefined): GateHealth[] {
   if (!current || current.gates.length === 0) return [];
 
   // Chronological and never later than the sample being judged. The panel
@@ -155,9 +152,7 @@ export function classifyGates(
     return {
       place: g.place,
       health: 'ok',
-      reason: rec.admittedEver
-        ? `${round(g.inPerMin)} of ${round(g.capacityPerMin)}/min`
-        : 'no one through yet',
+      reason: rec.admittedEver ? `${round(g.inPerMin)} of ${round(g.capacityPerMin)}/min` : 'no one through yet',
       stalledForS,
       admittedEver: rec.admittedEver,
     };

@@ -49,7 +49,17 @@ const scale = (c: number, k: number) => {
 export function bowlPalette(map: MapBundle) {
   const theme = map.theme;
   if (!theme || theme.team === 'Ohio State Buckeyes') {
-    return { a1: 0x9c1c24, a2: 0x8a1820, b1: 0x6d7179, b2: 0x62666e, aisle: 0xb9b4aa, endZone: 0xa3161e, logo: 0xbb0000, logoRing: 0xf2f2ee, logoCore: 0x347c3a };
+    return {
+      a1: 0x9c1c24,
+      a2: 0x8a1820,
+      b1: 0x6d7179,
+      b2: 0x62666e,
+      aisle: 0xb9b4aa,
+      endZone: 0xa3161e,
+      logo: 0xbb0000,
+      logoRing: 0xf2f2ee,
+      logoCore: 0x347c3a,
+    };
   }
   const p = hexNum(theme.primary);
   const q = hexNum(theme.secondary);
@@ -57,8 +67,10 @@ export function bowlPalette(map: MapBundle) {
   const lum = (c: number) => (0.299 * ((c >> 16) & 255) + 0.587 * ((c >> 8) & 255) + 0.114 * (c & 255)) / 255;
   const q2 = lum(q) > 0.85 ? 0xd9dce1 : q;
   return {
-    a1: scale(p, 0.95), a2: scale(p, 0.82),
-    b1: scale(q2, 0.9), b2: scale(q2, 0.78),
+    a1: scale(p, 0.95),
+    a2: scale(p, 0.82),
+    b1: scale(q2, 0.9),
+    b2: scale(q2, 0.78),
     aisle: 0xb9b4aa,
     endZone: scale(p, 0.92),
     logo: p,
@@ -91,7 +103,12 @@ export function buildBowl(map: MapBundle): Bowl | null {
     const c = queue[head]!;
     const u = c % W;
     const v = (c / W) | 0;
-    for (const [du, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+    for (const [du, dv] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
       if (!inBowl(u + du, v + dv)) continue;
       const n = (v + dv) * W + u + du;
       if (dist[n]! >= 0) continue;
@@ -127,11 +144,11 @@ export function buildBowl(map: MapBundle): Bowl | null {
   const palette = bowlPalette(map);
   const shell: Bowl['shell'] = [];
   const hOf = (u: number, v: number) => (u >= 0 && v >= 0 && u < W && v < H ? height[v * W + u]! : 0);
-  for (let start = 0; start < seats.length;) {
+  for (let start = 0; start < seats.length; ) {
     const first = seats[start]!;
-    const d = first % W + Math.floor(first / W);
+    const d = (first % W) + Math.floor(first / W);
     let end = start + 1;
-    while (end < seats.length && seats[end]! % W + Math.floor(seats[end]! / W) === d) end++;
+    while (end < seats.length && (seats[end]! % W) + Math.floor(seats[end]! / W) === d) end++;
     const g = new Graphics();
     g.zIndex = diagonalZ(d);
     shell.push({ d, g });
@@ -149,12 +166,28 @@ export function buildBowl(map: MapBundle): Bowl | null {
       const south = hOf(u, v + 1);
       if (south < h) {
         const outer = !inBowl(u, v + 1);
-        g.poly(quad([[x0, y1, south], [x1, y1, south], [x1, y1, h], [x0, y1, h]]), true).fill(outer ? (Math.floor(h / 3) % 2 ? 0x8a8780 : 0x9b978e) : 0x5b5e66);
+        g.poly(
+          quad([
+            [x0, y1, south],
+            [x1, y1, south],
+            [x1, y1, h],
+            [x0, y1, h],
+          ]),
+          true,
+        ).fill(outer ? (Math.floor(h / 3) % 2 ? 0x8a8780 : 0x9b978e) : 0x5b5e66);
       }
       const east = hOf(u + 1, v);
       if (east < h) {
         const outer = !inBowl(u + 1, v);
-        g.poly(quad([[x1, y0, east], [x1, y1, east], [x1, y1, h], [x1, y0, h]]), true).fill(outer ? (Math.floor(h / 3) % 2 ? 0xa29e95 : 0xb2ada3) : 0x6b6e76);
+        g.poly(
+          quad([
+            [x1, y0, east],
+            [x1, y1, east],
+            [x1, y1, h],
+            [x1, y0, h],
+          ]),
+          true,
+        ).fill(outer ? (Math.floor(h / 3) % 2 ? 0xa29e95 : 0xb2ada3) : 0x6b6e76);
       }
     }
     for (let k = start; k < end; k++) {
@@ -171,8 +204,24 @@ export function buildBowl(map: MapBundle): Bowl | null {
       const section = Math.floor(((angle + Math.PI) / (Math.PI * 2)) * 28);
       const aisle = Math.abs(((angle + Math.PI) / (Math.PI * 2)) * 28 - section - 0.5) > 0.46;
       const row = Math.round(h / TIER_STEP) % 2;
-      const seat = aisle ? palette.aisle : section % 2 ? (row ? palette.a1 : palette.a2) : row ? palette.b1 : palette.b2;
-      g.poly(quad([[x0, y0, h], [x1, y0, h], [x1, y1, h], [x0, y1, h]]), true).fill(seat);
+      const seat = aisle
+        ? palette.aisle
+        : section % 2
+          ? row
+            ? palette.a1
+            : palette.a2
+          : row
+            ? palette.b1
+            : palette.b2;
+      g.poly(
+        quad([
+          [x0, y0, h],
+          [x1, y0, h],
+          [x1, y1, h],
+          [x0, y1, h],
+        ]),
+        true,
+      ).fill(seat);
     }
     start = end;
   }
@@ -202,7 +251,11 @@ export function buildBowl(map: MapBundle): Bowl | null {
       uMax = Math.max(uMax, Math.abs(dx * cos - dy * sin));
       vMax = Math.max(vMax, Math.abs(dx * sin + dy * cos));
     }
-    const at = (uu: number, vv: number): [number, number, number] => [mx + uu * cos + vv * sin, my - uu * sin + vv * cos, 0];
+    const at = (uu: number, vv: number): [number, number, number] => [
+      mx + uu * cos + vv * sin,
+      my - uu * sin + vv * cos,
+      0,
+    ];
     const rect = (u0: number, v0: number, u1: number, v1: number, colour: number) =>
       turf.poly(quad([at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1)]), true).fill(colour);
     const sport = map.sport ?? 'football';
@@ -212,7 +265,8 @@ export function buildBowl(map: MapBundle): Bowl | null {
       for (let i = 0; i < segments; i++) {
         const a0 = (i / segments) * Math.PI * 2;
         const a1 = ((i + 1) / segments) * Math.PI * 2;
-        const p = (a: number, r: number): [number, number, number] => at(Math.cos(a) * (ru + r), Math.sin(a) * (rv + r));
+        const p = (a: number, r: number): [number, number, number] =>
+          at(Math.cos(a) * (ru + r), Math.sin(a) * (rv + r));
         turf.poly(quad([p(a0, -w), p(a1, -w), p(a1, w), p(a0, w)]), true).fill(colour);
       }
     };
@@ -233,7 +287,17 @@ export function buildBowl(map: MapBundle): Bowl | null {
         const dx = x0 + C / 2 - mx;
         const dy = y0 + C / 2 - my;
         const band = Math.floor(Math.hypot(dx, dy) / 6) % 2;
-        turf.poly(quad([[x0, y0, 0], [x0 + C, y0, 0], [x0 + C, y0 + C, 0], [x0, y0 + C, 0]]), true).fill(band ? 0x3a8a40 : 0x347c3a);
+        turf
+          .poly(
+            quad([
+              [x0, y0, 0],
+              [x0 + C, y0, 0],
+              [x0 + C, y0 + C, 0],
+              [x0, y0 + C, 0],
+            ]),
+            true,
+          )
+          .fill(band ? 0x3a8a40 : 0x347c3a);
       }
       if (sport === 'cricket') {
         // The 30-yard circle, the square, and the pitch: 20 m of rolled clay between the creases.
@@ -248,9 +312,22 @@ export function buildBowl(map: MapBundle): Bowl | null {
         // The infield: a dirt diamond with bases 27.4 m apart, and the mound.
         const d = 27.4 / Math.SQRT2;
         const home = vMax * 0.45;
-        turf.poly(quad([at(0, home), at(d * 1.25, home - d * 1.25), at(0, home - d * 2.5), at(-d * 1.25, home - d * 1.25)]), true).fill(0xb7834f);
-        turf.poly(quad([at(0, home - 2), at(d * 0.8, home - d), at(0, home - d * 2 + 2), at(-d * 0.8, home - d)]), true).fill(0x3a8a40);
-        for (const [bu, bv] of [[0, home], [d, home - d], [0, home - 2 * d], [-d, home - d]] as const) rect(bu - 0.4, bv - 0.4, bu + 0.4, bv + 0.4, white);
+        turf
+          .poly(
+            quad([at(0, home), at(d * 1.25, home - d * 1.25), at(0, home - d * 2.5), at(-d * 1.25, home - d * 1.25)]),
+            true,
+          )
+          .fill(0xb7834f);
+        turf
+          .poly(quad([at(0, home - 2), at(d * 0.8, home - d), at(0, home - d * 2 + 2), at(-d * 0.8, home - d)]), true)
+          .fill(0x3a8a40);
+        for (const [bu, bv] of [
+          [0, home],
+          [d, home - d],
+          [0, home - 2 * d],
+          [-d, home - d],
+        ] as const)
+          rect(bu - 0.4, bv - 0.4, bu + 0.4, bv + 0.4, white);
         disc(2.7, 2.7, 0xb7834f);
       }
     } else if (sport === 'soccer') {
@@ -258,8 +335,10 @@ export function buildBowl(map: MapBundle): Bowl | null {
       const hw = 34 * k;
       const hl = 52.5 * k;
       rect(-uMax - C / 2, -vMax - C / 2, uMax + C / 2, vMax + C / 2, 0x2f6b34);
-      for (let i = 0; i < 12; i++) rect(-hw, -hl + (i * 2 * hl) / 12, hw, -hl + ((i + 1) * 2 * hl) / 12, i % 2 ? 0x3a8a40 : 0x347c3a);
-      const line = (u0: number, v0: number, u1: number, v1: number) => rect(Math.min(u0, u1) - 0.12, Math.min(v0, v1) - 0.12, Math.max(u0, u1) + 0.12, Math.max(v0, v1) + 0.12, white);
+      for (let i = 0; i < 12; i++)
+        rect(-hw, -hl + (i * 2 * hl) / 12, hw, -hl + ((i + 1) * 2 * hl) / 12, i % 2 ? 0x3a8a40 : 0x347c3a);
+      const line = (u0: number, v0: number, u1: number, v1: number) =>
+        rect(Math.min(u0, u1) - 0.12, Math.min(v0, v1) - 0.12, Math.max(u0, u1) + 0.12, Math.max(v0, v1) + 0.12, white);
       line(-hw, -hl, hw, -hl);
       line(-hw, hl, hw, hl);
       line(-hw, -hl, -hw, hl);
@@ -308,7 +387,17 @@ export function buildBowl(map: MapBundle): Bowl | null {
   return { shell, turf, height, seats: Int32Array.from(seats) };
 }
 
-const MAJOR = new Set(['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'motorway_link', 'trunk_link', 'primary_link', 'secondary_link']);
+const MAJOR = new Set([
+  'motorway',
+  'trunk',
+  'primary',
+  'secondary',
+  'tertiary',
+  'motorway_link',
+  'trunk_link',
+  'primary_link',
+  'secondary_link',
+]);
 
 /** Painted lane markings: a yellow centre line on main roads, dashed white on the rest. */
 export function buildStreetLines(map: MapBundle): Graphics {
@@ -339,7 +428,15 @@ export function buildStreetLines(map: MapBundle): Graphics {
         const p0y = ay + uy * s0;
         const p1x = ax + ux * s1;
         const p1y = ay + uy * s1;
-        g.poly(quad([[p0x - nx, p0y - ny, 0.02], [p1x - nx, p1y - ny, 0.02], [p1x + nx, p1y + ny, 0.02], [p0x + nx, p0y + ny, 0.02]]), true).fill(colour);
+        g.poly(
+          quad([
+            [p0x - nx, p0y - ny, 0.02],
+            [p1x - nx, p1y - ny, 0.02],
+            [p1x + nx, p1y + ny, 0.02],
+            [p0x + nx, p0y + ny, 0.02],
+          ]),
+          true,
+        ).fill(colour);
       };
       if (dash === 0) seg(0, len);
       else {
@@ -382,5 +479,7 @@ export function streetLabels(map: MapBundle): { name: string; x: number; y: numb
     }
     best.set(street.name, { len, x, y, major: MAJOR.has(street.kind) });
   }
-  return [...best.entries()].filter(([, v]) => v.len > 60).map(([name, v]) => ({ name, x: v.x, y: v.y, major: v.major }));
+  return [...best.entries()]
+    .filter(([, v]) => v.len > 60)
+    .map(([name, v]) => ({ name, x: v.x, y: v.y, major: v.major }));
 }

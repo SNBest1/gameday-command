@@ -85,12 +85,18 @@ describe('askFm', () => {
   });
 
   it('returns null on an empty or malformed reply', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ choices: [] })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ choices: [] })),
+    );
     expect(await askFm(request, { url: 'http://fm.test', model: 'system', timeoutMs: 1000 })).toBeNull();
   });
 
   it('returns null when fm serve answers with an error status', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 500 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('nope', { status: 500 })),
+    );
     expect(await askFm(request, { url: 'http://fm.test', model: 'system', timeoutMs: 1000 })).toBeNull();
   });
 });

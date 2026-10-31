@@ -159,7 +159,10 @@ export function CommandBar(props: CommandBarProps) {
     const last = history.current.pop();
     if (last?.kind === 'step') {
       const ok = live.current.props.onRemoveStep(last.plan, last.step);
-      say(ok ? `Took that step back out of plan ${labels[last.plan]}.` : 'That step is already gone.', ok ? 'ok' : 'warn');
+      say(
+        ok ? `Took that step back out of plan ${labels[last.plan]}.` : 'That step is already gone.',
+        ok ? 'ok' : 'warn',
+      );
       return;
     }
     const what = live.current.props.onUndoLive(last?.plan ?? live.current.props.planOnMap);
@@ -241,7 +244,11 @@ export function CommandBar(props: CommandBarProps) {
         }
         // Hands-free: read it back, ask for a yes, then listen for it.
         const o = options(u.parsed);
-        const how = o?.liveOk ? 'Say yes to order it now' : o?.step ? `Say yes to add it to plan ${labels[o.target]}` : null;
+        const how = o?.liveOk
+          ? 'Say yes to order it now'
+          : o?.step
+            ? `Say yes to add it to plan ${labels[o.target]}`
+            : null;
         if (!how) return;
         speak(`${u.parsed.summary}. ${how}, or cancel.`, live.current.readAloud, () => {
           if (parsedRef.current === u.parsed) startListening('confirm');
@@ -258,7 +265,8 @@ export function CommandBar(props: CommandBarProps) {
   // "/" jumps to the box; holding Space anywhere outside a field is push-to-talk.
   useEffect(() => {
     let ptt = false;
-    const inField = (t: EventTarget | null) => !!(t as HTMLElement | null)?.closest?.('input, textarea, select, button, [contenteditable]');
+    const inField = (t: EventTarget | null) =>
+      !!(t as HTMLElement | null)?.closest?.('input, textarea, select, button, [contenteditable]');
     const down = (e: KeyboardEvent) => {
       if (e.key === '/' && !inField(e.target)) {
         e.preventDefault();
@@ -318,9 +326,17 @@ export function CommandBar(props: CommandBarProps) {
           onClick={toggleMic}
           aria-pressed={!!listening}
           aria-label={listening ? 'Stop listening' : 'Speak an order'}
-          title={speechSupported() ? (listening ? 'Listening. Click to stop.' : 'Click and speak, or hold Space') : 'This browser has no speech recognition'}
+          title={
+            speechSupported()
+              ? listening
+                ? 'Listening. Click to stop.'
+                : 'Click and speak, or hold Space'
+              : 'This browser has no speech recognition'
+          }
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-2.07A7 7 0 0 0 19 12h-2Z" /></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-2.07A7 7 0 0 0 19 12h-2Z" />
+          </svg>
         </button>
         <input
           ref={input}
@@ -339,7 +355,8 @@ export function CommandBar(props: CommandBarProps) {
             // Dictation drops in whole phrases; once it pauses, show what it understood.
             if (timer.current) window.clearTimeout(timer.current);
             const value = e.target.value;
-            if (value.trim().split(/\s+/).length >= 2) timer.current = window.setTimeout(() => handle(value, false), DICTATION_PAUSE_MS);
+            if (value.trim().split(/\s+/).length >= 2)
+              timer.current = window.setTimeout(() => handle(value, false), DICTATION_PAUSE_MS);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
@@ -381,7 +398,10 @@ export function CommandBar(props: CommandBarProps) {
       )}
 
       {parsed && (
-        <div className={`command-card${parsed.ok ? '' : ' refused'}${listening === 'confirm' ? ' asking' : ''}`} role="status">
+        <div
+          className={`command-card${parsed.ok ? '' : ' refused'}${listening === 'confirm' ? ' asking' : ''}`}
+          role="status"
+        >
           <p className="command-heard">
             Heard <q>{heard}</q>
           </p>
@@ -396,7 +416,11 @@ export function CommandBar(props: CommandBarProps) {
                 )}
                 {step &&
                   addTo.map((i, k) => (
-                    <button key={labels[i]} className={!liveOk && k === 0 ? 'go' : undefined} onClick={() => addStep(parsed, i, step)}>
+                    <button
+                      key={labels[i]}
+                      className={!liveOk && k === 0 ? 'go' : undefined}
+                      onClick={() => addStep(parsed, i, step)}
+                    >
                       Add to plan {labels[i]}
                     </button>
                   ))}
@@ -410,8 +434,14 @@ export function CommandBar(props: CommandBarProps) {
                   Cancel
                 </button>
               </div>
-              {!step && <p className="command-note">Plans send officers to gates and named places, so this one is a live order only.</p>}
-              {step && !liveOk && order && 'order' in order && <p className="command-note">Run the plans to give it as a live order too.</p>}
+              {!step && (
+                <p className="command-note">
+                  Plans send officers to gates and named places, so this one is a live order only.
+                </p>
+              )}
+              {step && !liveOk && order && 'order' in order && (
+                <p className="command-note">Run the plans to give it as a live order too.</p>
+              )}
               {o && canOrderOn(o.target) && order && 'error' in order && <p className="command-note">{order.error}</p>}
             </>
           ) : (

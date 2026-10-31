@@ -46,8 +46,34 @@ describe('boards come from the density grid and scene', () => {
 
   it('roster has one row per officer and updates values between frames', () => {
     const officers = [
-      { id: 'off-1', unit: 'OSU PD 1', cell: 0, x: 0, y: 0, state: 'en_route' as const, targetCell: 1, place: 0, homeCell: 0, told: 10, followed: 4, etaS: 90 },
-      { id: 'off-2', unit: 'OSU PD 2', cell: 0, x: 0, y: 0, state: 'standby' as const, targetCell: 0, place: -1, homeCell: 0, told: 0, followed: 0, etaS: null },
+      {
+        id: 'off-1',
+        unit: 'OSU PD 1',
+        cell: 0,
+        x: 0,
+        y: 0,
+        state: 'en_route' as const,
+        targetCell: 1,
+        place: 0,
+        homeCell: 0,
+        told: 10,
+        followed: 4,
+        etaS: 90,
+      },
+      {
+        id: 'off-2',
+        unit: 'OSU PD 2',
+        cell: 0,
+        x: 0,
+        y: 0,
+        state: 'standby' as const,
+        targetCell: 0,
+        place: -1,
+        homeCell: 0,
+        told: 0,
+        followed: 0,
+        etaS: null,
+      },
     ];
     const rows = rosterRows(map, officers);
     expect(rows).toHaveLength(2);

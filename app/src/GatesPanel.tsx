@@ -23,16 +23,28 @@ const MAX_SAMPLES = 240;
  * short history: `useRun` keeps none, so the panel accumulates its own samples
  * here. The limits of that are documented in `gate-health.ts`.
  */
-export function GatesPanel({ map, run, label, onToggle, disabled = false }: {
+export function GatesPanel({
+  map,
+  run,
+  label,
+  onToggle,
+  disabled = false,
+}: {
   map: MapBundle;
   run: RunHandle;
   label: string;
   onToggle?: (closableId: string, closed: boolean) => void;
   disabled?: boolean;
 }) {
-  const doors = useMemo(() => map.places.map((place) => place.kind === 'gate'
-    ? map.closables.find((c) => c.cells.some((cell) => place.cells.includes(cell)))
-    : undefined), [map]);
+  const doors = useMemo(
+    () =>
+      map.places.map((place) =>
+        place.kind === 'gate'
+          ? map.closables.find((c) => c.cells.some((cell) => place.cells.includes(cell)))
+          : undefined,
+      ),
+    [map],
+  );
   const scene = run.scene.current;
   const gates = scene?.gates ?? [];
   const t = scene?.t ?? null;
@@ -50,13 +62,9 @@ export function GatesPanel({ map, run, label, onToggle, disabled = false }: {
     if (samples.length > MAX_SAMPLES) samples.splice(0, samples.length - MAX_SAMPLES);
   }, [t, gates]);
 
-  const health = useMemo(
-    () => (t === null ? [] : classifyGates(history.current, { t, gates })),
-    [t, gates],
-  );
+  const health = useMemo(() => (t === null ? [] : classifyGates(history.current, { t, gates })), [t, gates]);
 
-  const gateName = (place: number) =>
-    (map.places[place]?.name ?? '').replace(/\s*\(.*\)/, '') || `Gate ${place}`;
+  const gateName = (place: number) => (map.places[place]?.name ?? '').replace(/\s*\(.*\)/, '') || `Gate ${place}`;
 
   const alerts = health
     .filter((h) => h.health === 'seized' || h.health === 'unused')
@@ -122,12 +130,21 @@ export function GatesPanel({ map, run, label, onToggle, disabled = false }: {
                 <tr key={g.place} className={g.open ? undefined : 'shut'}>
                   <td>
                     {name}
-                    {g.officers > 0 && <span className="cops" title={`${g.officers} officers on station`}> 🚓{g.officers}</span>}
+                    {g.officers > 0 && (
+                      <span className="cops" title={`${g.officers} officers on station`}>
+                        {' '}
+                        🚓{g.officers}
+                      </span>
+                    )}
                   </td>
                   <td>
                     <span className={`door ${g.open ? 'open' : 'closed'}`}>{g.open ? 'Open' : 'Closed'}</span>
                     {onToggle && doors[g.place] && (
-                      <button className="small ghost gate-order" disabled={disabled} onClick={() => onToggle(doors[g.place]!.id, g.open)}>
+                      <button
+                        className="small ghost gate-order"
+                        disabled={disabled}
+                        onClick={() => onToggle(doors[g.place]!.id, g.open)}
+                      >
                         {g.open ? 'Close' : 'Open'}
                       </button>
                     )}

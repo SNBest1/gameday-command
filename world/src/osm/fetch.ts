@@ -12,7 +12,10 @@ import type { OsmElement, OsmExtract } from './stadium.ts';
 
 export const OVERPASS_URL = process.env.OVERPASS_URL ?? 'https://overpass-api.de/api/interpreter';
 /** Public mirrors, tried in turn when the main server is busy (504/429 are common at peak). */
-const OVERPASS_MIRRORS = ['https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
+const OVERPASS_MIRRORS = [
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
 export const NOMINATIM_URL = process.env.NOMINATIM_URL ?? 'https://nominatim.openstreetmap.org';
 const USER_AGENT = 'GamedayCommand/0.1 (HackOHIO student project)';
 
@@ -21,9 +24,30 @@ export const STADIUM_RADIUS_M = 800;
 
 /** Tags the rasterizer actually reads. Everything else is dropped to keep the extract small. */
 const KEEP_TAGS = new Set([
-  'leisure', 'building', 'building:part', 'highway', 'amenity', 'landuse', 'barrier',
-  'footway', 'service', 'name', 'ref', 'access', 'width', 'lanes', 'tunnel', 'bridge',
-  'area', 'surface', 'parking', 'sport', 'capacity', 'man_made', 'wall', 'fence_type',
+  'leisure',
+  'building',
+  'building:part',
+  'highway',
+  'amenity',
+  'landuse',
+  'barrier',
+  'footway',
+  'service',
+  'name',
+  'ref',
+  'access',
+  'width',
+  'lanes',
+  'tunnel',
+  'bridge',
+  'area',
+  'surface',
+  'parking',
+  'sport',
+  'capacity',
+  'man_made',
+  'wall',
+  'fence_type',
 ]);
 
 export function bboxAround(center: LatLon, radiusM: number) {
@@ -64,7 +88,9 @@ export function trimElement(element: OsmElement): OsmElement | null {
   const out: OsmElement = { type: element.type, id: element.id, tags };
   if (element.geometry) out.geometry = round(element.geometry);
   if (element.members) {
-    out.members = element.members.filter((m) => m.geometry).map((m) => ({ type: m.type, role: m.role, geometry: round(m.geometry!) }));
+    out.members = element.members
+      .filter((m) => m.geometry)
+      .map((m) => ({ type: m.type, role: m.role, geometry: round(m.geometry!) }));
   }
   return out.geometry || out.members?.length ? out : null;
 }
@@ -166,26 +192,45 @@ function firstOf(...values: (string | undefined)[]): string | undefined {
 /** Find stadiums by name through Nominatim. Only leisure=stadium results come back. */
 export async function searchStadiums(q: string, url = NOMINATIM_URL): Promise<StadiumHit[]> {
   const params = new URLSearchParams({ q, format: 'jsonv2', limit: '15', extratags: '1', addressdetails: '1' });
-  const res = await fetch(`${url}/search?${params}`, { headers: { 'user-agent': USER_AGENT, 'accept-language': 'en' } });
+  const res = await fetch(`${url}/search?${params}`, {
+    headers: { 'user-agent': USER_AGENT, 'accept-language': 'en' },
+  });
   if (!res.ok) throw new Error(`Nominatim returned ${res.status} ${res.statusText}`);
   const rows = (await res.json()) as {
-    category?: string; type?: string; osm_type: string; osm_id: number; lat: string; lon: string;
-    name?: string; display_name: string; address?: Record<string, string>;
-    extratags?: Record<string, string>; importance?: number;
+    category?: string;
+    type?: string;
+    osm_type: string;
+    osm_id: number;
+    lat: string;
+    lon: string;
+    name?: string;
+    display_name: string;
+    address?: Record<string, string>;
+    extratags?: Record<string, string>;
+    importance?: number;
   }[];
   // Most important first: "Beaver Stadium" should find Penn State's before a
   // high-school ground of the same name.
   rows.sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0));
   return rows
-    .filter((r) => r.category === 'leisure' && r.type === 'stadium' && (r.osm_type === 'way' || r.osm_type === 'relation'))
+    .filter(
+      (r) => r.category === 'leisure' && r.type === 'stadium' && (r.osm_type === 'way' || r.osm_type === 'relation'),
+    )
     .map((r) => {
       // City, state, country reads better than the street and neighbourhood that
       // display_name starts with. Only fall back to display_name when address is empty.
-      const city = firstOf(r.address?.city, r.address?.town, r.address?.village, r.address?.municipality, r.address?.county);
+      const city = firstOf(
+        r.address?.city,
+        r.address?.town,
+        r.address?.village,
+        r.address?.municipality,
+        r.address?.county,
+      );
       const state = firstOf(r.address?.state, r.address?.region, r.address?.province);
       const country = firstOf(r.address?.country);
-      const where = [city, state, country].filter((part): part is string => !!part).join(', ')
-        || r.display_name.split(',').slice(1, 4).join(',').trim();
+      const where =
+        [city, state, country].filter((part): part is string => !!part).join(', ') ||
+        r.display_name.split(',').slice(1, 4).join(',').trim();
       return {
         name: r.name || r.display_name.split(',')[0]!,
         where,
@@ -212,8 +257,12 @@ export async function stadiumFacts(qid: string): Promise<{ teams: string[]; capa
       signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) return { teams: [] };
-    const rows = ((await res.json()) as { results: { bindings: { teamLabel?: { value: string }; cap?: { value: string } }[] } }).results.bindings;
-    const teams = [...new Set(rows.map((r) => r.teamLabel?.value).filter((t): t is string => !!t && !/^Q\d+$/.test(t)))];
+    const rows = (
+      (await res.json()) as { results: { bindings: { teamLabel?: { value: string }; cap?: { value: string } }[] } }
+    ).results.bindings;
+    const teams = [
+      ...new Set(rows.map((r) => r.teamLabel?.value).filter((t): t is string => !!t && !/^Q\d+$/.test(t))),
+    ];
     const caps = rows.map((r) => Number(r.cap?.value)).filter((n) => n > 1000);
     return { teams, capacity: caps.length ? Math.max(...caps) : undefined };
   } catch {

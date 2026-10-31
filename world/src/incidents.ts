@@ -156,7 +156,6 @@ export function testGateSurge(map: MapBundle, at = 0): Incident {
   };
 }
 
-
 /**
  * A lightning delay: everyone in the stands has to get out of the open.
  *
@@ -181,10 +180,7 @@ export function lightningDelay(map: MapBundle, at = 1800): Incident {
 /** The street a suspicious package would close: Woody Hayes Drive when mapped, else the longest. */
 export function biggestStreet(map: MapBundle) {
   const streets = map.closables.filter((c) => c.id.startsWith('street-') || /lane|plaza/i.test(c.id));
-  return (
-    streets.find((c) => /Woody Hayes/i.test(c.name)) ??
-    streets.sort((a, b) => b.cells.length - a.cells.length)[0]
-  );
+  return streets.find((c) => /Woody Hayes/i.test(c.name)) ?? streets.sort((a, b) => b.cells.length - a.cells.length)[0];
 }
 
 /** A suspicious package closing a street as the game lets out. */

@@ -4,7 +4,13 @@ import { groupName, isoProject, isoUnproject, shirtColor } from './people.ts';
 
 describe('close-up helpers', () => {
   it('unprojects a ground point back to where it came from', () => {
-    for (const [mx, my] of [[0, 0], [12.5, 3], [1600, 0], [0, 1600], [733.2, 1021.7]] as const) {
+    for (const [mx, my] of [
+      [0, 0],
+      [12.5, 3],
+      [1600, 0],
+      [0, 1600],
+      [733.2, 1021.7],
+    ] as const) {
       const { sx, sy } = isoProject(mx, my);
       const back = isoUnproject(sx, sy);
       expect(back.mx).toBeCloseTo(mx, 9);

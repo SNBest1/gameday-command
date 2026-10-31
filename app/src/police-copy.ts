@@ -12,7 +12,8 @@ export const policeCopy = {
   remove: 'Remove selected units',
   unitName: 'Synthetic unit name',
   coverage: 'Coverage',
-  coverageRule: 'Current geometric reach, not safety. Outdoor area excludes the bowl and motorways; hotspot coverage tests its centre.',
+  coverageRule:
+    'Current geometric reach, not safety. Outdoor area excludes the bowl and motorways; hotspot coverage tests its centre.',
   demo: 'Demo sign-in, no account needed',
   sync: 'Demo radio sync',
   seal: 'Gameday Command',
@@ -41,12 +42,16 @@ export const policeCopy = {
   requestSend: 'Send nearest free unit',
   requestDismiss: 'Dismiss request',
   noFreeUnit: 'No reachable free unit is available.',
-  reports: ['crowd crush','medical','fight','traffic','suspicious item','other'] as const,
-  measured: (seconds:number,count:number)=>`Measured suggestion to first arrival: ${(seconds/60).toFixed(2)} simulated min across ${count} responses.`,
+  reports: ['crowd crush', 'medical', 'fight', 'traffic', 'suspicious item', 'other'] as const,
+  measured: (seconds: number, count: number) =>
+    `Measured suggestion to first arrival: ${(seconds / 60).toFixed(2)} simulated min across ${count} responses.`,
   empty: 'No uncovered hotspot or incident needs an available unit right now.',
   routing: 'Calculating walking routes. Play the run to update live conditions.',
   assignment: 'Response assignments',
-  mission: 'Officers direct nearby fans toward an open gate ranked by queue and walking cost. Traffic points alternate junction entry directions. These are simulation assumptions, not a guaranteed resolution.',
-  duration: (s: number) => `Work for ${Math.round(s / 60)} simulated minutes after arrival, then return to the original post.`,
-  roadCapacity: (stalls: number, vehicles: number) => `${vehicles.toLocaleString()} vehicles for ${stalls.toLocaleString()} mapped parking stalls`,
+  mission:
+    'Officers direct nearby fans toward an open gate ranked by queue and walking cost. Traffic points alternate junction entry directions. These are simulation assumptions, not a guaranteed resolution.',
+  duration: (s: number) =>
+    `Work for ${Math.round(s / 60)} simulated minutes after arrival, then return to the original post.`,
+  roadCapacity: (stalls: number, vehicles: number) =>
+    `${vehicles.toLocaleString()} vehicles for ${stalls.toLocaleString()} mapped parking stalls`,
 };

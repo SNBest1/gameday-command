@@ -51,7 +51,14 @@ export const WALK_STEP = stepCost('walk');
 const MOTORWAY_KINDS = new Set(['motorway', 'motorway_link', 'trunk', 'trunk_link']);
 
 /** Stroke a street centreline (metres) into a cell mask, `radius` cells either side. */
-function strokeStreet(mask: Uint8Array, width: number, height: number, points: readonly number[], radius: number, value: number): void {
+function strokeStreet(
+  mask: Uint8Array,
+  width: number,
+  height: number,
+  points: readonly number[],
+  radius: number,
+  value: number,
+): void {
   for (let k = 0; k + 3 < points.length; k += 2) {
     const ax = points[k]! / CELL_SIZE_M;
     const ay = points[k + 1]! / CELL_SIZE_M;
@@ -160,14 +167,25 @@ export class FlowFields {
     if (map.id.startsWith('osm-')) {
       const clearance = new Uint8Array(cells.length).fill(7);
       const queue = new Int32Array(cells.length);
-      let head = 0, tail = 0;
-      for (let c = 0; c < cells.length; c++) if (cells[c] === 'blocked') {clearance[c] = 0; queue[tail++] = c;}
+      let head = 0,
+        tail = 0;
+      for (let c = 0; c < cells.length; c++)
+        if (cells[c] === 'blocked') {
+          clearance[c] = 0;
+          queue[tail++] = c;
+        }
       while (head < tail) {
         const c = queue[head++]!;
         if (clearance[c]! >= 6) continue;
-        for (const next of [c%width>0?c-1:-1,c%width<width-1?c+1:-1,c>=width?c-width:-1,c<cells.length-width?c+width:-1]) {
+        for (const next of [
+          c % width > 0 ? c - 1 : -1,
+          c % width < width - 1 ? c + 1 : -1,
+          c >= width ? c - width : -1,
+          c < cells.length - width ? c + width : -1,
+        ]) {
           if (next < 0 || clearance[next]! <= clearance[c]! + 1) continue;
-          clearance[next] = clearance[c]! + 1; queue[tail++] = next;
+          clearance[next] = clearance[c]! + 1;
+          queue[tail++] = next;
         }
       }
       for (let c = 0; c < cells.length; c++) {

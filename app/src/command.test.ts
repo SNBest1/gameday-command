@@ -2,15 +2,43 @@ import { describe, expect, it } from 'vitest';
 import type { Scorecard } from '../../contracts.ts';
 import type { GateStat } from '../../engine/src/edits.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
-import { briefLine, levelOf, GATE_LEVELS, noneAchieve, rankByPriority, readings, streetIndex, suggestPlans, usualAt, type HistorySample } from './command.ts';
+import {
+  briefLine,
+  levelOf,
+  GATE_LEVELS,
+  noneAchieve,
+  rankByPriority,
+  readings,
+  streetIndex,
+  suggestPlans,
+  usualAt,
+  type HistorySample,
+} from './command.ts';
 
 const map = makeTestMap();
 const gatePlaces = map.places.map((p, i) => ({ p, i })).filter(({ p }) => p.kind === 'gate');
-const stat = (place: number, waiting: number, open = true): GateStat => ({ place, open, inPerMin: 0, outPerMin: 0, waiting, capacityPerMin: 100, officers: 0 });
+const stat = (place: number, waiting: number, open = true): GateStat => ({
+  place,
+  open,
+  inPerMin: 0,
+  outPerMin: 0,
+  waiting,
+  capacityPerMin: 100,
+  officers: 0,
+});
 
 const card = (over: Partial<Scorecard>): Scorecard => ({
-  runId: 'r', planId: 'p', label: 'A', timeToClearMin: 10, peakDensity: 4, dangerMinutes: 100, firstOfficerMin: 1,
-  officerMinutesUsed: 60, fansNotReached: 0, fallbackDecisions: 0, ...over,
+  runId: 'r',
+  planId: 'p',
+  label: 'A',
+  timeToClearMin: 10,
+  peakDensity: 4,
+  dangerMinutes: 100,
+  firstOfficerMin: 1,
+  officerMinutesUsed: 60,
+  fansNotReached: 0,
+  fallbackDecisions: 0,
+  ...over,
 });
 
 describe('commander brief', () => {
@@ -70,6 +98,11 @@ describe('commander brief', () => {
     expect(rankByPriority(cards, 'danger')).toEqual([1, 0, 2]);
     expect(rankByPriority(cards, 'ambulance')[0]).toBe(2);
     expect(noneAchieve(cards, 'clear')).toBe(false);
-    expect(noneAchieve(cards.map((c) => ({ ...c, timeToClearMin: null })), 'clear')).toBe(true);
+    expect(
+      noneAchieve(
+        cards.map((c) => ({ ...c, timeToClearMin: null })),
+        'clear',
+      ),
+    ).toBe(true);
   });
 });

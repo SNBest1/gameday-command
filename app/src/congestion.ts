@@ -35,7 +35,11 @@ export function flowLevel(state: number, speed: number): number {
 }
 
 const isDriving = (state: number) =>
-  state === VS.driving || state === VS.stopped || state === VS.departing || state === VS.responding || state === VS.parking;
+  state === VS.driving ||
+  state === VS.stopped ||
+  state === VS.departing ||
+  state === VS.responding ||
+  state === VS.parking;
 
 /**
  * Paint each moving vehicle's footprint onto the cells, worst level wins, and
@@ -200,7 +204,7 @@ export function policeHotspots(
       // 5/m² by design, and `standingDensity()` has already removed the seated
       // fans, so what is left there is a seated crowd, not a crush.
       if (v < CROWDED || !pedestrianCell(kind) || kind === 'stands') continue;
-      const b = (((c / W) | 0) / BLOCK | 0) * BW + (((c % W) / BLOCK) | 0);
+      const b = ((((c / W) | 0) / BLOCK) | 0) * BW + (((c % W) / BLOCK) | 0);
       crowd[b] = crowd[b]! + v * area;
       if (v > peak[b]!) peak[b] = v;
     }
@@ -236,8 +240,21 @@ export function policeHotspots(
   const stack: number[] = [];
   for (let start = 0; start < BW * BH; start++) {
     if (seen[start] || !hot(start)) continue;
-    let people = 0, pk = 0, st = 0, sl = 0, bx0 = BW, by0 = BH, bx1 = 0, by1 = 0, sx = 0, sy = 0, wsum = 0;
-    let crowdBlock = -1, crowdBlockPeople = 0, vehBlock = -1, vehBlockWeight = 0;
+    let people = 0,
+      pk = 0,
+      st = 0,
+      sl = 0,
+      bx0 = BW,
+      by0 = BH,
+      bx1 = 0,
+      by1 = 0,
+      sx = 0,
+      sy = 0,
+      wsum = 0;
+    let crowdBlock = -1,
+      crowdBlockPeople = 0,
+      vehBlock = -1,
+      vehBlockWeight = 0;
     stack.push(start);
     seen[start] = 1;
     while (stack.length) {
@@ -360,7 +377,8 @@ export function policeHotspots(
   return found.slice(0, limit).map((h, i) => {
     // Name the area by whichever agent dominates it. A jam is weighted the way
     // the area's weight is above, so "mostly cars" means what the ranking means.
-    const byCrowd = h.kind === 'crowd' || (h.kind === 'both' && h.crowdedPeople >= h.stoppedVehicles * 20 + h.slowVehicles * 5);
+    const byCrowd =
+      h.kind === 'crowd' || (h.kind === 'both' && h.crowdedPeople >= h.stoppedVehicles * 20 + h.slowVehicles * 5);
     const block = byCrowd ? h.crowdBlock : h.vehBlock;
     const cell =
       block >= 0

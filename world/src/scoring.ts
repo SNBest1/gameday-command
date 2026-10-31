@@ -218,8 +218,7 @@ export class Scorer {
   }
 
   finish(): Scorecard {
-    const sinceIncident = (t: SimSeconds | null) =>
-      t === null ? null : Math.max(0, (t - this.init.incident.at) / 60);
+    const sinceIncident = (t: SimSeconds | null) => (t === null ? null : Math.max(0, (t - this.init.incident.at) / 60));
     const card: Scorecard = {
       runId: this.init.runId,
       planId: this.init.planId,

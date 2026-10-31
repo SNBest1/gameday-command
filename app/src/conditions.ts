@@ -33,7 +33,12 @@ export interface Conditions {
   unmatched: string[];
 }
 
-const norm = (s: string) => s.toLowerCase().replace(/\s*\(.*?\)\s*/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+const norm = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/\s*\(.*?\)\s*/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 
 function matcher(map: MapBundle) {
   const gates = map.places.filter((p) => p.kind === 'gate');
@@ -45,18 +50,28 @@ function matcher(map: MapBundle) {
 }
 
 export function parseConditions(text: string, map: MapBundle, fallbackSource = 'Uploaded file'): Conditions {
-  const out: Conditions = { source: fallbackSource, at: null, minuteToKickoff: null, gates: new Map(), streets: new Map(), unmatched: [] };
+  const out: Conditions = {
+    source: fallbackSource,
+    at: null,
+    minuteToKickoff: null,
+    gates: new Map(),
+    streets: new Map(),
+    unmatched: [],
+  };
   const find = matcher(map);
   const trimmed = text.trim();
   if (trimmed.startsWith('{')) {
     const data = JSON.parse(trimmed) as {
-      source?: string; at?: string; minuteToKickoff?: number;
+      source?: string;
+      at?: string;
+      minuteToKickoff?: number;
       gates?: { gate: string; waiting: number }[];
       roads?: { street: string; stopped?: number }[];
     };
     if (data.source) out.source = String(data.source);
     if (data.at) out.at = String(data.at);
-    if (Number.isFinite(Number(data.minuteToKickoff)) && data.minuteToKickoff !== undefined) out.minuteToKickoff = Number(data.minuteToKickoff);
+    if (Number.isFinite(Number(data.minuteToKickoff)) && data.minuteToKickoff !== undefined)
+      out.minuteToKickoff = Number(data.minuteToKickoff);
     for (const g of data.gates ?? []) {
       const id = find.gate(String(g.gate));
       if (id && Number.isFinite(Number(g.waiting))) out.gates.set(id, Math.max(0, Number(g.waiting)));
@@ -81,7 +96,8 @@ export function parseConditions(text: string, map: MapBundle, fallbackSource = '
       out.unmatched.push(line);
       continue;
     }
-    const id = kind.toLowerCase() === 'gate' ? find.gate(name) : kind.toLowerCase() === 'street' ? find.street(name) : undefined;
+    const id =
+      kind.toLowerCase() === 'gate' ? find.gate(name) : kind.toLowerCase() === 'street' ? find.street(name) : undefined;
     if (!id) out.unmatched.push(line);
     else if (kind.toLowerCase() === 'gate') out.gates.set(id, Math.max(0, v));
     else out.streets.set(id, Math.max(0, v));

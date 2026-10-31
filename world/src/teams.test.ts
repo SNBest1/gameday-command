@@ -4,8 +4,16 @@ import { OHIO_THEME, themeFor } from './teams.ts';
 
 describe('stadium themes', () => {
   it('uses the first home team it knows, then the stadium name, then a generated pair', () => {
-    expect(themeFor('Lumen Field', ['Seattle Seahawks', 'Seattle Sounders FC'])).toMatchObject({ team: 'Seattle Seahawks', primary: '#002244', source: 'home team from Wikidata' });
-    expect(themeFor('Michigan Stadium')).toMatchObject({ team: 'Michigan Wolverines', primary: '#00274c', secondary: '#ffcb05' });
+    expect(themeFor('Lumen Field', ['Seattle Seahawks', 'Seattle Sounders FC'])).toMatchObject({
+      team: 'Seattle Seahawks',
+      primary: '#002244',
+      source: 'home team from Wikidata',
+    });
+    expect(themeFor('Michigan Stadium')).toMatchObject({
+      team: 'Michigan Wolverines',
+      primary: '#00274c',
+      secondary: '#ffcb05',
+    });
     const made = themeFor('Some Unknown Ground');
     expect(made.source).toMatch(/generated/);
     expect(made.primary).toMatch(/^#[0-9a-f]{6}$/);

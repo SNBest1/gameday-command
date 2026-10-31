@@ -8,7 +8,15 @@ import { lightningDelay, testGateSurge } from './incidents.ts';
 import { makeOfficers } from './officers.ts';
 import { playbookFor } from './playbook.ts';
 import { makeTestMap } from './test-map.ts';
-import { CLEAR_SKY, decisionWeather, driveFactor, walkFactor, weatherAt, weatherTimeline, WEATHER_TIMELINES } from './weather.ts';
+import {
+  CLEAR_SKY,
+  decisionWeather,
+  driveFactor,
+  walkFactor,
+  weatherAt,
+  weatherTimeline,
+  WEATHER_TIMELINES,
+} from './weather.ts';
 
 const map = makeTestMap();
 

@@ -26,7 +26,11 @@ export function allowedNumbers(req: BriefingRequest): number[] {
       values.push(value, Math.round(value), Math.round(value * 10) / 10);
     }
   }
-  const names = [...req.plans.map((p) => p.name), req.incident.note ?? '', ...req.plans.flatMap((p) => p.actions.map((a) => ('message' in a ? a.message : '')))];
+  const names = [
+    ...req.plans.map((p) => p.name),
+    req.incident.note ?? '',
+    ...req.plans.flatMap((p) => p.actions.map((a) => ('message' in a ? a.message : ''))),
+  ];
   for (const name of names) values.push(...numbersIn(name));
   return values;
 }
@@ -45,7 +49,8 @@ export function briefingIsSupported(text: string, req: BriefingRequest): boolean
   return numbersIn(text).every((n) => allowed.some((a) => Math.abs(a - n) < 0.051));
 }
 
-const minutes = (value: number | null) => (value === null ? 'never cleared in this window' : `${Math.round(value)} minutes`);
+const minutes = (value: number | null) =>
+  value === null ? 'never cleared in this window' : `${Math.round(value)} minutes`;
 
 /** Deterministic fallback. Says only what the scorecards say, so it always verifies. */
 export function templateBriefing(req: BriefingRequest): Briefing {

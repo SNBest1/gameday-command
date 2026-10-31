@@ -1,4 +1,14 @@
-import type { Id, Incident, MapBundle, Population, SimSeconds, TrafficConfig, VehicleFrame, VehicleKind, WeatherState } from '../../contracts.ts';
+import type {
+  Id,
+  Incident,
+  MapBundle,
+  Population,
+  SimSeconds,
+  TrafficConfig,
+  VehicleFrame,
+  VehicleKind,
+  WeatherState,
+} from '../../contracts.ts';
 import { CELL_SIZE_M, DOT_GROUP_SIZE, VEHICLE_KINDS, VEHICLE_STATES } from '../../contracts.ts';
 import { expandCells } from '../../world/src/incidents.ts';
 import { isLongVehicle, VEHICLE_TYPES } from '../../world/src/vehicles.ts';
@@ -26,7 +36,10 @@ import { parkingConnectors } from './traffic-access.ts';
  */
 
 const KIND_INDEX = Object.fromEntries(VEHICLE_KINDS.map((k, i) => [k, i])) as Record<VehicleKind, number>;
-const VSTATE = Object.fromEntries(VEHICLE_STATES.map((s, i) => [s, i])) as Record<(typeof VEHICLE_STATES)[number], number>;
+const VSTATE = Object.fromEntries(VEHICLE_STATES.map((s, i) => [s, i])) as Record<
+  (typeof VEHICLE_STATES)[number],
+  number
+>;
 
 /** What a vehicle is trying to do. Kept apart from the display state, which also says "stopped". */
 const MODE_WAITING = 0;
@@ -117,10 +130,12 @@ function buildRoadNet(map: MapBundle): RoadNet {
   const nearLot = new Uint8Array(size);
   for (let c = 0; c < size; c++) {
     if (cells[c] !== 'parking') continue;
-    const cx = c % W, cy = Math.floor(c / W);
+    const cx = c % W,
+      cy = Math.floor(c / W);
     for (let dy = -3; dy <= 3; dy++) {
       for (let dx = -3; dx <= 3; dx++) {
-        const x = cx + dx, y = cy + dy;
+        const x = cx + dx,
+          y = cy + dy;
         if (x >= 0 && y >= 0 && x < W && y < H) nearLot[y * W + x] = 1;
       }
     }
@@ -218,7 +233,10 @@ function buildRoadNet(map: MapBundle): RoadNet {
     return lotOf[c] === lot && reach[c] === 1;
   };
   lots.forEach((lot, index) => {
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
     for (const c of lot.cells) {
       const x = c % W;
       const y = (c / W) | 0;
@@ -242,7 +260,9 @@ function buildRoadNet(map: MapBundle): RoadNet {
         let previous = -1;
         for (let x = x0 + STALL_PITCH_M / 2; x <= x1 - STALL_PITCH_M / 2; x += STALL_PITCH_M) {
           const ok =
-            inLot(index, x, y) && inLot(index, x, y - STALL_DEPTH_M * 0.42) && inLot(index, x, y + STALL_DEPTH_M * 0.42);
+            inLot(index, x, y) &&
+            inLot(index, x, y - STALL_DEPTH_M * 0.42) &&
+            inLot(index, x, y + STALL_DEPTH_M * 0.42);
           if (!ok) {
             previous = -1;
             continue;
@@ -350,8 +370,11 @@ export function stallCount(map: MapBundle): number {
 /** Leave headroom for arrivals and long vehicles instead of filling a small map at startup. */
 export function trafficCapacity(map: MapBundle) {
   const net = roadNetFor(map);
-  return {stalls: net.stallX.length, entries: net.entries.length,
-    vehicles: Math.min(4500, Math.floor(net.stallX.length * 0.85))};
+  return {
+    stalls: net.stallX.length,
+    entries: net.entries.length,
+    vehicles: Math.min(4500, Math.floor(net.stallX.length * 0.85)),
+  };
 }
 
 export interface TrafficInit {
@@ -682,12 +705,12 @@ export class TrafficModel {
 
   /** Closed cells are escape-only; diagonals must not cut a barricade corner. */
   private canStep(from: number, to: number, ems: boolean): boolean {
-    const open = (cell: number) => this.allowed(cell, ems) &&
-      (this.closedCells[cell] !== 1 || this.closedCells[from] === 1);
+    const open = (cell: number) =>
+      this.allowed(cell, ems) && (this.closedCells[cell] !== 1 || this.closedCells[from] === 1);
     if (!open(to)) return false;
     const W = this.map.width;
     if (from % W !== to % W && Math.floor(from / W) !== Math.floor(to / W)) {
-      if (!open(Math.floor(from / W) * W + to % W) || !open(Math.floor(to / W) * W + from % W)) return false;
+      if (!open(Math.floor(from / W) * W + (to % W)) || !open(Math.floor(to / W) * W + (from % W))) return false;
     }
     return true;
   }
@@ -946,32 +969,58 @@ export class TrafficModel {
    * never enters a closure or jumps over traffic, pedestrians or a building.
    */
   private clearClosureTail(i: number, density: Float32Array, ems: boolean, dt: number): boolean {
-    const cell=this.cellAt(this.hx[i]!,this.hy[i]!);
-    if(cell<0 || this.closedCells[cell]===1)return false;
-    const dx=Math.cos(this.heading[i]!),dy=Math.sin(this.heading[i]!),length=this.type(i).lengthM;
-    let rearClosed=false;
-    for(let s=0;s<=length;s+=0.5) {
-      const c=this.cellAt(this.hx[i]!-dx*s,this.hy[i]!-dy*s);
-      if(c>=0 && this.closedCells[c]===1){rearClosed=true;break;}
+    const cell = this.cellAt(this.hx[i]!, this.hy[i]!);
+    if (cell < 0 || this.closedCells[cell] === 1) return false;
+    const dx = Math.cos(this.heading[i]!),
+      dy = Math.sin(this.heading[i]!),
+      length = this.type(i).lengthM;
+    let rearClosed = false;
+    for (let s = 0; s <= length; s += 0.5) {
+      const c = this.cellAt(this.hx[i]! - dx * s, this.hy[i]! - dy * s);
+      if (c >= 0 && this.closedCells[c] === 1) {
+        rearClosed = true;
+        break;
+      }
     }
-    if(!rearClosed)return false;
-    let remaining=CRAWL_SPEED_MPS*dt,moved=0;
-    while(remaining>0) {
-      const step=Math.min(0.5,remaining),x=Math.fround(this.hx[i]!+dx*step),y=Math.fround(this.hy[i]!+dy*step);
-      const from=this.cellAt(this.hx[i]!,this.hy[i]!),next=this.cellAt(x,y);
-      if(next<0 || !this.canStep(from,next,ems) || this.heldByOther(next,i) || density[next]!>(ems?CROWD_STOP_EMS:CROWD_STOP))break;
-      this.hx[i]=x;this.hy[i]=y;remaining-=step;moved+=step;
-      if(this.occCount[next]===0 || this.occOwner[next]!==i+1)this.claimCell(next,i);
+    if (!rearClosed) return false;
+    let remaining = CRAWL_SPEED_MPS * dt,
+      moved = 0;
+    while (remaining > 0) {
+      const step = Math.min(0.5, remaining),
+        x = Math.fround(this.hx[i]! + dx * step),
+        y = Math.fround(this.hy[i]! + dy * step);
+      const from = this.cellAt(this.hx[i]!, this.hy[i]!),
+        next = this.cellAt(x, y);
+      if (
+        next < 0 ||
+        !this.canStep(from, next, ems) ||
+        this.heldByOther(next, i) ||
+        density[next]! > (ems ? CROWD_STOP_EMS : CROWD_STOP)
+      )
+        break;
+      this.hx[i] = x;
+      this.hy[i] = y;
+      remaining -= step;
+      moved += step;
+      if (this.occCount[next] === 0 || this.occOwner[next] !== i + 1) this.claimCell(next, i);
     }
-    if(moved===0)return false;
-    this.speed[i]=moved/dt;this.stuck[i]=0;return true;
+    if (moved === 0) return false;
+    this.speed[i] = moved / dt;
+    this.stuck[i] = 0;
+    return true;
   }
 
   /**
    * Drive vehicle i up to `budget` meters along a field, one cell at a time,
    * steering for the centre of the next cell so traffic settles into lanes.
    */
-  private advance(i: number, field: Field, budget: number, density: Float32Array, ems: boolean): 'moved' | 'arrived' | 'blocked' {
+  private advance(
+    i: number,
+    field: Field,
+    budget: number,
+    density: Float32Array,
+    ems: boolean,
+  ): 'moved' | 'arrived' | 'blocked' {
     const W = this.map.width;
     const crowdStop = ems ? CROWD_STOP_EMS : CROWD_STOP;
     const squeeze = ems || this.stuck[i]! >= SQUEEZE_AFTER_S;
@@ -990,8 +1039,12 @@ export class TrafficModel {
         const phase = ((this.signalTime % 14) + 14) % 14;
         const horizontal = Math.abs(DIR_DX[best]!) >= Math.abs(DIR_DY[best]!);
         for (const point of this.controlPoints) {
-          const distance = Math.max(Math.abs(cell % W - point % W), Math.abs(Math.floor(cell / W) - Math.floor(point / W)));
-          if (distance > 2 && distance <= 6 && (phase === 6 || phase === 13 || horizontal !== (phase < 6))) return moved ? 'moved' : 'blocked';
+          const distance = Math.max(
+            Math.abs((cell % W) - (point % W)),
+            Math.abs(Math.floor(cell / W) - Math.floor(point / W)),
+          );
+          if (distance > 2 && distance <= 6 && (phase === 6 || phase === 13 || horizontal !== phase < 6))
+            return moved ? 'moved' : 'blocked';
         }
       }
       const cx = cell % W;
@@ -1158,9 +1211,13 @@ export class TrafficModel {
         // is full or closed. Choosing the nearest reachable entry keeps the
         // choice deterministic; no RNG draw moves an existing car.
         if (anyLotOpen && (cell < 0 || this.closedCells[cell] === 1 || lots.dist[cell] === UNREACHABLE)) {
-          const alternatives = this.net.entries.filter((entry) =>
-            this.closedCells[entry.cell] !== 1 && this.occCount[entry.cell] === 0 &&
-            rho[entry.cell]! <= CROWD_STOP && lots.dist[entry.cell] !== UNREACHABLE);
+          const alternatives = this.net.entries.filter(
+            (entry) =>
+              this.closedCells[entry.cell] !== 1 &&
+              this.occCount[entry.cell] === 0 &&
+              rho[entry.cell]! <= CROWD_STOP &&
+              lots.dist[entry.cell] !== UNREACHABLE,
+          );
           if (alternatives.length > 0) {
             cell = alternatives[i % alternatives.length]!.cell;
             this.entry[i] = cell;
@@ -1236,7 +1293,7 @@ export class TrafficModel {
       if (!field) continue;
       const at = this.cellAt(this.hx[i]!, this.hy[i]!);
       if (at >= 0 && field.dist[at] === UNREACHABLE) {
-        if (this.clearClosureTail(i,rho,ems,dt)) continue;
+        if (this.clearClosureTail(i, rho, ems, dt)) continue;
         // Cut off from where it was going (a closure, or every lot it could
         // reach filled up). Head for the edge instead; if even that is cut
         // off, it waits where it is, and is counted stopped.
@@ -1418,12 +1475,26 @@ export class TrafficModel {
     if (!state || typeof state !== 'object') return;
     const s = state as Record<string, unknown>;
     const arrays: [{ set(a: ArrayLike<number>): void }, string][] = [
-      [this.hx, 'hx'], [this.hy, 'hy'], [this.heading, 'heading'], [this.speed, 'speed'], [this.mode, 'mode'],
-      [this.blocked, 'blocked'], [this.waited, 'waited'], [this.stuck, 'stuck'], [this.arriveT, 'arriveT'],
+      [this.hx, 'hx'],
+      [this.hy, 'hy'],
+      [this.heading, 'heading'],
+      [this.speed, 'speed'],
+      [this.mode, 'mode'],
+      [this.blocked, 'blocked'],
+      [this.waited, 'waited'],
+      [this.stuck, 'stuck'],
+      [this.arriveT, 'arriveT'],
       [this.entry, 'entry'],
-      [this.departT, 'departT'], [this.stall, 'stall'], [this.stallRun, 'stallRun'], [this.targetX, 'targetX'],
-      [this.targetY, 'targetY'], [this.targetHeading, 'targetHeading'], [this.stallTaken, 'stallTaken'],
-      [this.lotFree, 'lotFree'], [this.lotDemand, 'lotDemand'], [this.dotCounted, 'dotCounted'],
+      [this.departT, 'departT'],
+      [this.stall, 'stall'],
+      [this.stallRun, 'stallRun'],
+      [this.targetX, 'targetX'],
+      [this.targetY, 'targetY'],
+      [this.targetHeading, 'targetHeading'],
+      [this.stallTaken, 'stallTaken'],
+      [this.lotFree, 'lotFree'],
+      [this.lotDemand, 'lotDemand'],
+      [this.dotCounted, 'dotCounted'],
     ];
     for (const [into, key] of arrays) if (s[key]) into.set(s[key] as ArrayLike<number>);
     this.rng.restore((s.rng as number[]) ?? []);

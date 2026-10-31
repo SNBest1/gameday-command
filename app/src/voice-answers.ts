@@ -57,7 +57,11 @@ export function answer(q: Question, facts: Facts): string {
       return `On plan ${facts.plan}, the worst spot is ${worstSpot.where}, ${worstSpot.level}: ${n(worstSpot.crowdedPeople)} packed${worstSpot.stoppedVehicles ? `, ${n(worstSpot.stoppedVehicles)} vehicles stopped` : ''}.`;
     case 'status': {
       const parts = [`Plan ${facts.plan}, ${facts.clock}.`];
-      parts.push(busiest && busiest.waiting > 0 ? `Busiest gate ${gateName(facts, busiest)}, ${n(busiest.waiting)} waiting.` : 'No gate queues.');
+      parts.push(
+        busiest && busiest.waiting > 0
+          ? `Busiest gate ${gateName(facts, busiest)}, ${n(busiest.waiting)} waiting.`
+          : 'No gate queues.',
+      );
       if (facts.officers.length) parts.push(`${n(free)} officers free.`);
       parts.push(worstSpot ? `Worst spot ${worstSpot.where}, ${worstSpot.level}.` : 'Nothing congested.');
       return parts.join(' ');

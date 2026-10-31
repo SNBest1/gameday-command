@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest';
-import {MotionRecorder, poseOnPath} from './motion.ts';
+import { describe, expect, it } from 'vitest';
+import { MotionRecorder, poseOnPath } from './motion.ts';
 
 describe('motion paths between replay frames', () => {
   it('follows a corner and keeps stopped actors sparse', () => {
@@ -8,8 +8,8 @@ describe('motion paths between replay frames', () => {
     r.capture(1, [2, 40], [0, 40]);
     r.capture(2, [2, 40], [2, 40]);
     const p = r.take();
-    expect(poseOnPath(p, 0, 0.5, 3)).toMatchObject({x: 1, y: 0});
-    expect(poseOnPath(p, 0, 1.5, 3)).toMatchObject({x: 2, y: 1});
+    expect(poseOnPath(p, 0, 0.5, 3)).toMatchObject({ x: 1, y: 0 });
+    expect(poseOnPath(p, 0, 1.5, 3)).toMatchObject({ x: 2, y: 1 });
     expect(poseOnPath(p, 1, 1.5, 3)).toBeNull();
     expect(p.offsets[1]).toBe(p.offsets[2]);
   });
@@ -31,13 +31,14 @@ describe('motion paths between replay frames', () => {
     r.capture(0, [10, -1], [10, -1]);
     r.capture(1, [100, 20], [100, 20]);
     const p = r.take();
-    expect(poseOnPath(p, 0, 0.5, 3)).toMatchObject({x: 10, y: 10});
-    expect(poseOnPath(p, 0, 1, 3)).toMatchObject({x: 100, y: 100});
+    expect(poseOnPath(p, 0, 0.5, 3)).toMatchObject({ x: 10, y: 10 });
+    expect(poseOnPath(p, 0, 1, 3)).toMatchObject({ x: 100, y: 100 });
     expect(poseOnPath(p, 1, 0.5, 3)?.x).toBe(-1);
   });
   it('resets on a rewind or a roster change, without retaining a future path', () => {
     const r = new MotionRecorder();
-    r.capture(0, [1], [1]); r.capture(1, [2], [1]);
+    r.capture(0, [1], [1]);
+    r.capture(1, [2], [1]);
     r.capture(0, [1], [1]);
     expect(r.take().samples.length).toBe(0);
     r.capture(1, [1, 3], [1, 3]);
@@ -56,11 +57,11 @@ describe('motion paths between replay frames', () => {
     r.capture(0, new Float32Array([10]), new Float32Array([10]));
     r.capture(1, new Float32Array([11]), new Float32Array([10]));
     const packet = r.take();
-    const received = structuredClone(packet, {transfer: [packet.offsets.buffer, packet.samples.buffer]});
+    const received = structuredClone(packet, { transfer: [packet.offsets.buffer, packet.samples.buffer] });
     expect(packet.samples.byteLength).toBe(0);
     r.capture(2, new Float32Array([11]), new Float32Array([11]));
-    expect(poseOnPath(r.take(), 0, 1.5, 3)).toMatchObject({x: 11, y: 10.5});
-    expect(poseOnPath(received, 0, 0.5, 3)).toMatchObject({x: 10.5, y: 10});
+    expect(poseOnPath(r.take(), 0, 1.5, 3)).toMatchObject({ x: 11, y: 10.5 });
+    expect(poseOnPath(received, 0, 0.5, 3)).toMatchObject({ x: 10.5, y: 10 });
   });
   it('bounds crowd sampling cadence and can flush a final partial interval', () => {
     const r = new MotionRecorder(3);
