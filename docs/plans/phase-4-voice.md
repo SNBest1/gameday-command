@@ -67,7 +67,10 @@ The model only **proposes**. Names are confirmed against the map by the existing
 
 ## Skills used
 
-Filled in at step 0. Where a skill conflicts with this plan, the plan wins.
+Reviewed at step 0 with `find-skills`:
+
+- No phase-specific skill applies cleanly. The available AI SDK skills (`vercel/ai@ai-sdk`) assume the Vercel AI SDK package, which the plan forbids; `openai/skills@openai-docs` documents the HTTP API the plan already specifies exactly. Nothing was installed.
+- The plan's own OpenAI-compatible request shape, the browser `Web Speech` / `MediaRecorder` APIs and the existing repo tests are the working references. Where a general skill would suggest an SDK or provider-specific helper, the plan wins (no new npm dependencies).
 
 ## Streams and files
 
@@ -86,7 +89,7 @@ Run the waves in this order:
 
 ## Steps
 
-- [ ] **0. Skills and baseline.** As in earlier phases.
+- [x] **0. Skills and baseline.** As in earlier phases.
 
 ### Stream A: Server routes
 
