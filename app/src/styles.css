@@ -1871,7 +1871,7 @@ main {
   position: absolute;
   z-index: 2;
   right: 12px;
-  bottom: 12px;
+  bottom: 34px;
   display: flex;
   flex-direction: column;
   align-items: stretch;

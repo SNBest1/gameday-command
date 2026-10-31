@@ -35,6 +35,11 @@ export function cellToLngLat(geo: MapGeoref, width: number, cell: number): [numb
   return cellCentreLngLat(geo, width, x, y);
 }
 
+/** Metres in the simulation frame to [lon, lat], for dots, vehicles and officers. */
+export function metresToLngLat(geo: MapGeoref, width: number, xM: number, yM: number): [number, number] {
+  return cellCentreLngLat(geo, width, xM / geo.cellSizeM - 0.5, yM / geo.cellSizeM - 0.5);
+}
+
 /** A click's [lon, lat] to a cell index, or -1 when it is off the grid. */
 export function lngLatToCell(geo: MapGeoref, width: number, height: number, lon: number, lat: number): number {
   const radius = geo.radiusM > 0 ? geo.radiusM : (width * geo.cellSizeM) / 2;

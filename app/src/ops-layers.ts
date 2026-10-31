@@ -12,7 +12,7 @@ import { cellCentreLngLat, type MapGeoref } from '../../world/src/osm/georef.ts'
 import { coverage } from './coverage.ts';
 import { flowLevel, FLOW_RGB, standingDensity, type PoliceHotspot } from './congestion.ts';
 import { bandOf, HEAT_FLOOR, heatBands } from './heat.ts';
-import { mapBounds, type Bounds } from './ops-geo.ts';
+import { mapBounds, metresToLngLat } from './ops-geo.ts';
 import { BARRICADE_SYMBOL, COVERAGE_SYMBOLS, HOTSPOT_SYMBOLS, INCIDENT_SYMBOL, UNIT_SYMBOLS } from './ops-symbols.ts';
 import { STATE_RGB } from './people.ts';
 
@@ -104,7 +104,7 @@ export interface TextsProps {
 export interface DensityProps {
   id: string;
   image: ImageData;
-  bounds: Bounds;
+  bounds: [west: number, south: number, east: number, north: number];
   visible: boolean;
   pickable: boolean;
 }
@@ -117,9 +117,6 @@ const INCIDENT: Rgba = [...INCIDENT_SYMBOL.rgb, 235];
 const FAN_ALPHA = 220;
 
 const rgba = (rgb: [number, number, number], alpha = 255): Rgba => [rgb[0], rgb[1], rgb[2], alpha];
-
-const metresToLngLat = (geo: MapGeoref, width: number, x: number, y: number): LngLat =>
-  cellCentreLngLat(geo, width, x / geo.cellSizeM - 0.5, y / geo.cellSizeM - 0.5);
 
 const cellToLngLat = (geo: MapGeoref, width: number, cell: number): LngLat =>
   cellCentreLngLat(geo, width, cell % width, Math.floor(cell / width));
@@ -168,7 +165,10 @@ export function densityProps(
   return {
     id: 'ops-density',
     image,
-    bounds: mapBounds(geo, map.width, map.height),
+    bounds: (() => {
+      const [[west, south], [east, north]] = mapBounds(geo, map.width, map.height);
+      return [west, south, east, north];
+    })(),
     visible: true,
     pickable: false,
   };

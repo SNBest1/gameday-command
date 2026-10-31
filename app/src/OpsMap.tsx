@@ -25,7 +25,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { getMapGeo } from './api.ts';
 import type { CrowdViewProps } from './CrowdView.tsx';
 import { basemapImage } from './ops-basemap.ts';
-import { flatGeoref, lngLatToCell, mapBounds } from './ops-geo.ts';
+import { flatGeoref, lngLatToCell, mapBounds, metresToLngLat } from './ops-geo.ts';
 import {
   opsLayerProps,
   type FanRow,
@@ -200,12 +200,7 @@ export function OpsMap(props: CrowdViewProps) {
     const x = frame.x[props.selected];
     const y = frame.y[props.selected];
     if (x === undefined || y === undefined || x < 0 || y < 0) return;
-    const centre = cellCentreLngLat(
-      georefRef.current,
-      bundle.width,
-      x / georefRef.current.cellSizeM - 0.5,
-      y / georefRef.current.cellSizeM - 0.5,
-    );
+    const centre = metresToLngLat(georefRef.current, bundle.width, x, y);
     map.easeTo({ center: centre, zoom: Math.max(map.getZoom(), 17.5), duration: 400 });
   };
 
@@ -289,10 +284,14 @@ export function OpsMap(props: CrowdViewProps) {
     const setBasemap = () => {
       if (!map) return;
       const firstSymbol = map.getStyle()?.layers?.find((layer) => layer.type === 'symbol')?.id;
+      const [[west, south], [east, north]] = mapBounds(georefRef.current, bundle.width, bundle.height);
       basemapRef.current = new BitmapLayer({
         id: 'ops-basemap',
         image: basemapImage(bundle, theme),
-        bounds: mapBounds(georefRef.current, bundle.width, bundle.height),
+        bounds: [west, south, east, north],
+        // Online, the grid is a quiet tint under the real streets and labels;
+        // offline it is the whole base map.
+        opacity: fallback ? 1 : 0.22,
         pickable: false,
         ...(firstSymbol ? { beforeId: firstSymbol } : {}),
       } as unknown as BitmapLayerProps);
@@ -344,12 +343,7 @@ export function OpsMap(props: CrowdViewProps) {
       (window as unknown as { gamedayMap?: { lookAt(xM: number, yM: number, zoom: number): void } }).gamedayMap = {
         lookAt: (xM, yM, zoom) => {
           map?.jumpTo({
-            center: cellCentreLngLat(
-              georefRef.current,
-              bundle.width,
-              xM / georefRef.current.cellSizeM - 0.5,
-              yM / georefRef.current.cellSizeM - 0.5,
-            ),
+            center: metresToLngLat(georefRef.current, bundle.width, xM, yM),
             zoom,
           });
         },
