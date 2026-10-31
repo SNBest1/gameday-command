@@ -8,7 +8,6 @@ import {
   type MapBundle,
   type Scorecard,
   type SimConfig,
-  type TickFrame,
   type WorkerIn,
   type WorkerOut,
 } from '../../contracts.ts';
@@ -130,12 +129,13 @@ async function parses(init: Init): Promise<void> {
   const inProcess = await runInProcess(init);
   const viaServer = await runServer(init);
   expect(viaServer.scorecard).toEqual(inProcess.scorecard);
+  // The socket path must not drop, duplicate or reorder frames.
+  expect(viaServer.frames).toHaveLength(inProcess.frames.length);
+  expect(viaServer.frames.map((f) => f.frame.t)).toEqual(inProcess.frames.map((f) => f.frame.t));
   const a = inProcess.frames[inProcess.frames.length - 1]!;
   const b = viaServer.frames[viaServer.frames.length - 1]!;
   expect(b.frame).toEqual(a.frame);
   expect(b.density).toEqual(a.density);
-  const frame = (f: Extract<WorkerOut, { type: 'frame' }>): TickFrame => f.frame;
-  expect(frame(b)).toEqual(frame(a));
 }
 
 describe('in-process and server runs', () => {
