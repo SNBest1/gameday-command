@@ -117,7 +117,7 @@ Run the waves in this order:
 
 ### Stream C: Server runs
 
-- [ ] **C1.** Add `@hono/node-ws` (exact version) to `server/package.json`. Create `server/src/runs.ts`, a run registry:
+- [x] **C1.** Add `@hono/node-ws` (exact version) to `server/package.json`. Create `server/src/runs.ts`, a run registry:
   - `POST /api/runs` takes the same `init` payload the app sends a worker today. It starts a `worker-node.ts` worker and returns `{ id }`.
   - `GET /api/runs/:id/ws` upgrades to a WebSocket and sends `hello`. It then forwards every worker message to every connected socket (encoded with `wire.ts`) and every socket message to the worker (decoded with `wire.ts`).
   - `DELETE /api/runs/:id` terminates the worker.
