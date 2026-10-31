@@ -626,6 +626,11 @@ main {
   height: 0;
   min-height: 520px;
 }
+.canvas-wrap.ops {
+  flex: 1 0 auto;
+  height: 0;
+  min-height: 520px;
+}
 .canvas-wrap.plan .maps-stack {
   width: min(100%, calc(100vh - 250px));
   margin: 0 auto;
@@ -1847,6 +1852,47 @@ main {
 .crowd-tools button:hover:not(:disabled) {
   border-color: var(--well-ink);
 }
+.ops-map-wrap {
+  position: absolute;
+  inset: 0;
+}
+.ops-map {
+  position: absolute;
+  inset: 0;
+}
+.canvas-wrap canvas {
+  display: block;
+}
+/* Keep MapLibre's own chrome out of the police UI; attribution stays visible. */
+.ops-map .maplibregl-ctrl-attrib {
+  font-size: 12px;
+}
+.ops-tools {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.ops-tools button {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 9px;
+  border-radius: var(--radius);
+  border: 1px solid var(--well-line);
+  background: var(--well-chip);
+  color: var(--well-ink);
+  font-size: 13px;
+}
+.ops-tools button:hover:not(:disabled) {
+  border-color: var(--well-ink);
+}
+.ops-tools button:disabled {
+  opacity: 0.5;
+}
 .crowd-toggles {
   top: 56px;
   left: 12px;
@@ -2534,6 +2580,10 @@ main {
     overflow: visible;
   }
   .canvas-wrap.close {
+    flex: none;
+    height: 70vh;
+  }
+  .canvas-wrap.ops {
     flex: none;
     height: 70vh;
   }

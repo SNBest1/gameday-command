@@ -38,13 +38,13 @@ export function useCommandBarProps({
   runs: RunHandle[];
   scrub: number | null;
   started: boolean;
-  view: 'close' | 'plan' | 'compare';
+  view: 'ops' | 'close' | 'plan' | 'compare';
   allDone: boolean;
   speed: number;
   police: PoliceHotspot[][];
   railTabs: readonly { id: RailTabId; label: string }[];
   setCloseRun: (run: number) => void;
-  setView: (view: 'close' | 'plan' | 'compare') => void;
+  setView: (view: 'ops' | 'close' | 'plan' | 'compare') => void;
   setPlanStates: (updater: (prev: PlanState[]) => PlanState[]) => void;
   setPlansDirty: (dirty: boolean) => void;
   setPlaying: (playing: boolean) => void;
@@ -128,7 +128,7 @@ export function useCommandBarProps({
         case 'view':
           setView(c.view);
           return c.view === 'close'
-            ? 'Showing the 3D view.'
+            ? 'Showing the close-up.'
             : c.view === 'plan'
               ? 'Showing the 2D plan.'
               : 'Showing all three plans side by side.';
