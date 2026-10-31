@@ -10,9 +10,10 @@ import {
 import type { GateStat, OfficerStatus, SceneInfo } from '../../engine/src/edits.ts';
 import { cellCentreLngLat, type MapGeoref } from '../../world/src/osm/georef.ts';
 import { coverage } from './coverage.ts';
-import { flowLevel, FLOW_RGB, HOTSPOT_COLOUR, standingDensity, type PoliceHotspot } from './congestion.ts';
+import { flowLevel, FLOW_RGB, standingDensity, type PoliceHotspot } from './congestion.ts';
 import { bandOf, HEAT_FLOOR, heatBands } from './heat.ts';
 import { mapBounds, type Bounds } from './ops-geo.ts';
+import { BARRICADE_SYMBOL, COVERAGE_SYMBOLS, HOTSPOT_SYMBOLS, INCIDENT_SYMBOL, UNIT_SYMBOLS } from './ops-symbols.ts';
 import { STATE_RGB } from './people.ts';
 
 /**
@@ -108,18 +109,11 @@ export interface DensityProps {
   pickable: boolean;
 }
 
-const OFFICER_RGB: Record<OfficerStatus['state'], [number, number, number]> = {
-  standby: [120, 140, 160],
-  en_route: [230, 150, 20],
-  on_scene: [40, 180, 110],
-  patrolling: [60, 170, 210],
-};
-
-const BARRIER: Rgba = [220, 50, 60, 150];
-const BARRIER_LINE: Rgba = [220, 50, 60, 235];
-const COVER: Rgba = [80, 140, 200, 55];
-const REACH: Rgba = [80, 140, 200, 28];
-const INCIDENT: Rgba = [255, 45, 111, 235];
+const BARRIER: Rgba = [...BARRICADE_SYMBOL.rgb, 150];
+const BARRIER_LINE: Rgba = [...BARRICADE_SYMBOL.rgb, 235];
+const COVER: Rgba = [...COVERAGE_SYMBOLS.covered.rgb, 55];
+const REACH: Rgba = [...COVERAGE_SYMBOLS.reachable.rgb, 28];
+const INCIDENT: Rgba = [...INCIDENT_SYMBOL.rgb, 235];
 const FAN_ALPHA = 220;
 
 const rgba = (rgb: [number, number, number], alpha = 255): Rgba => [rgb[0], rgb[1], rgb[2], alpha];
@@ -305,7 +299,7 @@ export function officerRows(
     unit: officer.unit,
     state: officer.state,
     position: metresToLngLat(geo, map.width, officer.x, officer.y),
-    color: rgba(OFFICER_RGB[officer.state], officer.id === selected ? 255 : 235),
+    color: rgba(UNIT_SYMBOLS[officer.state].rgb, officer.id === selected ? 255 : 235),
   }));
 }
 
@@ -351,7 +345,7 @@ export function officerRouteRows(map: MapBundle, geo: MapGeoref, scene: SceneInf
     if (!cells) continue;
     const points = cells.map((cell) => cellToLngLat(geo, map.width, cell));
     for (const dash of dashPolyline(points)) {
-      rows.push({ path: dash, color: rgba(OFFICER_RGB[officer.state], 210), width: 2 });
+      rows.push({ path: dash, color: rgba(UNIT_SYMBOLS[officer.state].rgb, 210), width: 2 });
     }
   }
   return rows;
@@ -387,6 +381,37 @@ export function routesProps(map: MapBundle, geo: MapGeoref, scene: SceneInfo | n
     getColor: (d) => d.color,
     getWidth: (d) => d.width,
     widthUnits: 'pixels',
+    visible: true,
+    pickable: false,
+  };
+}
+
+export interface UnitLabelRow extends TextDatum {
+  id: string;
+  code: string;
+}
+
+export function unitLabelRows(map: MapBundle, geo: MapGeoref, scene: SceneInfo | null): UnitLabelRow[] {
+  if (!scene) return [];
+  return scene.officers.map((officer) => ({
+    id: officer.id,
+    code: UNIT_SYMBOLS[officer.state].code,
+    position: metresToLngLat(geo, map.width, officer.x, officer.y),
+    text: UNIT_SYMBOLS[officer.state].code,
+  }));
+}
+
+export function unitLabelsProps(map: MapBundle, geo: MapGeoref, scene: SceneInfo | null): TextsProps {
+  return {
+    id: 'ops-unit-labels',
+    data: unitLabelRows(map, geo, scene),
+    getPosition: (d) => d.position,
+    getText: (d) => d.text,
+    getColor: [255, 255, 255, 255],
+    getSize: 10,
+    sizeUnits: 'pixels',
+    getHaloColor: [0, 0, 0, 180],
+    getHaloWidth: 1,
     visible: true,
     pickable: false,
   };
@@ -562,13 +587,12 @@ export interface HotspotRow extends PointDatum {
 
 export function hotspotRows(geo: MapGeoref, width: number, spots: PoliceHotspot[]): HotspotRow[] {
   return spots.map((spot) => {
-    const rgb = parseInt(HOTSPOT_COLOUR[spot.level].slice(1), 16);
     const areaCells = (spot.x1 - spot.x0 + 1) * (spot.y1 - spot.y0 + 1);
     return {
       rank: spot.rank,
       level: spot.level,
       position: metresToLngLat(geo, width, spot.cx, spot.cy),
-      color: [(rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, 210] as Rgba,
+      color: [...HOTSPOT_SYMBOLS[spot.level].rgb, 210] as Rgba,
       radiusM: Math.max(CELL_SIZE_M, Math.sqrt((areaCells * CELL_SIZE_M * CELL_SIZE_M) / Math.PI)),
     };
   });
@@ -655,6 +679,7 @@ export interface OpsLayerProps {
   fans: ScatterProps;
   vehicles: ScatterProps;
   officers: ScatterProps;
+  unitLabels: TextsProps;
   routes: PathsProps;
   closures: PolygonsProps;
   gates: TextsProps;
@@ -711,6 +736,7 @@ export function opsLayerProps(input: OpsLayersInput): OpsLayerProps {
     fans: fansProps(map, geo, frame, zoom, selected),
     vehicles: vehiclesProps(map, geo, frame, showVehicles, showFlow, vehicleFocus, selectedVehicle),
     officers: officersProps(map, geo, scene, selectedOfficer),
+    unitLabels: unitLabelsProps(map, geo, scene),
     routes: routesProps(map, geo, scene),
     closures: closuresProps(map, geo, scene),
     gates: gatesProps(map, geo, scene, zoom),

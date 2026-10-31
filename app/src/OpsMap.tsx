@@ -80,6 +80,12 @@ function makeLayers(specs: OpsLayerProps): Layer[] {
     new PolygonLayer(specs.incident as unknown as PolygonLayerProps<PolygonDatum>),
     new ScatterplotLayer(specs.officers as unknown as ScatterplotLayerProps<PointDatum>),
     new TextLayer({
+      ...specs.unitLabels,
+      fontFamily: 'system-ui, sans-serif',
+      getTextAnchor: 'middle',
+      getAlignmentBaseline: 'center',
+    } as unknown as TextLayerProps<TextDatum>),
+    new TextLayer({
       ...specs.gates,
       fontFamily: 'system-ui, sans-serif',
       getTextAnchor: 'middle',
