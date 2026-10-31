@@ -134,7 +134,7 @@ Run the waves in this order:
   - `workerSource()` wraps today's `new Worker(new URL('../../engine/src/worker.ts', import.meta.url), { type: 'module' })`; keep that exact line.
   - `serverSource(init)` calls `POST /api/runs`, then opens the WebSocket, using `wire.ts`.
 - [x] **D2.** In `app/src/useRun.ts`, replace direct use of the `Worker` with a `RunSource`. Pick `serverSource` only when the page URL has `engine=server`; otherwise use `workerSource`. Change nothing else about how `useRun` stores frames and records.
-- [ ] **D3.** `app/src/run-source.test.ts`: `serverSource` against a fake fetch and a fake WebSocket decodes a binary frame into the same shape a worker posts.
+- [x] **D3.** `app/src/run-source.test.ts`: `serverSource` against a fake fetch and a fake WebSocket decodes a binary frame into the same shape a worker posts.
   Verify: `npm test`, then a browser check. Start `npm run serve` and `npm run dev`, and open http://localhost:5173/?autorun=1&engine=server. All three runs play, the rail tabs work, the console is clean, and `GET /api/health` still answers. Then open the same URL without `engine=server` and check that it behaves as before.
 
 ### Stream E: Parity
