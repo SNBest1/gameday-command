@@ -382,17 +382,19 @@ switch, and `?view=close|plan|compare` still selects them directly.
   between cells, metres and lon/lat; `metresToLngLat` is the one to use for dots,
   vehicles and officers.
 - **Offline base map.** `app/src/ops-basemap.ts` paints one pixel per cell in
-  muted light and dark palettes. It is always a deck.gl `BitmapLayer` under the
-  first symbol layer, at 22% opacity while tiles load. If there is no georef,
-  `VITE_MAP_STYLE` is empty, the browser is offline, or the style does not load
-  within 5 s, MapLibre switches to a blank style and the same image is drawn at
-  full opacity: the map needs nothing external.
+  muted light and dark palettes. It is a deck.gl `BitmapLayer` at full opacity
+  only when there is no georef, `VITE_MAP_STYLE` is empty, the browser is
+  offline, or the style does not load within 5 s; then MapLibre switches to a
+  blank style and the map needs nothing external. Once a tile style loads, the
+  grid layer is removed so no tinted square sits over the real map.
 - **Tiles and PMTiles.** `VITE_MAP_STYLE` defaults to keyless OpenFreeMap
-  Positron and is read at build time. A deployment can point it at any MapLibre
-  style; for an on-premises install, a self-hosted style with a
-  `pmtiles://https://host/basemap.pmtiles` source works because `OpsMap`
-  registers the `pmtiles` protocol and removes it on unmount. `.env.example`
-  documents both forms.
+  Positron and is read at build time. `VITE_MAP_STYLE_DARK` is optional: when
+  the theme switches to dark and it is set, `OpsMap` calls `map.setStyle` with
+  it and leaves the deck.gl layers in place; otherwise the light style stays. A
+  deployment can point either at any MapLibre style; for an on-premises install,
+  a self-hosted style with a `pmtiles://https://host/basemap.pmtiles` source
+  works because `OpsMap` registers the `pmtiles` protocol and removes it on
+  unmount. `.env.example` documents both forms.
 - **One WebGL context.** MapLibre owns the context and deck.gl shares it through
   `MapboxOverlay({ interleaved: true })`. `MapWorkspace` mounts exactly one of
   `OpsMap`, `CrowdView` or `ComparisonMaps`.
