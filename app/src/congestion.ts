@@ -106,8 +106,8 @@ const STOPPED_MIN = 2;
 
 /**
  * Cells a pedestrian can be on. The engine's flow field treats every cell that
- * is not `blocked` as walkable (`engine/src/flowfield.ts`, `passable()`), so a
- * dot may stand on `road`, `parking`, `concourse`, `stands` and `shelter` cells.
+ * is not `blocked` as walkable (its `passable()`), so a dot may stand on `road`,
+ * `parking`, `concourse`, `stands` and `shelter` cells.
  * Density on a `blocked` cell is not people — nothing can stand inside a wall —
  * so it is an artefact and is not counted.
  */
@@ -116,7 +116,7 @@ const pedestrianCell = (kind: CellKind) => kind !== 'blocked';
 /**
  * Cells a vehicle can be on: the road network and the parking lots.
  *
- * The engine's road network (`engine/src/traffic.ts`) also accepts walk cells
+ * The engine's traffic network also accepts walk cells
  * within 3 cells of a lot as a *driveway*, because OSM rarely maps the stub into
  * a lot, and it lets an emergency vehicle drive the plazas and the concourse
  * ring. Both are left out here on purpose: a car creeping down a driveway is
