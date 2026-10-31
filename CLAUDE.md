@@ -397,6 +397,12 @@ switch, and `?view=close|plan|compare` still selects them directly.
   self-hosted style with a `pmtiles://https://host/basemap.pmtiles` source works
   because `OpsMap` registers the `pmtiles` protocol and removes it on unmount.
   `.env.example` documents both forms.
+- **Satellite.** The **Satellite** button in the map's tools swaps the base
+  style for a raster imagery source (`VITE_SATELLITE_TILES`, default Esri World
+  Imagery, keyless for development but check its terms before operational use;
+  empty hides the button). It appears only for a georeferenced map, is
+  remembered as `gd-basemap`, ignores the light/dark theme, and draws map text
+  in the dark-theme look (light text, dark outline) so labels read over imagery.
 - **One WebGL context.** MapLibre owns the context and deck.gl shares it through
   `MapboxOverlay({ interleaved: true })`. `MapWorkspace` mounts exactly one of
   `OpsMap`, `CrowdView` or `ComparisonMaps`.
