@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MapBundle } from '../../contracts.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
-import { fromToolCall, voiceSystemPrompt, voiceTools } from './voice-tools.ts';
+import { fromToolCall, safeFromToolCall, voiceSystemPrompt, voiceTools } from './voice-tools.ts';
 
 // The test map, plus the kind of names a real stadium has (mirrors voice-commands.test).
 const base = makeTestMap();
@@ -72,6 +72,15 @@ describe('voice tool schema', () => {
     expect(fromToolCall({ name: 'none', arguments: {} }, map)).toBeNull();
     expect(fromToolCall({ name: 'close', arguments: {} }, map)).toBeNull();
     expect(fromToolCall({ name: 'view', arguments: { view: 'satellite' } }, map)).toBeNull();
+  });
+
+  it('falls back instead of throwing on a malformed call', () => {
+    const args = Object.defineProperty({}, 'target', {
+      get() {
+        throw new Error('bad arguments');
+      },
+    });
+    expect(safeFromToolCall({ name: 'close', arguments: args }, map)).toBeNull();
   });
 
   it('keeps the system prompt under 8,000 characters and names the map', () => {
