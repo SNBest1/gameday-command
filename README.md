@@ -4,6 +4,18 @@ A live police operations tool for game day at Ohio Stadium. It simulates the cro
 
 The commander always makes the call. The tool shows tradeoffs; it never tells police what to do. Fan behavior is an **assumption, not a forecast**, and the app says so on screen.
 
+## The 2026 rebuild
+
+The hackathon demo is being rebuilt into a tool for real police use. `docs/roadmap.md` tracks the phases and `docs/plans/` holds each plan. Merged so far:
+
+- **An operations map is the default view.** A real street map (MapLibre GL with deck.gl layers sharing one WebGL context) with the crowd's density, fans, vehicles, officers and their routes, closures, gates, hotspots and the incident drawn on top. It has light and dark styles (keyless OpenFreeMap by default), a **Satellite** button for aerial imagery, and falls back to a map built from the stadium's own cells when there is no internet. On-premises installs can point it at a self-hosted PMTiles style. The close-up and side-by-side views are still one click away. See "The operations map" in `CLAUDE.md`.
+- **The engine can run on the server.** `POST /api/runs` starts the same engine in a Node worker and streams it over a WebSocket, so any number of screens can watch one authoritative run. Open the app with `?engine=server` to use it; the browser worker stays the default. A parity test proves the two give byte-identical frames and scorecards. Protocol: `docs/wire-protocol.md`.
+- **The crowd model is checked against real experiments.** `npm run validate` compares walking speed against density and flow through a bottleneck with published Jülich pedestrian data and writes `validation/report.md`. It found that walkers in open space move about half as fast as measured (0.5 against 1.1 m/s); the fix changes every scorecard and is a team decision.
+- **A voice assistant, not just speech-to-text.** Speech can go to any OpenAI-compatible speech-to-text server, local or hosted, and an LLM with tool calling turns free phrasing into the existing typed orders. The plain-code parser takes over whenever either is missing or fails, nothing runs without the commander's yes, and every interpreted command is logged for the after-action report. Setup: `docs/voice-setup.md`.
+- **Engineering basics.** Biome lint and format, CI on Ubuntu, Windows and macOS, a single engine entry point for the app, and a split `App.tsx`.
+
+**There is no authentication yet.** The API, including the voice log of police transcripts, is open to anyone who can reach it. Keep it on a trusted network until the authentication phase lands.
+
 ## Forecast layer (in progress)
 
 `engine/src/forecast.ts` now holds the pure ensemble: normalised weights, Gaussian
@@ -42,13 +54,14 @@ Five npm workspaces plus one frozen contract at the root. `contracts.ts` holds e
       │  TickFrame + DensityGrid (transferred typed arrays)             │
       ▼                                                                │
 ┌────────────────────────────────────────────────┐                      │
-│  /app   Vite + React + PixiJS 8                │◄──── /api proxy ─────┘
-│  3 runs side by side, heatmap, scorecards      │
+│  /app   Vite + React + MapLibre/deck.gl + Pixi │◄──── /api proxy ─────┘
+│  ops map, close-up, 3 runs, scorecards         │
 └────────────────────────────────────────────────┘
 ```
 
 Why it is shaped this way:
 
+- **The same worker runs anywhere.** `engine/src/worker-core.ts` is the engine behind a tiny host interface: a browser Web Worker, or a Node worker the server streams over a WebSocket (`?engine=server`).
 - **One worker per plan.** Three plans must run on the identical crowd. Isolated workers with the same seed is the cheapest way to guarantee that; nothing is shared, so nothing can leak between runs.
 - **No AI in movement.** Crowd physics is plain code: flow fields on a 2 m grid, walking speed falling as cell density rises. AI answers *decisions only*, at decision points.
 - **Decisions are grouped, not per-dot.** Dots that face the same choice in the same rounded context share a `decisionKey`, so one model call answers thousands of dots. Rounding is what makes that possible.
@@ -82,7 +95,7 @@ uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
 ```
 
 Everything above works with no configuration. `.env.example` documents all
-eighteen environment variables the code reads, each with its default and why you
+34 environment variables the code reads, each with its default and why you
 might change it. Copy it to `.env` only if you need to move a port, a model URL
 or an OSM service; the server and the scripts that use these variables load that
 file automatically through Node's `--env-file-if-exists`, and run unchanged when
@@ -182,7 +195,7 @@ The map is now zoomable (scroll, drag, double-click, or Fit / Stadium / Incident
 
 ### Congestion, police hotspots and the 3D stadium
 
-- **Three views:** a 3D close-up of one plan, a large **2D plan** of one plan, and all three side by side.
+- **Four views:** the operations map (the default, see "The 2026 rebuild" above), a 3D close-up of one plan, a large **2D plan** of one plan, and all three side by side.
 - **Traffic flow:** roads under moving vehicles are coloured green (moving), amber (slow) or red (jammed), in 2D and 3D.
 - **Most congested right now:** a ranked list per plan, merging packed standing crowds and stopped traffic, with numbered pins on the map and a button to fly to each. Seated fans are left out.
 - **The Horseshoe in 3D:** tiered stands around a field with yard lines and end zones, the crowd sitting on the tiers, street centre lines and names from OpenStreetMap.
@@ -199,9 +212,9 @@ The map is now zoomable (scroll, drag, double-click, or Fit / Stadium / Incident
 
 ### Spoken orders, the plan scoreboard and shortcuts
 
-- **Orders in plain words.** The box above the map takes typed or spoken orders: "close gate 3 in 2 minutes", "send 4 officers to gate 2", "redirect gate 1 to gate 5", "PA: use the west gates", "close Woody Hayes Drive". Names are matched against the map's own gates, streets and places in plain code, never a model, and an order that names nothing is refused with a "did you mean". Nothing happens until the commander confirms, either as a live order on the plan on the map or as a step added to a plan.
+- **Orders in plain words.** The box above the map takes typed or spoken orders: "close gate 3 in 2 minutes", "send 4 officers to gate 2", "redirect gate 1 to gate 5", "PA: use the west gates", "close Woody Hayes Drive". Names are matched against the map's own gates, streets and places in plain code, and an order that names nothing is refused with a "did you mean". When an intent LLM is configured, it may propose the order from looser wording first, but the names still resolve through the same code and any failure falls back to the parser. Nothing happens until the commander confirms, either as a live order on the plan on the map or as a step added to a plan.
 - **Hands-free.** Hold Space (or click the mic) and speak. A spoken order is read back with "say yes to confirm", and the mic opens again for the answer. The same box runs the app ("run the plans", "pause", "show 2D", "shift to plan B"), answers questions from the plan's own numbers ("what's the worst gate?", "how many officers are free?", "status") and undoes ("undo that").
-- **Where the audio goes.** The mic uses the browser's own speech recognition: Chrome sends the audio to Google's speech service, Safari uses Apple's, and Brave blocks it (the app says so). Any dictation tool that types into the box (macOS dictation, Handy) also works and keeps audio on the laptop. Only `app/src/speech.ts` would change for a local recogniser.
+- **Where the audio goes.** With `STT_URL` set, the app records a short clip and the API server forwards it to that speech-to-text server; no audio is stored. Otherwise the mic uses the browser's own speech recognition: Chrome sends the audio to Google's speech service, Safari uses Apple's, and Brave blocks it (the app says so). Any dictation tool that types into the box (macOS dictation, Handy) also works and keeps audio on the laptop. Only `app/src/speech.ts` would change for a local recogniser.
 - **Plan scoreboard.** The Plans tab opens with A, B and C side by side: who is in the zone and dangerously packed while they run, then time to clear, crush-risk minutes and officer time, the best of each marked.
 - **Keyboard.** Space (hold) to talk, `/` to type, `1` `2` `3` to put a plan on the map, `P` to run or pause, `?` for the list.
 - **Decision cache in every weather.** Weather is part of each fan decision's key, so `WARM_WEATHER=rain-at-kickoff npm run warm` (or `thunderstorm`) fills the answers a rainy or stormy demo needs; `WARM_SETTLE_S` waits longer for a Kev short of memory.
@@ -224,6 +237,6 @@ The **Orders** tab drives the plan on the map while it runs. Orders go to that p
 
 ## Rules this project holds to
 
-- No Claude API and no paid API. Models run locally: Kev via MLX, the briefing via Apple's on-device `fm serve`.
+- Every model is optional and replaceable. It runs fully on premises (Kev via MLX, the briefing via Apple's on-device `fm serve`, any local speech-to-text and LLM server), and hosted services can be configured instead. With none of them, every decision is a fallback and voice uses the plain-code parser.
 - No faces, no identities, ever. Future sensor input is people counts per zone only.
 - Fan behavior is labeled on screen as an assumption, not a forecast.
