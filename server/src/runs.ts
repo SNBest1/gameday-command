@@ -43,6 +43,11 @@ const runs = new Map<string, Run>();
 const RUN_IDLE_MS = 10 * 60 * 1000;
 let inject: ((server: unknown) => void) | null = null;
 
+function runsMax(): number {
+  const value = Number(process.env.RUNS_MAX ?? 12);
+  return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 12;
+}
+
 function broadcast(run: Run, message: string | Uint8Array<ArrayBuffer>, type: string): void {
   if (run.sockets.size > 0) {
     for (const socket of run.sockets) socket.send(message);
@@ -73,7 +78,13 @@ export function addRunRoutes(app: Hono, decisionBaseUrl: string): void {
   inject = injectWebSocket as (server: unknown) => void;
 
   app.post('/api/runs', async (c) => {
-    const init = await c.req.json<WorkerIn>();
+    if (runs.size >= runsMax()) return c.json({ error: 'too many runs' }, 503);
+    let init: WorkerIn;
+    try {
+      init = await c.req.json<WorkerIn>();
+    } catch {
+      return c.json({ error: 'invalid JSON' }, 400);
+    }
     if (init.type !== 'init') return c.json({ error: 'POST /api/runs needs an init message' }, 400);
     const id = randomUUID();
     const worker = new Worker(new URL('../../engine/src/worker-node.ts', import.meta.url));
