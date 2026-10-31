@@ -81,7 +81,7 @@ Run the waves in this order:
 
 ### Stream A: Worker core
 
-- [ ] **A1.** Split `engine/src/worker.ts` into a host-independent core and a thin browser entry.
+- [x] **A1.** Split `engine/src/worker.ts` into a host-independent core and a thin browser entry.
   - Create `engine/src/worker-core.ts`. Move into it every line of `worker.ts` except the `host` global and the `host.onmessage = ...` assignment. Export `startWorker(host: WorkerHost): void`, with:
     ```ts
     export interface WorkerHost {
@@ -93,7 +93,7 @@ Run the waves in this order:
   - Keep `setTimeout`-based pacing as it is.
 
   Verify: `npm run typecheck && npm test && npm run build`; then open `npm run dev` with `?autorun=1` and check that runs play as before.
-- [ ] **A2.** Create `engine/src/worker-node.ts`: a `WorkerHost` over `parentPort` from `node:worker_threads` (`parentPort.postMessage(msg, transfer)` and `parentPort.on('message', ...)`), then `startWorker(host)`.
+- [x] **A2.** Create `engine/src/worker-node.ts`: a `WorkerHost` over `parentPort` from `node:worker_threads` (`parentPort.postMessage(msg, transfer)` and `parentPort.on('message', ...)`), then `startWorker(host)`.
 - [ ] **A3.** Create `engine/src/worker-core.test.ts`:
   - Start `worker-node.ts` with `new Worker(new URL('./worker-node.ts', import.meta.url))`.
   - Send `init` for the test map (`test-3gate`; copy how `app/src/bench.ts` builds its `init`).
