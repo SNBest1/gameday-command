@@ -161,7 +161,7 @@ Run the waves in this order:
 
 ### Stream C: Recording
 
-- [ ] **C1.** `app/src/speech-recorded.ts`: `listenRecorded(onWords, onEnd): Listening | null`, with the same signature and `Listening` interface as `listen` in `speech.ts`.
+- [x] **C1.** `app/src/speech-recorded.ts`: `listenRecorded(onWords, onEnd): Listening | null`, with the same signature and `Listening` interface as `listen` in `speech.ts`.
   - Records with `MediaRecorder` (prefer `audio/webm;codecs=opus`, else `audio/ogg`, else whatever the browser supports).
   - `stop()` ends the recording, posts the blob to `/api/speech/transcribe`, then calls `onWords(text, true)` and `onEnd(null)`, or `onEnd(<sentence>)` on failure.
   - Stops by itself after 12 s.
