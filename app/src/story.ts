@@ -86,8 +86,8 @@ export function liveStats(
 }
 
 /**
- * Best plan first. Moving the crush out of the incident zone is not a win:
- * weighted danger near the incident plus spillover is the first criterion.
+ * Lowest crush risk first. Moving the crush out of the incident zone is not a
+ * win: weighted danger near the incident plus spillover is the first criterion.
  * Clearing time breaks ties, then a plan that never clears loses.
  */
 export function rankPlans(cards: (Scorecard | null)[]): number[] {

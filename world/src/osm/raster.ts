@@ -13,7 +13,7 @@ export interface Projection {
   xyOf(point: LatLon): { x: number; y: number };
 }
 
-const METERS_PER_DEGREE_LAT = 111_320;
+export const METERS_PER_DEGREE_LAT = 111_320;
 
 /**
  * Local equirectangular projection about the map centre. Over 1.6 km the error

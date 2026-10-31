@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  // One .env at the repo root holds the server's and the app's variables.
+  envDir: '..',
   // The engine worker and contracts.ts live above this package in the workspace.
   server: {
     port: 5173,

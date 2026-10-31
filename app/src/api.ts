@@ -9,6 +9,7 @@ import type {
   ResponsePlan,
   Scorecard,
 } from '../../contracts.ts';
+import type { MapGeoref } from '../../world/src/osm/georef.ts';
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path);
@@ -17,6 +18,15 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 export const getMap = (id: Id) => getJson<MapBundle>(`/api/maps/${id}`);
+export async function getMapGeo(id: Id): Promise<MapGeoref | null> {
+  try {
+    const res = await fetch(`/api/maps/${id}/geo`);
+    if (!res.ok) return null;
+    return (await res.json()) as MapGeoref;
+  } catch {
+    return null;
+  }
+}
 export const getDecisionDefaults = () => getJson<DecisionDefaults>('/api/decision-defaults');
 export const getPlans = (incident: IncidentKind) => getJson<ResponsePlan[]>(`/api/plans?incident=${incident}`);
 
