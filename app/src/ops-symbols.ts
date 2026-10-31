@@ -1,4 +1,4 @@
-import type { OfficerStatus } from '../../engine/src/edits.ts';
+import type { OfficerStatus } from '../../engine/src/index.ts';
 import { HOTSPOT_COLOUR, type HotspotLevel } from './congestion.ts';
 
 /**
@@ -46,7 +46,12 @@ export const HOTSPOT_SYMBOLS: Record<HotspotLevel, MapSymbol> = {
 };
 
 export const COVERAGE_SYMBOLS = {
-  covered: { code: 'C', label: 'Inside officer reach', shape: 'square' as const, rgb: [80, 140, 200] as [number, number, number] },
+  covered: {
+    code: 'C',
+    label: 'Inside officer reach',
+    shape: 'square' as const,
+    rgb: [80, 140, 200] as [number, number, number],
+  },
   reachable: {
     code: 'R',
     label: 'Reachable in a walk',

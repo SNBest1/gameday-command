@@ -13,3 +13,5 @@ export { decode, encode } from './wire.ts';
 export { MotionRecorder, poseOnPath } from './motion.ts';
 export { roadJunctions } from './junctions.ts';
 export { motorwayCells } from './flowfield.ts';
+export { Simulation } from './sim.ts';
+export { FlowMovement } from './movement-flow.ts';

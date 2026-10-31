@@ -7,7 +7,7 @@ import {
   type TickFrame,
   type VehicleKind,
 } from '../../contracts.ts';
-import type { GateStat, OfficerStatus, SceneInfo } from '../../engine/src/edits.ts';
+import type { GateStat, OfficerStatus, SceneInfo } from '../../engine/src/index.ts';
 import { cellCentreLngLat, type MapGeoref } from '../../world/src/osm/georef.ts';
 import { coverage } from './coverage.ts';
 import { flowLevel, FLOW_RGB, standingDensity, type PoliceHotspot } from './congestion.ts';
@@ -408,7 +408,7 @@ export function unitLabelsProps(map: MapBundle, geo: MapGeoref, scene: SceneInfo
     getPosition: (d) => d.position,
     getText: (d) => d.text,
     getColor: [255, 255, 255, 255],
-    getSize: 10,
+    getSize: 12,
     sizeUnits: 'pixels',
     getHaloColor: [0, 0, 0, 180],
     getHaloWidth: 1,

@@ -37,8 +37,8 @@ export interface RailProps {
   runs: RunHandle[];
   closeRun: number;
   history: { runs: number; samples: HistorySample[] };
-  view: 'close' | 'plan' | 'compare';
-  setView: (view: 'close' | 'plan' | 'compare') => void;
+  view: 'ops' | 'close' | 'plan' | 'compare';
+  setView: (view: 'ops' | 'close' | 'plan' | 'compare') => void;
   setCloseRun: (run: number) => void;
   setPlanStates: (next: PlanState[] | ((prev: PlanState[]) => PlanState[])) => void;
   setPlansDirty: (dirty: boolean) => void;

@@ -2,22 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { DECISION_DEFAULTS } from '../../brain/src/defaults.ts';
 import { makePopulation } from '../../brain/src/fan-types.ts';
 import type { SimConfig, TickFrame } from '../../contracts.ts';
-import { FlowMovement } from '../../engine/src/movement-flow.ts';
-import { Simulation } from '../../engine/src/sim.ts';
-import type { SceneInfo } from '../../engine/src/edits.ts';
+import { FlowMovement, Simulation } from '../../engine/src/index.ts';
+import type { SceneInfo } from '../../engine/src/index.ts';
 import { testGateSurge, windowFor } from '../../world/src/incidents.ts';
 import { makeOfficers } from '../../world/src/officers.ts';
 import { playbookFor } from '../../world/src/playbook.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
 import { heatBands } from './heat.ts';
-import {
-  densityProps,
-  fanRows,
-  fansProps,
-  gateLabelRows,
-  opsLayerProps,
-  vehicleRows,
-} from './ops-layers.ts';
+import { densityProps, fanRows, fansProps, gateLabelRows, opsLayerProps, vehicleRows } from './ops-layers.ts';
 import { flatGeoref } from './ops-geo.ts';
 
 class TestImageData {
@@ -147,7 +139,12 @@ describe('operations map layer props', () => {
       map,
       geo,
       frame: run.frame,
-      density: { t: run.frame.t, width: map.width, height: map.height, peoplePerM2: new Float32Array(map.width * map.height) },
+      density: {
+        t: run.frame.t,
+        width: map.width,
+        height: map.height,
+        peoplePerM2: new Float32Array(map.width * map.height),
+      },
       scene: run.scene,
       zoom: 18,
       dangerDensity: 3.5,
