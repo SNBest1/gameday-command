@@ -14,6 +14,7 @@ import type { BandTotals, HeatBand, Hotspot } from './heat.ts';
 import { Inspector, type EditRequest } from './Inspector.tsx';
 import { Legend, VehicleIcon } from './Legend.tsx';
 import { OfficerPanel } from './OfficerPanel.tsx';
+import { OpsMap } from './OpsMap.tsx';
 import { applyDisabled } from './PlanEditor.tsx';
 import type { PlanState } from './PlanCards.tsx';
 import { pitchFor } from './pitch.ts';
@@ -36,8 +37,8 @@ export interface MapWorkspaceProps {
   setCloseRun: (run: number) => void;
   planStates: PlanState[];
   incident: Incident | undefined;
-  view: 'close' | 'plan' | 'compare';
-  setView: (view: 'close' | 'plan' | 'compare') => void;
+  view: 'ops' | 'close' | 'plan' | 'compare';
+  setView: (view: 'ops' | 'close' | 'plan' | 'compare') => void;
   showCoverage: boolean;
   showFlow: boolean;
   setShowFlow: (value: boolean | ((value: boolean) => boolean)) => void;
@@ -151,11 +152,52 @@ export function MapWorkspace(props: MapWorkspaceProps) {
 
   return (
     <>
-      <div className={`canvas-wrap${view === 'close' ? ' close' : view === 'plan' ? ' plan' : ''}`}>
+      <div className={`canvas-wrap${view === 'ops' ? ' ops' : view === 'close' ? ' close' : view === 'plan' ? ' plan' : ''}`}>
         {/* Only one of these is mounted at a time, so the page holds a
                     single WebGL context. ComparisonMaps draws all three runs in
                     one PixiJS Application for the same reason. */}
-        {view !== 'close' ? (
+        {view === 'ops' ? (
+          <OpsMap
+            showCoverage={showCoverage}
+            officerFocus={officerRole ? roleChoice.unitId : null}
+            map={loaded.map}
+            run={runs[closeRun]!}
+            types={FAN_TYPES}
+            scrubIndex={scrub}
+            dangerDensity={DANGER}
+            incidentCells={incident?.cells}
+            incidentLabel={incident ? `${INCIDENT_LABELS[incident.kind]} here` : undefined}
+            selected={picked?.run === closeRun ? picked.dot : null}
+            onPick={(dot) => {
+              setPickedOfficer(null);
+              setPickedVehicle(null);
+              setPicked(dot === null ? null : { run: closeRun, dot });
+            }}
+            selectedOfficer={
+              officerRole ? roleChoice.unitId : pickedOfficer?.run === closeRun ? pickedOfficer.id : null
+            }
+            onPickOfficer={(id) => {
+              setPicked(null);
+              setPickedVehicle(null);
+              setPickedOfficer({ run: closeRun, id });
+            }}
+            focusToken={focusToken}
+            showVehicles={showVehicles}
+            vehicleFocus={vehicleFocus}
+            selectedVehicle={pickedVehicle?.run === closeRun ? pickedVehicle.vehicle : null}
+            onPickVehicle={(vehicle) => {
+              setPicked(null);
+              setPickedOfficer(null);
+              setPickedVehicle({ run: closeRun, vehicle });
+            }}
+            selectedBand={selectedBand}
+            focusBox={focusBox}
+            showFlow={showFlow}
+            onShowFlow={setShowFlow}
+            hotspots={police[closeRun] ?? []}
+            onPickStreet={pickMode ? orderAt : undefined}
+          />
+        ) : view !== 'close' ? (
           <ComparisonMaps
             showCoverage={showCoverage}
             key={view}
@@ -327,7 +369,7 @@ export function MapWorkspace(props: MapWorkspaceProps) {
             onApply={applyEdit}
             onFocus={() => {
               setCloseRun(picked.run);
-              setView('close');
+              if (view !== 'ops') setView('close');
               setFocusToken((k) => k + 1);
             }}
             onClose={() => setPicked(null)}

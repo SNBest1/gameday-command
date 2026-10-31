@@ -118,11 +118,11 @@ export function App() {
   const [vehicleFocus, setVehicleFocus] = useState<VehicleKind | null>(null);
   const [selectedBand, setSelectedBand] = useState<number | null>(null);
   const [focusBox, setFocusBox] = useState<FocusBox | null>(null);
-  /** The 3D close-up of one plan (the default) or all three maps side by side. */
-  /** The 3D close-up of one plan (the default), a large 2D plan of one, or all three maps side by side. */
-  const [view, setView] = useState<'close' | 'plan' | 'compare'>(
-    params.get('view') === 'compare' ? 'compare' : params.get('view') === 'plan' ? 'plan' : 'close',
-  );
+  /** The operations map (default), the 3D close-up of one plan, a large 2D plan, or all three maps. */
+  const [view, setView] = useState<'ops' | 'close' | 'plan' | 'compare'>(() => {
+    const wanted = params.get('view');
+    return wanted === 'close' || wanted === 'plan' || wanted === 'compare' ? wanted : 'ops';
+  });
   const [showFlow, setShowFlow] = useState(true);
   const [closeRun, setCloseRun] = useState(0);
   const [pickMode, setPickMode] = useState<PolicePickMode>(null);
