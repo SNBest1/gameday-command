@@ -69,6 +69,7 @@ import { HOTSPOT_COLOUR, policeHotspots, standingDensity, type PoliceHotspot } f
 import { bandTotals, heatBands, hotspots, makePlaceIndex, type Hotspot } from './heat.ts';
 import { useRun, type RunHandle, type RunInit } from './useRun.ts';
 import { useHistoryRecording } from './useHistoryRecording.ts';
+import { useAutorun } from './useAutorun.ts';
 
 /** A stadium's crowd is its capacity, up to the 100,000 the engine is sized for. */
 const fanCount = (map: MapBundle) =>
@@ -280,6 +281,21 @@ export function App() {
   const cards = runs.map((r) => r.scorecard);
   const allDone = cards.every((c) => c !== null);
   useHistoryRecording({ loaded, runA, runB, runC, generation, allDone, loadHistory });
+  useAutorun({
+    autorun: AUTORUN,
+    loaded,
+    runA,
+    runB,
+    runC,
+    runs,
+    setPlaying,
+    incidentKind: incident?.kind ?? null,
+    weatherId,
+    traffic,
+    allDone,
+    savedComparison,
+    briefing,
+  });
   // When all three plans finish, show the verdict once; after that the rail stays where the commander puts it.
   const wasDone = useRef(false);
   useEffect(() => {
@@ -291,17 +307,6 @@ export function App() {
   const order = allDone ? rankByPriority(cards, priority) : null;
   void rankPlans;
   const rankOf = (i: number) => (order ? order.indexOf(i) : null);
-
-  // Start without a click when asked, once all three workers are ready. Only
-  // once: `playing` is not a dependency, so this effect never sees a pause,
-  // but without the ref the next ready flip after a restart would start play again.
-  const autoStarted = useRef(false);
-  useEffect(() => {
-    if (!AUTORUN || autoStarted.current || !loaded) return;
-    if (!runs.every((r) => r.ready)) return;
-    autoStarted.current = true;
-    setPlaying(true);
-  }, [loaded, runA.ready, runB.ready, runC.ready]);
 
   // Keep the finished comparison, which is what POST /comparisons is for.
   useEffect(() => {
@@ -360,41 +365,6 @@ export function App() {
     );
   };
   useEffect(() => setAppliedNote(null), [picked?.dot]);
-
-  // Published for an unattended run: a browser with no debugger attached can
-  // still be checked, because the server sees the saved comparison.
-  useEffect(() => {
-    (window as unknown as { gameday?: unknown }).gameday = {
-      mapId: loaded?.map.id ?? null,
-      incident: incident?.kind ?? null,
-      weather: weatherId,
-      traffic,
-      allDone,
-      /** Vehicles in a run doing something, for pointing the camera at them in a check. */
-      vehiclesIn: (run: number, state: string) => {
-        const v = runs[run]?.latest.current?.frame.vehicles;
-        if (!v) return [];
-        const out: { i: number; kind: string; x: number; y: number }[] = [];
-        for (let i = 0; i < v.state.length; i++) {
-          if (VEHICLE_STATES[v.state[i]!] === state)
-            out.push({ i, kind: VEHICLE_KINDS[v.kind[i]!]!, x: v.x[i]!, y: v.y[i]! });
-        }
-        return out;
-      },
-      savedComparison,
-      briefing: briefing ? { canned: briefing.canned, model: briefing.model } : null,
-      runs: runs.map((r, i) => ({
-        label: LABELS[i],
-        ready: r.ready,
-        t: r.t,
-        frames: r.frameCount,
-        scorecard: r.scorecard,
-        snapshotAt: r.snapshotAt,
-        snapshotDots: r.snapshotDots,
-        fallbacksSoFar: r.fallbackCount,
-      })),
-    };
-  });
 
   const t = Math.max(...runs.map((r) => r.t));
   const window_ = incident ? windowFor(incident) : { startAt: 0, endAt: 1 };
