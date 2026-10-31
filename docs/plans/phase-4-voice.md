@@ -194,7 +194,7 @@ Run the waves in this order:
   - checks each resolves with `fromToolCall` to the expected kind.
 
   Add the same kind of self-skipping block for `STT_URL`, using a short WAV committed under `server/test-data/` (generate it with any TTS on your machine and commit it, under 200 KB). If you cannot produce one, skip the STT live test and say so.
-- [ ] **D5.** Write `docs/voice-setup.md`:
+- [x] **D5.** Write `docs/voice-setup.md`:
   - the two deployments;
   - on premises: run any OpenAI-compatible speech-to-text server and any OpenAI-compatible LLM server with tool calling on the same network, and set the variables;
   - hosted: set the URLs and keys of a provider;
