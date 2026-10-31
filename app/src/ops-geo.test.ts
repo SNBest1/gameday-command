@@ -3,7 +3,7 @@ import { georefOf } from '../../world/src/osm/georef.ts';
 import { makeProjection } from '../../world/src/osm/raster.ts';
 import { loadExtract } from '../../world/src/osm/stadium.ts';
 import { CELL_SIZE_M } from '../../contracts.ts';
-import { cellToLngLat, flatGeoref, lngLatToCell, mapBounds } from './ops-geo.ts';
+import { cellToLngLat, flatGeoref, lngLatToCell, mapBounds, metresToLngLat } from './ops-geo.ts';
 
 const extract = loadExtract();
 const ohio = georefOf(extract);
@@ -28,6 +28,18 @@ describe('ops map lon/lat helpers', () => {
       const [lon, lat] = cellToLngLat(flat, width, cell);
       expect(lngLatToCell(flat, width, height, lon, lat)).toBe(cell);
     }
+  });
+
+  it('places metres from the map origin on the right cell', () => {
+    const width = 17;
+    const height = 13;
+    const flat = flatGeoref(width);
+    const centre = metresToLngLat(flat, width, 17, 17);
+    expect(centre[0]).toBeCloseTo(0, 9);
+    expect(centre[1]).toBeCloseTo(0, 9);
+    const cell = 10 * width + 10;
+    const [lon, lat] = metresToLngLat(flat, width, 21, 21);
+    expect(lngLatToCell(flat, width, height, lon, lat)).toBe(cell);
   });
 
   it('bounds cover the corner cells and reject clicks outside', () => {
