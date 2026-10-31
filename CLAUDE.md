@@ -367,6 +367,43 @@ every message are in `docs/wire-protocol.md`; `engine/src/wire.ts` is the codec.
   are produced by `node validation/derive-reference.ts`; `SOURCES.md` records
   URLs, hashes, licence and methods.
 
+## The operations map
+
+`view === 'ops'` is the default and mounts `app/src/OpsMap.tsx`; the close-up and
+the side-by-side maps stay available from the Map / Close-up / Side by side
+switch, and `?view=close|plan|compare` still selects them directly.
+
+- **Georeferencing.** `GET /api/maps/:id/geo` returns `MapGeoref`
+  (`world/src/osm/georef.ts`): the OSM extract's centre and radius plus the 2 m
+  cell size. Ohio uses `loadExtract()`; an imported stadium uses its saved
+  extract. A map with no location, including the test map, answers 404 and the
+  app uses `flatGeoref(width)`, a local flat frame centred on (0, 0), so every
+  layer keeps working without a special case. `app/src/ops-geo.ts` converts
+  between cells, metres and lon/lat; `metresToLngLat` is the one to use for dots,
+  vehicles and officers.
+- **Offline base map.** `app/src/ops-basemap.ts` paints one pixel per cell in
+  muted light and dark palettes. It is always a deck.gl `BitmapLayer` under the
+  first symbol layer, at 22% opacity while tiles load. If there is no georef,
+  `VITE_MAP_STYLE` is empty, the browser is offline, or the style does not load
+  within 5 s, MapLibre switches to a blank style and the same image is drawn at
+  full opacity: the map needs nothing external.
+- **Tiles and PMTiles.** `VITE_MAP_STYLE` defaults to keyless OpenFreeMap
+  Positron and is read at build time. A deployment can point it at any MapLibre
+  style; for an on-premises install, a self-hosted style with a
+  `pmtiles://https://host/basemap.pmtiles` source works because `OpsMap`
+  registers the `pmtiles` protocol and removes it on unmount. `.env.example`
+  documents both forms.
+- **One WebGL context.** MapLibre owns the context and deck.gl shares it through
+  `MapboxOverlay({ interleaved: true })`. `MapWorkspace` mounts exactly one of
+  `OpsMap`, `CrowdView` or `ComparisonMaps`.
+- **Layers and symbols.** `app/src/ops-layers.ts` builds plain deck.gl props from
+  one frame and scene (standing density, fans at zoom 17, vehicles, officers and
+  dashed routes, closures, gates, incident outline, hotspots, coverage).
+  `app/src/ops-symbols.ts` is the single neutral symbol and colour table; a
+  department standard replaces that file, not the layers. Picking runs officers,
+  then vehicles, then fans, and a police pick mode keeps the close-up's
+  non-blocked cell rule in `app/src/street-pick.ts`.
+
 Kev (optional — without it every decision is a fallback, by design):
 
 ```bash
@@ -375,7 +412,7 @@ uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
 
 ## Current state
 
-Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **389 checks in 63 files (384 pass, 5 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
+Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **402 checks in 68 files (397 pass, 5 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
 
 Measured on the stadium map (800x800 cells at 2 m, 100,000 fans as 20,000 dots). These are development-Mac numbers, not a controlled benchmark; `engine/src/perf.test.ts` asserts only the 10x bar, and a Windows run of this suite measured ~310x.
 
