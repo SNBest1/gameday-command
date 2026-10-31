@@ -65,6 +65,17 @@ export function importedMap(id: string): MapBundle | undefined {
   }
 }
 
+/** An imported stadium's saved OSM extract, or undefined if there is none. */
+export function importedExtract(id: string): OsmExtract | undefined {
+  if (!/^osm-(way|relation)-\d+$/.test(id)) return undefined;
+  try {
+    const saved = JSON.parse(readFileSync(resolve(STADIUM_DIR, `${id}.json`), 'utf8')) as Imported;
+    return saved.extract;
+  } catch {
+    return undefined;
+  }
+}
+
 /** The import request: a search hit, plus the city/state/country it was found in. */
 interface ImportRequest {
   name: string;

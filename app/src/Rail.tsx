@@ -37,8 +37,8 @@ export interface RailProps {
   runs: RunHandle[];
   closeRun: number;
   history: { runs: number; samples: HistorySample[] };
-  view: 'close' | 'plan' | 'compare';
-  setView: (view: 'close' | 'plan' | 'compare') => void;
+  view: 'ops' | 'close' | 'plan' | 'compare';
+  setView: (view: 'ops' | 'close' | 'plan' | 'compare') => void;
   setCloseRun: (run: number) => void;
   setPlanStates: (next: PlanState[] | ((prev: PlanState[]) => PlanState[])) => void;
   setPlansDirty: (dirty: boolean) => void;
@@ -247,7 +247,7 @@ export function Rail(props: RailProps) {
               />
             )}
             <section className="block verdict">
-              <h2>Verdict</h2>
+              <h2>Comparison</h2>
               {/* Who wrote this, at the top: a template summary folded into grey
                       type under the text still read as if a model had written it. */}
               {allDone && briefing?.canned && (
