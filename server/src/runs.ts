@@ -62,7 +62,6 @@ export function addRunRoutes(app: Hono, decisionBaseUrl: string): void {
     runs.set(id, run);
     worker.on('message', (message: WorkerOut | EditOut) => {
       broadcast(run, encode(message) as string | Uint8Array<ArrayBuffer>);
-      bump(run);
     });
     worker.on('error', (error) => {
       broadcast(
