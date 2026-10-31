@@ -410,6 +410,52 @@ switch, and `?view=close|plan|compare` still selects them directly.
   runs officers, then vehicles, then fans, and a police pick mode keeps the
   close-up's non-blocked cell rule in `app/src/street-pick.ts`.
 
+## Voice assistant
+
+The command box keeps its local grammar. Two optional OpenAI-compatible
+services extend it; both are reached by the API server, never by the browser:
+
+```
+mic ─► speech.ts ──► Web Speech, or MediaRecorder ─► POST /api/speech/transcribe
+text ─► CommandBar ─► local confirm/cancel/undo
+                    └► POST /api/voice/interpret ─► tool call
+                    ─► voice-tools.fromToolCall() ─► Utterance
+                    (any failure ─► parseUtterance, today's parser)
+Utterance ─► existing read-back + "say yes to confirm" ─► existing order/step/control
+every interpreted utterance ─► POST /api/voice/log
+```
+
+- **Fallback rule.** Confirm, cancel and undo always run locally and instantly.
+  Everything else may go to the LLM when `/api/speech/config` says `llm`; a
+  timeout, HTTP error, invalid JSON, unknown tool, unresolved name or `none`
+  falls back to `parseUtterance`. A refusal is never shown as an order, and
+  nothing runs without the human's yes.
+- **Speech.** With `STT_URL` set, the app records a clip (MediaRecorder, webm
+  or ogg, 12 s cap) and sends it to `/api/speech/transcribe`; without it, the
+  browser's Web Speech recogniser is used. The server forwards multipart audio
+  to `${STT_URL}/v1/audio/transcriptions`; no audio is stored.
+- **Tool schema.** `app/src/voice-tools.ts` builds one tool per Intent, Control
+  and Question kind plus `show_plan` and `none`, and the system prompt with the
+  map's gate, place and street names (streets dropped first to stay under 8,000
+  characters). `fromToolCall` resolves names with the same `findChoice` lists
+  `parseCommand` uses; the model only proposes.
+- **Audit.** `server/src/voice.ts` writes `voice_log`: transcript, source
+  (`browser`/`stt`/`typed`), the tool call or `fallback`, the summary and
+  `confirmed`/`cancelled`/`none`. Confirm and cancel add a second row with the
+  outcome. Rows older than `VOICE_LOG_DAYS` (default 30) are pruned at startup.
+  The Orders tab's after-action report and JSON export include this page's rows.
+- **Environment.** `STT_URL`, `STT_MODEL`, `STT_KEY`, `STT_TIMEOUT_MS`,
+  `INTENT_LLM_URL`, `INTENT_LLM_MODEL`, `INTENT_LLM_KEY`,
+  `INTENT_LLM_TIMEOUT_MS`, `VOICE_LOG_DAYS`, `VOICE_RATE_PER_MIN` and
+  `TRUST_PROXY`, documented in `.env.example` and `docs/voice-setup.md`.
+  `DECISION_CACHE_VERSION` and the decision cache are untouched.
+- **Security.** The voice log stores police transcripts and the API has no
+  authentication yet. A hosted deployment must not expose the API server to the
+  public internet until the authentication phase lands; keep it on the local
+  network or behind an authenticating gateway. The interpret and transcribe
+  routes share a per-IP limit (`VOICE_RATE_PER_MIN`, default 30), and the log
+  route is body- and field-capped.
+
 Kev (optional — without it every decision is a fallback, by design):
 
 ```bash
@@ -418,7 +464,7 @@ uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
 
 ## Current state
 
-Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **404 checks in 68 files (399 pass, 5 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
+Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **423 checks in 71 files (417 pass, 6 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
 
 Measured on the stadium map (800x800 cells at 2 m, 100,000 fans as 20,000 dots). These are development-Mac numbers, not a controlled benchmark; `engine/src/perf.test.ts` asserts only the 10x bar, and a Windows run of this suite measured ~310x.
 
@@ -432,8 +478,11 @@ Measured on the stadium map (800x800 cells at 2 m, 100,000 fans as 20,000 dots).
 
 Gate surge now (Gate 2, 5,000-fan late rush, default decisions, headless): plan A clears in 17.3 min, C in 19.4, B in 26.9. Re-measure in Chrome with a warm cache before quoting it on stage; the earlier 6.2 / 8.6 / never figures were the old Gate 1 turnstile jam.
 
+**Rebuild status (2026-10-31).** Phase 0 is merged. Phases 1 (server-side engine and validation), 3 (operations map) and 4 (voice assistant) sit on stacked branches, to be merged in that order. `docs/roadmap.md` has the merge table and next steps; `docs/plans/` has each plan.
+
 **Open items, in order:**
 
+0. **The validation suite says walkers are too slow in open space** (model about 0.5 m/s against about 1.1 m/s measured). A lone 5-person dot counts itself as 1.25 people/m² in its own 2 m cell, which the Weidmann curve slows to about 69%. Any fix changes every scorecard: decide it as a team, plan it, and judge it with `npm run validate`. Also, **no authentication exists yet**, so do not host the API publicly.
 1. **A cold cache is mostly fallbacks until it warms.** The model answers in ~250 ms, so of the ~144 keys a lightning delay raises at once only a handful land inside the engine's 2 s pause; the rest take the defaults and are counted as fallbacks, which is what the contract asks for. `makeWarmer` then fetches them in the background without a deadline, so the cache completes by itself (144 of 144 keys about 80 seconds later) and the same scenario then runs with zero fallbacks. Run `npm run warm` before a demo. Raising `KEV_CONCURRENCY` makes the cold case *worse* (16 answered one key where 4 answered five) because Kev serialises on one GPU — leave it at 4.
 2. **Safari: the likely cause was fixed, and the fix is unverified on Safari itself.** Safari loaded the app and its workers really did call `/decide`, but ninety sim minutes had not completed after six wall minutes. The worker used to sleep once per *sim second* (`1000 / speed` ms), and Safari clamps `setTimeout` to about a second in a tab whose app is not frontmost, workers included — so at the app's default speed of 20 every 50 ms sleep became 1,000 ms and the run paced itself at real time, needing the full 90 minutes. The arithmetic matches the symptom exactly. `loop()` now makes up every step the wall clock owes before sleeping at all, so a coarse timer costs fewer, bigger batches instead of a slower run.
 

@@ -20,6 +20,7 @@ import { georefOf } from '../../world/src/osm/georef.ts';
 import { openDb, type Db } from './db.ts';
 import { addCommandRoutes, importedMap, importedExtract } from './command.ts';
 import { addRunRoutes, injectRunWebSocket } from './runs.ts';
+import { voiceRoutes } from './voice.ts';
 import { OHIO_THEME } from '../../world/src/teams.ts';
 import { askKev } from './kev.ts';
 import { briefingIsSupported, templateBriefing } from './briefing.ts';
@@ -158,6 +159,8 @@ export function createApp(db: Db): Hono {
   });
 
   app.get('/api/decision-defaults', (c) => c.json(DECISION_DEFAULTS));
+
+  voiceRoutes(app, db);
 
   addRunRoutes(app, `http://127.0.0.1:${PORT}`);
 

@@ -2,10 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MapBundle, PlanAction } from '../../contracts.ts';
 import type { OfficerStatus, PoliceOrder } from '../../engine/src/index.ts';
 import { stepChoices } from './plan-steps.ts';
-import { listen, speechSupported, type Listening } from './speech.ts';
+import { listen, speechConfig, speechConfigReady, speechSupported, type Listening } from './speech.ts';
+import { TRANSCRIBING_WORDS } from './speech-recorded.ts';
+import { interpretVoice, logVoice, type VoiceLogEntry } from './api.ts';
 import { answer, type Facts } from './voice-answers.ts';
 import { readBack, toLiveOrder, toPlanStep, type Parsed } from './voice-commands.ts';
-import { parseUtterance, type Control } from './voice-intents.ts';
+import { parseUtterance, type Control, type Utterance } from './voice-intents.ts';
+import { safeFromToolCall, voiceSystemPrompt, voiceTools, type ToolCall } from './voice-tools.ts';
+import { VOICE_SESSION_ID } from './voice-session.ts';
 
 /** How long dictation has to pause before the box shows what it understood. */
 const DICTATION_PAUSE_MS = 900;
@@ -95,10 +99,17 @@ export function CommandBar(props: CommandBarProps) {
   const [done, setDone] = useState<Done | null>(null);
   const [readAloud, setReadAloud] = useState(loadReadBack);
   const [listening, setListening] = useState<null | 'command' | 'confirm'>(null);
+  const [transcribing, setTranscribing] = useState(false);
+  const [understanding, setUnderstanding] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const timer = useRef<number | null>(null);
   const session = useRef<Listening | null>(null);
+  const starting = useRef(false);
+  const mounted = useRef(true);
+  const pendingLog = useRef<VoiceLogEntry | null>(null);
+  const understandingRef = useRef(false);
+  const interpretation = useRef(0);
   const history = useRef<Undoable[]>([]);
   const choices = useMemo(() => stepChoices(map), [map]);
 
@@ -117,6 +128,32 @@ export function CommandBar(props: CommandBarProps) {
     speak(spoken, live.current.readAloud, then);
   };
 
+  const postLog = (entry: VoiceLogEntry) => void logVoice(entry).catch(() => {});
+  const logOutcome = (outcome: VoiceLogEntry['outcome']) => {
+    const base = pendingLog.current;
+    if (!base) return;
+    pendingLog.current = null;
+    postLog({ ...base, outcome });
+  };
+  const record = (
+    utterance: Utterance,
+    transcript: string,
+    spoken: boolean,
+    call: ToolCall | null,
+    summary: string,
+  ) => {
+    const entry: VoiceLogEntry = {
+      session: VOICE_SESSION_ID,
+      source: spoken ? (speechConfig().stt ? 'stt' : 'browser') : 'typed',
+      transcript: transcript.trim(),
+      toolCall: call ?? 'fallback',
+      summary,
+      outcome: 'none',
+    };
+    postLog(entry);
+    if (utterance.type === 'order' && utterance.parsed.ok) pendingLog.current = entry;
+  };
+
   /** Where an order on the card goes, and what can be done with it right now. */
   const options = (p: Parsed | null) => {
     const { planOnMap, canOrderOn, officersOf, map } = live.current.props;
@@ -132,12 +169,14 @@ export function CommandBar(props: CommandBarProps) {
   const giveLive = (p: Parsed & { ok: true }, target: number, order: PoliceOrder) => {
     live.current.props.onOrder(target, order);
     history.current.push({ kind: 'live', plan: target });
+    logOutcome('confirmed');
     setParsed(null);
     say(`Ordered on plan ${labels[target]}: ${p.summary.replace(/, now$/, '')}.`, 'ok', readBack(p.intent, true));
   };
   const addStep = (p: Parsed & { ok: true }, plan: number, step: PlanAction) => {
     live.current.props.onAddStep(plan, step);
     history.current.push({ kind: 'step', plan, step });
+    logOutcome('confirmed');
     setParsed(null);
     say(`Added to plan ${labels[plan]}. Restart with your changes to run it.`, 'ok', readBack(p.intent, false));
   };
@@ -169,8 +208,15 @@ export function CommandBar(props: CommandBarProps) {
     say(what ? `Undone. ${what}` : 'There is no order to undo.', what ? 'ok' : 'warn');
   };
 
-  function startListening(mode: 'command' | 'confirm') {
-    if (session.current) return;
+  async function startListening(mode: 'command' | 'confirm') {
+    if (session.current || starting.current) return;
+    starting.current = true;
+    try {
+      await speechConfigReady();
+    } finally {
+      starting.current = false;
+    }
+    if (!mounted.current || session.current) return;
     try {
       window.speechSynthesis?.cancel();
     } catch {
@@ -178,6 +224,7 @@ export function CommandBar(props: CommandBarProps) {
     }
     if (timer.current) window.clearTimeout(timer.current);
     setMicError(null);
+    setTranscribing(false);
     if (mode === 'command') {
       setParsed(null);
       setDone(null);
@@ -185,12 +232,19 @@ export function CommandBar(props: CommandBarProps) {
     setText('');
     const s = listen(
       (words, final) => {
+        if (words === TRANSCRIBING_WORDS) {
+          setTranscribing(true);
+          return;
+        }
+        if (final && words && understandingRef.current) return;
+        setTranscribing(false);
         setText(words);
-        if (final && words) handle(words, true);
+        if (final && words) void handle(words, true);
       },
       (error) => {
         session.current = null;
         setListening(null);
+        setTranscribing(false);
         // Silence after "say yes" is not an error: the card's buttons are still there.
         if (error && !(mode === 'confirm' && /hear anything/.test(error))) setMicError(error);
       },
@@ -203,11 +257,50 @@ export function CommandBar(props: CommandBarProps) {
     setListening(mode);
   }
 
-  /** Whatever was said or typed: confirm, cancel, undo, switch, control, question or order. */
-  function handle(value: string, spoken: boolean) {
+  /** Whatever was said or typed: local confirm/cancel/undo first, then the LLM, then today's parser. */
+  async function handle(value: string, spoken: boolean) {
     if (timer.current) window.clearTimeout(timer.current);
     if (!value.trim()) return;
-    const u = parseUtterance(value, live.current.props.map);
+    // A new mic final while the model is thinking would race the first result.
+    if (spoken && understandingRef.current) return;
+    const token = ++interpretation.current;
+    const map = live.current.props.map;
+    const local = parseUtterance(value, map);
+    if (local.type === 'confirm' || local.type === 'cancel' || local.type === 'undo') {
+      apply(local, value, spoken, null);
+      return;
+    }
+
+    let utterance: Utterance = local;
+    let call: ToolCall | null = null;
+    await speechConfigReady();
+    if (speechConfig().llm) {
+      understandingRef.current = true;
+      setUnderstanding(true);
+      try {
+        const result = await interpretVoice({
+          text: value,
+          tools: voiceTools(map),
+          system: voiceSystemPrompt(map, labels),
+        });
+        if (token !== interpretation.current) return;
+        const from = result.call ? safeFromToolCall(result.call, map) : null;
+        if (from) {
+          utterance = from;
+          call = result.call;
+        }
+      } finally {
+        if (token === interpretation.current) {
+          understandingRef.current = false;
+          setUnderstanding(false);
+        }
+      }
+    }
+    if (token !== interpretation.current) return;
+    apply(utterance, value, spoken, call);
+  }
+
+  function apply(u: Utterance, value: string, spoken: boolean, call: ToolCall | null) {
     setText('');
     setMicError(null);
     switch (u.type) {
@@ -217,26 +310,37 @@ export function CommandBar(props: CommandBarProps) {
       case 'cancel':
         if (parsedRef.current) {
           setParsed(null);
+          logOutcome('cancelled');
           say('Cancelled.', 'warn');
         }
         return;
       case 'undo':
         undo();
         return;
-      case 'show_plan':
+      case 'show_plan': {
+        const message = `Showing plan ${labels[u.plan]} on the map.`;
+        record(u, value, spoken, call, message);
         live.current.props.onShowPlan(u.plan);
-        say(`Showing plan ${labels[u.plan]} on the map.`, 'ok', `Showing plan ${labels[u.plan]}.`);
+        say(message, 'ok', `Showing plan ${labels[u.plan]}.`);
         return;
-      case 'control':
-        say(live.current.props.onControl(u.control), 'ok');
+      }
+      case 'control': {
+        const message = live.current.props.onControl(u.control);
+        record(u, value, spoken, call, message);
+        say(message, 'ok');
         return;
-      case 'question':
-        say(answer(u.question, live.current.props.facts()), 'answer');
+      }
+      case 'question': {
+        const message = answer(u.question, live.current.props.facts());
+        record(u, value, spoken, call, message);
+        say(message, 'answer');
         return;
+      }
       case 'order': {
         setHeard(value.trim());
         setParsed(u.parsed);
         setDone(null);
+        record(u, value, spoken, call, u.parsed.ok ? u.parsed.summary : u.parsed.error);
         if (!spoken) return;
         if (!u.parsed.ok) {
           speak(firstSentence(u.parsed.error), live.current.readAloud);
@@ -251,7 +355,7 @@ export function CommandBar(props: CommandBarProps) {
             : null;
         if (!how) return;
         speak(`${u.parsed.summary}. ${how}, or cancel.`, live.current.readAloud, () => {
-          if (parsedRef.current === u.parsed) startListening('confirm');
+          if (parsedRef.current === u.parsed) void startListening('confirm');
         });
       }
     }
@@ -259,7 +363,7 @@ export function CommandBar(props: CommandBarProps) {
 
   const toggleMic = () => {
     if (session.current) session.current.stop();
-    else startListening('command');
+    else void startListening('command');
   };
 
   // "/" jumps to the box; holding Space anywhere outside a field is push-to-talk.
@@ -274,7 +378,7 @@ export function CommandBar(props: CommandBarProps) {
       } else if (e.code === 'Space' && !e.repeat && !inField(e.target)) {
         e.preventDefault();
         ptt = true;
-        startListening('command');
+        void startListening('command');
       } else if (e.key === 'Escape' && session.current) {
         session.current.stop();
       }
@@ -298,6 +402,7 @@ export function CommandBar(props: CommandBarProps) {
 
   useEffect(
     () => () => {
+      mounted.current = false;
       if (timer.current) window.clearTimeout(timer.current);
       session.current?.stop();
     },
@@ -317,7 +422,7 @@ export function CommandBar(props: CommandBarProps) {
         className="command-bar"
         onSubmit={(e) => {
           e.preventDefault();
-          handle(text, false);
+          void handle(text, false);
         }}
       >
         <button
@@ -345,9 +450,13 @@ export function CommandBar(props: CommandBarProps) {
           placeholder={
             listening === 'confirm'
               ? 'Listening for “yes” or “cancel”…'
-              : listening
-                ? 'Listening… say an order or ask a question'
-                : 'Say or type an order or a question: “close gate 3”, “what’s the worst gate?”, “show 2D”'
+              : transcribing
+                ? 'Transcribing…'
+                : understanding
+                  ? 'Understanding…'
+                  : listening
+                    ? 'Listening… say an order or ask a question'
+                    : 'Say or type an order or a question: “close gate 3”, “what’s the worst gate?”, “show 2D”'
           }
           onChange={(e) => {
             setText(e.target.value);
@@ -356,7 +465,7 @@ export function CommandBar(props: CommandBarProps) {
             if (timer.current) window.clearTimeout(timer.current);
             const value = e.target.value;
             if (value.trim().split(/\s+/).length >= 2)
-              timer.current = window.setTimeout(() => handle(value, false), DICTATION_PAUSE_MS);
+              timer.current = window.setTimeout(() => void handle(value, false), DICTATION_PAUSE_MS);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
@@ -387,9 +496,13 @@ export function CommandBar(props: CommandBarProps) {
       <p className="command-tip">
         {listening === 'confirm'
           ? 'Say “yes” to go ahead or “cancel”. Or use the buttons.'
-          : listening
-            ? 'Listening. Stop talking when you’re done.'
-            : 'Hold Space or click the mic to talk. Try “close gate 3”, “shift to plan B”, “pause”, “what’s the worst gate?” or “undo that”. Press / to type, ? for all shortcuts.'}
+          : transcribing
+            ? 'Transcribing the recording. This can take a moment.'
+            : understanding
+              ? 'Understanding the words. The old parser is still there if this fails.'
+              : listening
+                ? 'Listening. Stop talking when you’re done.'
+                : 'Hold Space or click the mic to talk. Try “close gate 3”, “shift to plan B”, “pause”, “what’s the worst gate?” or “undo that”. Press / to type, ? for all shortcuts.'}
       </p>
       {micError && (
         <p className="command-mic-error" role="alert">
@@ -429,6 +542,7 @@ export function CommandBar(props: CommandBarProps) {
                   onClick={() => {
                     session.current?.stop();
                     setParsed(null);
+                    logOutcome('cancelled');
                   }}
                 >
                   Cancel
