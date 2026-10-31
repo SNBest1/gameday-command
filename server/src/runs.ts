@@ -127,16 +127,17 @@ export function addRunRoutes(app: Hono, decisionBaseUrl: string): void {
           run.sockets.add(ws);
           bump(run);
         },
-        onMessage(event, _ws) {
+        onMessage(event, ws) {
           if (!run) return;
           const data = event.data;
           try {
             run.worker.postMessage(decode(data as string | ArrayBuffer | Uint8Array) as WorkerIn | EditIn);
           } catch (error) {
-            run.worker.postMessage({
-              type: 'error',
-              message: error instanceof Error ? error.message : String(error),
-            } satisfies WorkerOut);
+            ws.send(
+              encode({ type: 'error', message: error instanceof Error ? error.message : String(error) }) as
+                | string
+                | Uint8Array<ArrayBuffer>,
+            );
           }
           bump(run);
         },
