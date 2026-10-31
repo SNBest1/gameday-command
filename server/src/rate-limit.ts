@@ -26,7 +26,11 @@ export function takeRate(
 }
 
 /** The client key, using X-Forwarded-For only when the deployment trusts its proxy. */
-export function clientKey(remoteAddress: string | undefined, forwardedFor: string | undefined, trustProxy: boolean): string {
+export function clientKey(
+  remoteAddress: string | undefined,
+  forwardedFor: string | undefined,
+  trustProxy: boolean,
+): string {
   if (trustProxy) {
     const first = forwardedFor?.split(',')[0]?.trim();
     if (first) return first;

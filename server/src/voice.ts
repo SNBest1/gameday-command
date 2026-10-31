@@ -144,50 +144,51 @@ export function voiceRoutes(app: Hono, db: Db): void {
       const target = env('INTENT_LLM_URL');
       if (!target) return c.json(failure('intent LLM is not configured'));
 
-    const headers: Record<string, string> = { 'content-type': 'application/json' };
-    if (env('INTENT_LLM_KEY')) headers.Authorization = `Bearer ${env('INTENT_LLM_KEY')}`;
+      const headers: Record<string, string> = { 'content-type': 'application/json' };
+      if (env('INTENT_LLM_KEY')) headers.Authorization = `Bearer ${env('INTENT_LLM_KEY')}`;
 
-    try {
-      const response = await fetch(`${baseUrl(target)}/v1/chat/completions`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model: env('INTENT_LLM_MODEL'),
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: text },
-          ],
-          tools: body.tools,
-          tool_choice: 'required',
-          temperature: 0,
-          stream: false,
-        }),
-        signal: AbortSignal.timeout(envNumber('INTENT_LLM_TIMEOUT_MS', DEFAULT_LLM_TIMEOUT_MS)),
-      });
-      if (!response.ok) return c.json(failure(`intent LLM returned ${response.status}`));
-      const data = (await response.json().catch(() => null)) as {
-        choices?: { message?: { tool_calls?: { function?: { name?: unknown; arguments?: unknown } }[] } }[];
-      } | null;
-      const call = data?.choices?.[0]?.message?.tool_calls?.[0]?.function;
-      if (!call || typeof call.name !== 'string' || call.name === '') {
-        return c.json(failure('no tool call'));
-      }
-      let args: unknown = call.arguments;
-      if (typeof args === 'string') {
-        try {
-          args = JSON.parse(args);
-        } catch {
-          return c.json(failure('tool arguments are not JSON'));
+      try {
+        const response = await fetch(`${baseUrl(target)}/v1/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: env('INTENT_LLM_MODEL'),
+            messages: [
+              { role: 'system', content: system },
+              { role: 'user', content: text },
+            ],
+            tools: body.tools,
+            tool_choice: 'required',
+            temperature: 0,
+            stream: false,
+          }),
+          signal: AbortSignal.timeout(envNumber('INTENT_LLM_TIMEOUT_MS', DEFAULT_LLM_TIMEOUT_MS)),
+        });
+        if (!response.ok) return c.json(failure(`intent LLM returned ${response.status}`));
+        const data = (await response.json().catch(() => null)) as {
+          choices?: { message?: { tool_calls?: { function?: { name?: unknown; arguments?: unknown } }[] } }[];
+        } | null;
+        const call = data?.choices?.[0]?.message?.tool_calls?.[0]?.function;
+        if (!call || typeof call.name !== 'string' || call.name === '') {
+          return c.json(failure('no tool call'));
         }
+        let args: unknown = call.arguments;
+        if (typeof args === 'string') {
+          try {
+            args = JSON.parse(args);
+          } catch {
+            return c.json(failure('tool arguments are not JSON'));
+          }
+        }
+        if (!args || typeof args !== 'object' || Array.isArray(args)) {
+          return c.json(failure('tool arguments are not an object'));
+        }
+        return c.json({ call: { name: call.name, arguments: args } });
+      } catch (error) {
+        return c.json(failure(error instanceof Error ? error.message : String(error)));
       }
-      if (!args || typeof args !== 'object' || Array.isArray(args)) {
-        return c.json(failure('tool arguments are not an object'));
-      }
-      return c.json({ call: { name: call.name, arguments: args } });
-    } catch (error) {
-      return c.json(failure(error instanceof Error ? error.message : String(error)));
-    }
-  });
+    },
+  );
 
   app.post(
     '/api/voice/log',
@@ -212,15 +213,7 @@ export function voiceRoutes(app: Hono, db: Db): void {
       const outcome = body.outcome === 'confirmed' || body.outcome === 'cancelled' ? body.outcome : 'none';
       db.prepare(
         'insert into voice_log (at, session, source, transcript, tool_call, summary, outcome) values (?, ?, ?, ?, ?, ?, ?)',
-      ).run(
-        new Date().toISOString(),
-        String(body.session ?? ''),
-        body.source,
-        transcript,
-        toolCall,
-        summary,
-        outcome,
-      );
+      ).run(new Date().toISOString(), String(body.session ?? ''), body.source, transcript, toolCall, summary, outcome);
       return c.json({ ok: true });
     },
   );
