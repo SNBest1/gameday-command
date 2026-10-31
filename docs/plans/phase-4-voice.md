@@ -111,7 +111,7 @@ Run the waves in this order:
     - Returns `{ call: { name, arguments } }`, with `arguments` parsed from JSON, or `{ call: null, reason }` on any failure.
     - It never throws to the client.
   - `POST /api/voice/log` stores one entry; `GET /api/voice/log?since=<iso>` lists them.
-- [ ] **A2.** In `server/src/db.ts`, add the table `voice_log`:
+- [x] **A2.** In `server/src/db.ts`, add the table `voice_log`:
   - columns: `id INTEGER PRIMARY KEY`, `at TEXT`, `session TEXT`, `source TEXT`, `transcript TEXT`, `tool_call TEXT` (JSON or `'fallback'`), `summary TEXT`, `outcome TEXT` (`'confirmed'|'cancelled'|'none'`);
   - prune rows older than `VOICE_LOG_DAYS` (default 30) when the server starts.
 
