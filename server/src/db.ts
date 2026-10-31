@@ -41,7 +41,18 @@ export function openDb(path = process.env.DB_PATH ?? './data/gameday.db'): Db {
       ms integer,
       created_at integer not null
     );
+    create table if not exists voice_log (
+      id integer primary key,
+      at text not null,
+      session text not null,
+      source text not null,
+      transcript text not null,
+      tool_call text not null,
+      summary text not null,
+      outcome text not null
+    );
   `);
+  pruneVoiceLog(db);
   const version = (db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version;
   if (version < DECISION_CACHE_VERSION) {
     db.exec('delete from decision_cache');
@@ -49,6 +60,12 @@ export function openDb(path = process.env.DB_PATH ?? './data/gameday.db'): Db {
   }
   seedDecisions(db);
   return db;
+}
+
+export function pruneVoiceLog(db: Db, days = Number(process.env.VOICE_LOG_DAYS ?? 30)): number {
+  const safe = Number.isFinite(days) && days >= 0 ? days : 30;
+  const cutoff = new Date(Date.now() - safe * 24 * 60 * 60 * 1000).toISOString();
+  return Number(db.prepare('delete from voice_log where at < ?').run(cutoff).changes);
 }
 
 interface SeedRow {
