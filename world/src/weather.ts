@@ -1,4 +1,11 @@
-import type { DecisionContext, Incident, SimSeconds, WeatherKind, WeatherState, WeatherTimeline } from '../../contracts.ts';
+import type {
+  DecisionContext,
+  Incident,
+  SimSeconds,
+  WeatherKind,
+  WeatherState,
+  WeatherTimeline,
+} from '../../contracts.ts';
 
 /**
  * Weather scenarios for game day in Columbus. Like fan behavior, these are an
@@ -32,7 +39,10 @@ export const WEATHER_TIMELINES: WeatherTimeline[] = [
     segments: [
       { from: -Infinity, state: state('overcast', { intensity: 0.3, tempC: 10, windMps: 5 }) },
       { from: -1200, state: state('rain', { intensity: 0.45, tempC: 9, windMps: 6, visibilityM: 4000 }) },
-      { from: 0, state: state('heavy_rain', { intensity: 0.9, tempC: 8, windMps: 9, windFromDeg: 230, visibilityM: 1200 }) },
+      {
+        from: 0,
+        state: state('heavy_rain', { intensity: 0.9, tempC: 8, windMps: 9, windFromDeg: 230, visibilityM: 1200 }),
+      },
       { from: 1800, state: state('rain', { intensity: 0.5, tempC: 8, windMps: 6, visibilityM: 3000 }) },
     ],
   },
@@ -41,16 +51,35 @@ export const WEATHER_TIMELINES: WeatherTimeline[] = [
     label: 'Thunderstorm in the second quarter',
     segments: [
       { from: -Infinity, state: state('overcast', { intensity: 0.5, tempC: 24, windMps: 4, windFromDeg: 210 }) },
-      { from: 900, state: state('rain', { intensity: 0.5, tempC: 22, windMps: 8, windFromDeg: 210, visibilityM: 3000 }) },
-      { from: 1800, state: state('thunderstorm', { intensity: 1, tempC: 19, windMps: 14, windFromDeg: 260, visibilityM: 800, lightning: true }) },
+      {
+        from: 900,
+        state: state('rain', { intensity: 0.5, tempC: 22, windMps: 8, windFromDeg: 210, visibilityM: 3000 }),
+      },
+      {
+        from: 1800,
+        state: state('thunderstorm', {
+          intensity: 1,
+          tempC: 19,
+          windMps: 14,
+          windFromDeg: 260,
+          visibilityM: 800,
+          lightning: true,
+        }),
+      },
     ],
   },
   {
     id: 'snow',
     label: 'Late-season snow',
     segments: [
-      { from: -Infinity, state: state('snow', { intensity: 0.35, tempC: -2, windMps: 5, windFromDeg: 320, visibilityM: 2500 }) },
-      { from: -600, state: state('snow', { intensity: 0.75, tempC: -3, windMps: 8, windFromDeg: 320, visibilityM: 700 }) },
+      {
+        from: -Infinity,
+        state: state('snow', { intensity: 0.35, tempC: -2, windMps: 5, windFromDeg: 320, visibilityM: 2500 }),
+      },
+      {
+        from: -600,
+        state: state('snow', { intensity: 0.75, tempC: -3, windMps: 8, windFromDeg: 320, visibilityM: 700 }),
+      },
     ],
   },
   {
@@ -84,8 +113,7 @@ export function weatherAt(timeline: WeatherTimeline | undefined, t: SimSeconds, 
     if (segment.from <= t) current = segment.state;
     else break;
   }
-  const lightningNow =
-    incident?.kind === 'lightning_delay' && t >= incident.at && t < incident.at + LIGHTNING_CLEAR_S;
+  const lightningNow = incident?.kind === 'lightning_delay' && t >= incident.at && t < incident.at + LIGHTNING_CLEAR_S;
   if (lightningNow && !current.lightning) {
     return {
       ...current,

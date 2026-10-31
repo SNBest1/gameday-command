@@ -35,7 +35,8 @@ export function destinations(map: MapBundle): { index: number; label: string }[]
   map.places.forEach((place, index) => {
     if (place.kind === 'gate') out.push({ index, label: place.name });
     else if (place.kind === 'seating') out.push({ index, label: 'Their seat' });
-    else if (place.kind === 'concourse' || place.kind === 'shelter') out.push({ index, label: `${place.name} (shelter)` });
+    else if (place.kind === 'concourse' || place.kind === 'shelter')
+      out.push({ index, label: `${place.name} (shelter)` });
   });
   const lots = map.places.findIndex((p) => p.kind === 'parking');
   if (lots >= 0) out.push({ index: lots, label: 'Leave: back to the car' });
@@ -50,7 +51,18 @@ function Bar({ value, color }: { value: number; color?: string }) {
   );
 }
 
-export function Inspector({ map, types, run, label, dot, scrubbing, appliedNote, onApply, onFocus, onClose }: InspectorProps) {
+export function Inspector({
+  map,
+  types,
+  run,
+  label,
+  dot,
+  scrubbing,
+  appliedNote,
+  onApply,
+  onFocus,
+  onClose,
+}: InspectorProps) {
   const info = run.inspected?.dot === dot ? run.inspected : null;
   const record = run.decisionsByDot.current?.get(dot);
   const typeIndex = info?.typeIndex ?? run.typeIndex.current?.[dot] ?? 0;
@@ -149,7 +161,8 @@ export function Inspector({ map, types, run, label, dot, scrubbing, appliedNote,
         {record && (
           <>
             <p>
-              {record.situation.replace(/_/g, ' ')} at {kickoff(record.t)}: chose <strong>{record.picked.replace(/_/g, ' ')}</strong>
+              {record.situation.replace(/_/g, ' ')} at {kickoff(record.t)}: chose{' '}
+              <strong>{record.picked.replace(/_/g, ' ')}</strong>
             </p>
             <div className="odds">
               {Object.entries(record.odds).map(([key, value]) => (
@@ -161,7 +174,9 @@ export function Inspector({ map, types, run, label, dot, scrubbing, appliedNote,
               ))}
             </div>
             <p className={`muted${record.source === 'default' ? ' warn' : ''}`}>
-              {record.source === 'default' ? 'No AI answer in time, so this used the default odds' : 'Odds from the Kev AI model of fan behavior'}
+              {record.source === 'default'
+                ? 'No AI answer in time, so this used the default odds'
+                : 'Odds from the Kev AI model of fan behavior'}
             </p>
           </>
         )}

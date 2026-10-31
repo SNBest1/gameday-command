@@ -7,7 +7,15 @@
  * pathologically slow under software GL — so a page that renders would measure
  * the renderer rather than the engine.
  */
-import type { DecisionDefaults, MapBundle, Scorecard, SimConfig, Snapshot, WorkerIn, WorkerOut } from '../../contracts.ts';
+import type {
+  DecisionDefaults,
+  MapBundle,
+  Scorecard,
+  SimConfig,
+  Snapshot,
+  WorkerIn,
+  WorkerOut,
+} from '../../contracts.ts';
 import { CONTRACT_VERSION, DOT_GROUP_SIZE } from '../../contracts.ts';
 import { makePopulation } from '../../brain/src/fan-types.ts';
 import { makeOfficers } from '../../world/src/officers.ts';
@@ -90,8 +98,7 @@ async function run(label: string, fans: number): Promise<Record<string, unknown>
       } else if (message.type === 'error' && seeking) {
         seekError = message.message;
         resolveSeek?.();
-      }
-      else if (message.type === 'deciding') {
+      } else if (message.type === 'deciding') {
         pauses++;
         keys += message.pendingKeys;
         decidingAt = performance.now();
@@ -219,7 +226,9 @@ async function run(label: string, fans: number): Promise<Record<string, unknown>
     `${label}: ${simSeconds} sim s in ${wallSeconds.toFixed(1)}s = ${ratio.toFixed(1)}x real time ` +
       `(${frames} frames, ${pauses} pause(s) over ${keys} keys costing ${(pausedMs / 1000).toFixed(1)}s)`,
   );
-  log(`${label}: decisions ${JSON.stringify(sources)}, peak ${card.peakDensity.toFixed(2)}/m², fallbacks ${card.fallbackDecisions}`);
+  log(
+    `${label}: decisions ${JSON.stringify(sources)}, peak ${card.peakDensity.toFixed(2)}/m², fallbacks ${card.fallbackDecisions}`,
+  );
   log(`${label}: worker snapshot ${JSON.stringify(snapshotCheck)}`);
   log(`${label}: worker seek ${JSON.stringify(seekResult)}`);
   return result;

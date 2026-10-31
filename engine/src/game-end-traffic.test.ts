@@ -11,8 +11,15 @@ import { TrafficModel } from './traffic.ts';
 it('starts regular traffic parked and advances departures when fans return to their cars', () => {
   const map = buildStadiumMap(loadExtract());
   const startAt = GAME_END_S - 300;
-  const traffic = new TrafficModel({ map, population: makePopulation(100_000, 20251023), incident: gameEnd(map),
-    config: { vehicles: 1500, seed: 77, emergencyResponse: false }, startAt, endAt: GAME_END_S + 3600, gameEndAt: GAME_END_S });
+  const traffic = new TrafficModel({
+    map,
+    population: makePopulation(100_000, 20251023),
+    incident: gameEnd(map),
+    config: { vehicles: 1500, seed: 77, emergencyResponse: false },
+    startAt,
+    endAt: GAME_END_S + 3600,
+    gameEndAt: GAME_END_S,
+  });
   const before = traffic.frame();
   let parked = 0;
   const dots = new DotStore(before.x.length);

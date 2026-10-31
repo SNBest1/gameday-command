@@ -64,8 +64,7 @@ function simFor(opts: {
   });
 }
 
-const cellName = (width: number, cell: number): string =>
-  `cell ${cell} (x ${cell % width}, y ${(cell / width) | 0})`;
+const cellName = (width: number, cell: number): string => `cell ${cell} (x ${cell % width}, y ${(cell / width) | 0})`;
 
 /** The first exactly differing value, or null when the two fields agree everywhere. */
 function firstDifference(actual: DensityField, expected: DensityField, t: number): string | null {
@@ -124,36 +123,40 @@ function countState(sim: Simulation, state: number): number {
 }
 
 describe('the density shortcut matches a full scan', () => {
-  it.skipIf(!haveMap)('through a gate surge with traffic on the stadium map', async () => {
-    const map = stadium!;
-    const sim = simFor({
-      runId: 'density-surge-traffic',
-      map,
-      incident: gateSurge(map, 0),
-      startAt: -120,
-      endAt: 240,
-      fans: 6_000,
-      traffic: STADIUM_TRAFFIC,
-    });
-    const reference = DensityField.forMap(map);
-    reference.update(sim.ctx.dots);
-    expectDensityMatches(sim, reference);
+  it.skipIf(!haveMap)(
+    'through a gate surge with traffic on the stadium map',
+    async () => {
+      const map = stadium!;
+      const sim = simFor({
+        runId: 'density-surge-traffic',
+        map,
+        incident: gateSurge(map, 0),
+        startAt: -120,
+        endAt: 240,
+        fans: 6_000,
+        traffic: STADIUM_TRAFFIC,
+      });
+      const reference = DensityField.forMap(map);
+      reference.update(sim.ctx.dots);
+      expectDensityMatches(sim, reference);
 
-    // Proves the run actually built a crowd at the surge gate, so the equality
-    // below is not comparing two empty grids.
-    let peak = 0;
-    await runChecked(sim, reference, 360, (s) => {
-      const { occupied, occupiedCount, peoplePerM2 } = s.ctx.density;
-      for (let k = 0; k < occupiedCount; k++) {
-        const cell = occupied[k]!;
-        const value = peoplePerM2[cell]!;
-        if (value > peak) peak = value;
-      }
-    });
+      // Proves the run actually built a crowd at the surge gate, so the equality
+      // below is not comparing two empty grids.
+      let peak = 0;
+      await runChecked(sim, reference, 360, (s) => {
+        const { occupied, occupiedCount, peoplePerM2 } = s.ctx.density;
+        for (let k = 0; k < occupiedCount; k++) {
+          const cell = occupied[k]!;
+          const value = peoplePerM2[cell]!;
+          if (value > peak) peak = value;
+        }
+      });
 
-    expect(sim.traffic).not.toBeNull();
-    expect(peak).toBeGreaterThan(1.5);
-  }, 120_000);
+      expect(sim.traffic).not.toBeNull();
+      expect(peak).toBeGreaterThan(1.5);
+    },
+    120_000,
+  );
 
   it('through a lightning shelter order and the all-clear re-seating', async () => {
     const map = makeTestMap();

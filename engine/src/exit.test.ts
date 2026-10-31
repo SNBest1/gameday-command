@@ -4,7 +4,7 @@ import { DECISION_DEFAULTS } from '../../brain/src/defaults.ts';
 import { makePopulation } from '../../brain/src/fan-types.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
 import { testGateSurge } from '../../world/src/incidents.ts';
-import { FlowFields } from './flowfield.ts';
+import type { FlowFields } from './flowfield.ts';
 import { FlowMovement, MAX_DOTS_PER_CELL, SEATS_PER_STANDS_CELL } from './movement-flow.ts';
 import { Simulation } from './sim.ts';
 
@@ -12,15 +12,32 @@ function make(startAt: number, fans = 600, late = 0, map = makeTestMap()) {
   const population = makePopulation(fans, 42);
   population.types = population.types.map((type) => ({ ...type, arrivalWindowMin: [60, -late] }));
   const movement = new FlowMovement();
-  const sim = new Simulation({ map, population, movement, defaults: DECISION_DEFAULTS, serverUrl: '',
+  const sim = new Simulation({
+    map,
+    population,
+    movement,
+    defaults: DECISION_DEFAULTS,
+    serverUrl: '',
     replay: { runId: 'exit', answers: [] },
-    config: { runId: 'exit', label: 'A', seed: 42, startAt, endAt: 16000, speed: 1000, dangerDensity: 4, mapId: map.id,
-      incident: testGateSurge(map, 20000), officers: [],
-      plan: { id: 'empty', name: 'Empty', forIncident: 'gate_surge', officersAvailable: 0, actions: [] } } });
+    config: {
+      runId: 'exit',
+      label: 'A',
+      seed: 42,
+      startAt,
+      endAt: 16000,
+      speed: 1000,
+      dangerDensity: 4,
+      mapId: map.id,
+      incident: testGateSurge(map, 20000),
+      officers: [],
+      plan: { id: 'empty', name: 'Empty', forIncident: 'gate_surge', officersAvailable: 0, actions: [] },
+    },
+  });
   return { sim, movement, map };
 }
 
-const cellOf = (sim: Simulation, i: number) => Math.floor(sim.ctx.dots.y[i]! / CELL_SIZE_M) * sim.ctx.map.width + Math.floor(sim.ctx.dots.x[i]! / CELL_SIZE_M);
+const cellOf = (sim: Simulation, i: number) =>
+  Math.floor(sim.ctx.dots.y[i]! / CELL_SIZE_M) * sim.ctx.map.width + Math.floor(sim.ctx.dots.x[i]! / CELL_SIZE_M);
 
 describe('exit orders', () => {
   it('starts late runs in assigned seats without overfilling cells, and restores them', async () => {
@@ -63,7 +80,11 @@ describe('exit orders', () => {
     movement.onChoice(sim.ctx, 0, 'exit_route', 'my_gate');
     const cell = cellOf(sim, 0);
     const gate = map.places[home]!;
-    const near = gate.cells.some((g) => Math.abs((g % map.width) - (cell % map.width)) <= 1 && Math.abs(Math.floor(g / map.width) - Math.floor(cell / map.width)) <= 1);
+    const near = gate.cells.some(
+      (g) =>
+        Math.abs((g % map.width) - (cell % map.width)) <= 1 &&
+        Math.abs(Math.floor(g / map.width) - Math.floor(cell / map.width)) <= 1,
+    );
     expect(near, 'placed at their own gate').toBe(true);
     expect(map.places[sim.ctx.dots.targetPlace[0]!]!.kind).toBe('parking');
     for (let t = 0; t < 300; t++) await sim.step();
@@ -73,7 +94,11 @@ describe('exit orders', () => {
   it('finds the smallest containing parking place without scanning it per release', async () => {
     const map = makeTestMap();
     const named = { ...map.places[5]!, id: 'named-lot', cells: [...map.places[5]!.cells] };
-    map.places[5] = { ...map.places[5]!, id: 'all-lots', cells: [...named.cells, ...Array.from({ length: map.width }, (_, x) => 4 * map.width + x)] };
+    map.places[5] = {
+      ...map.places[5]!,
+      id: 'all-lots',
+      cells: [...named.cells, ...Array.from({ length: map.width }, (_, x) => 4 * map.width + x)],
+    };
     map.places.push(named);
     const { sim, movement } = make(-600, 800, 30, map);
     const namedCells = new Set(named.cells);
@@ -81,17 +106,26 @@ describe('exit orders', () => {
     let fan = -1;
     while (sim.ctx.t < 0 && fan < 0) {
       await sim.step();
-      fan = Array.from({ length: sim.ctx.dots.count }, (_, i) => i).find((i) =>
-        sim.ctx.dots.stateOf(i) !== 'arriving' && !movement.describe(i).admitted && namedCells.has(lotCells[i]!)) ?? -1;
+      fan =
+        Array.from({ length: sim.ctx.dots.count }, (_, i) => i).find(
+          (i) =>
+            sim.ctx.dots.stateOf(i) !== 'arriving' && !movement.describe(i).admitted && namedCells.has(lotCells[i]!),
+        ) ?? -1;
     }
     expect(fan).toBeGreaterThanOrEqual(0);
     const parking = map.places.filter((place) => place.kind === 'parking');
     const includes = parking.map((place) => place.cells.includes);
-    parking.forEach((place) => { place.cells.includes = () => { throw new Error('release scanned parking cells'); }; });
+    parking.forEach((place) => {
+      place.cells.includes = () => {
+        throw new Error('release scanned parking cells');
+      };
+    });
     try {
       movement.onChoice(sim.ctx, fan, 'exit_route', 'wait_in_seat');
     } finally {
-      parking.forEach((place, i) => { place.cells.includes = includes[i]!; });
+      parking.forEach((place, i) => {
+        place.cells.includes = includes[i]!;
+      });
     }
     expect(sim.ctx.dots.targetPlace[fan]).toBe(map.places.indexOf(named));
   });
@@ -108,7 +142,10 @@ describe('exit orders', () => {
       dots.y[i] = 3;
     }
     density.peoplePerM2.fill(5);
-    for (let t = 0; t < 200; t++) { movement.step(sim.ctx, 1); sim.ctx.t++; }
+    for (let t = 0; t < 200; t++) {
+      movement.step(sim.ctx, 1);
+      sim.ctx.t++;
+    }
     expect(cellOf(sim, 0), 'must escape the cell above the full row').not.toBe(3);
     expect(map.cells[cellOf(sim, 0)]).not.toBe('blocked');
   });
@@ -193,7 +230,10 @@ describe('exit orders', () => {
     const sheltering: number[] = [];
     const arriving: number[] = [];
     for (let i = 0; i < dots.count; i++) {
-      if (dots.stateOf(i) === 'arriving') { arriving.push(i); continue; }
+      if (dots.stateOf(i) === 'arriving') {
+        arriving.push(i);
+        continue;
+      }
       if (dots.stateOf(i) === 'seated') seated.push(i);
       else if (dots.stateOf(i) === 'sheltering') sheltering.push(i);
       else if (movement.describe(i).admitted) admittedWalking.push(i);
@@ -217,14 +257,35 @@ describe('exit orders', () => {
     const checkpoint = sim.checkpoint();
     movement.sendTo(sim.ctx, outside[0]!, 0);
     sim.rewind(checkpoint);
-    const officer = { id: 'exit-officer', unit: 'Test officer', cell: map.places[0]!.cells[0]!, radiusCells: 100, speedMps: 2 };
+    const officer = {
+      id: 'exit-officer',
+      unit: 'Test officer',
+      cell: map.places[0]!.cells[0]!,
+      radiusCells: 100,
+      speedMps: 2,
+    };
     sim.ctx.officers.push(officer);
     sim.ctx.officerPost.set(officer.id, 0);
     for (const dot of outside) movement.onChoice(sim.ctx, dot, 'officer_instruction', 'follow');
     let outFlow = 0;
     let enteredBowl = 0;
     // Leaving is instant inside the bowl: a fan is placed on a gate cell or the free cell just outside it.
-    const gateCells = new Set(map.places.filter((p) => p.kind === 'gate').flatMap((p) => p.cells).flatMap((c) => [c, c - 1, c + 1, c - map.width, c + map.width, c - map.width - 1, c - map.width + 1, c + map.width - 1, c + map.width + 1]));
+    const gateCells = new Set(
+      map.places
+        .filter((p) => p.kind === 'gate')
+        .flatMap((p) => p.cells)
+        .flatMap((c) => [
+          c,
+          c - 1,
+          c + 1,
+          c - map.width,
+          c + map.width,
+          c - map.width - 1,
+          c - map.width + 1,
+          c + map.width - 1,
+          c + map.width + 1,
+        ]),
+    );
     const seatedThroughGate = new Set<number>();
     while (sim.ctx.t < 3600) {
       await sim.step();
@@ -238,8 +299,17 @@ describe('exit orders', () => {
     expect(enteredBowl).toBe(0);
     expect(outside.every((i) => dots.stateOf(i) === 'gone')).toBe(true);
     expect(seatedThroughGate.size).toBe(seated.length);
-    for (const [state, group] of Object.entries({ seated, admittedWalking, walkingOutside, queuedOutside, sheltering })) {
-      expect(group.every((i) => dots.stateOf(i) === 'gone'), `${state} got home`).toBe(true);
+    for (const [state, group] of Object.entries({
+      seated,
+      admittedWalking,
+      walkingOutside,
+      queuedOutside,
+      sheltering,
+    })) {
+      expect(
+        group.every((i) => dots.stateOf(i) === 'gone'),
+        `${state} got home`,
+      ).toBe(true);
     }
     expect(outFlow).toBeGreaterThan(0);
     expect(arriving.some((i) => movement.describe(i).admitted)).toBe(true);

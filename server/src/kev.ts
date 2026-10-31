@@ -30,7 +30,10 @@ export interface SystemOneRequest {
 
 interface SystemOneResponse {
   model?: string;
-  answers?: Record<string, { type?: string; choice?: string; confidence?: number; probabilities?: Record<string, number> }>;
+  answers?: Record<
+    string,
+    { type?: string; choice?: string; confidence?: number; probabilities?: Record<string, number> }
+  >;
   latency_ms?: number;
 }
 

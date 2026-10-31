@@ -1,18 +1,32 @@
 import { describe, expect, it } from 'vitest';
 import { CONTRACT_VERSION, type MapBundle } from '../../contracts.ts';
-import type { SceneInfo } from '../../engine/src/edits.ts';
+import type { SceneInfo } from '../../engine/src/index.ts';
 import { barricadePlacements, buildBarricades, closedAreas, closureKey } from './barricadeArt.ts';
 import { diagonalZ, personZ, vehicleDiagonal } from './depth.ts';
 
 function roadMap(): MapBundle {
   return {
-    version: CONTRACT_VERSION, id: 'road', name: 'Road', width: 30, height: 12,
-    cells: Array.from({ length: 360 }, (_, c) => Math.floor(c / 30) >= 4 && Math.floor(c / 30) <= 6 ? 'road' : 'walk'),
-    places: [], closables: [], sources: [],
+    version: CONTRACT_VERSION,
+    id: 'road',
+    name: 'Road',
+    width: 30,
+    height: 12,
+    cells: Array.from({ length: 360 }, (_, c) =>
+      Math.floor(c / 30) >= 4 && Math.floor(c / 30) <= 6 ? 'road' : 'walk',
+    ),
+    places: [],
+    closables: [],
+    sources: [],
   };
 }
-const scene = (closed: string[], barricades: SceneInfo['barricades'] = []): SceneInfo =>
-  ({ t: 0, officers: [], gates: [], alerts: [], closed, barricades });
+const scene = (closed: string[], barricades: SceneInfo['barricades'] = []): SceneInfo => ({
+  t: 0,
+  officers: [],
+  gates: [],
+  alerts: [],
+  closed,
+  barricades,
+});
 
 describe('barricade placement and depth', () => {
   it('spans the road at both ends and places intermediate barriers', () => {
@@ -31,7 +45,12 @@ describe('barricade placement and depth', () => {
     const map = roadMap();
     const cells = [123, 124, 125, 126];
     const pieces = barricadePlacements(cells, map.width, (c) => map.cells[c], true);
-    expect(pieces.map((p) => [p.x, p.y])).toEqual([[7, 9], [9, 9], [11, 9], [13, 9]]);
+    expect(pieces.map((p) => [p.x, p.y])).toEqual([
+      [7, 9],
+      [9, 9],
+      [11, 9],
+      [13, 9],
+    ]);
     for (const p of pieces) {
       expect(p.angle).toBeCloseTo(0);
       expect(p.kind).toBe('sawhorse');
@@ -41,7 +60,7 @@ describe('barricade placement and depth', () => {
   it('caps pieces on long streets and doors, and accepts empty closures', () => {
     const cells = Array.from({ length: 10000 }, (_, c) => c);
     for (const gate of [false, true]) {
-      const pieces = barricadePlacements(cells, 10000, (c) => c >= 0 && c < 10000 ? 'road' : undefined, gate);
+      const pieces = barricadePlacements(cells, 10000, (c) => (c >= 0 && c < 10000 ? 'road' : undefined), gate);
       expect(pieces.length).toBeGreaterThan(0);
       expect(pieces.length).toBeLessThanOrEqual(96);
     }
@@ -72,8 +91,15 @@ it('merges closed map and live areas without duplicates and invalidates moved/re
   expect(closedAreas(map, info).map((a) => a.id)).toEqual(['street', 'live']);
   expect(closedAreas(map, null)).toEqual([]);
   expect(closureKey(info)).toBe(closureKey({ ...info, closed: ['live', 'street'] }));
-  expect(closureKey(info)).not.toBe(closureKey({ ...info, barricades: info.barricades!.map((b) => b.id === live.id ? { ...b, cells: [158, 159] } : b) }));
-  expect(closureKey(info)).not.toBe(closureKey({ ...info, barricades: info.barricades!.map((b) => b.id === live.id ? { ...b, name: 'Moved' } : b) }));
+  expect(closureKey(info)).not.toBe(
+    closureKey({
+      ...info,
+      barricades: info.barricades!.map((b) => (b.id === live.id ? { ...b, cells: [158, 159] } : b)),
+    }),
+  );
+  expect(closureKey(info)).not.toBe(
+    closureKey({ ...info, barricades: info.barricades!.map((b) => (b.id === live.id ? { ...b, name: 'Moved' } : b)) }),
+  );
 });
 
 it('recognises gates by overlapping cells, with the marker along the doorway', () => {

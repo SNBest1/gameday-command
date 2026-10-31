@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Application, Container, Graphics, Sprite, Texture } from 'pixi.js';
 import type { CellKind, MapBundle, VehicleKind, WeatherState } from '../../contracts.ts';
 import { CELL_SIZE_M, DOT_STATES, VEHICLE_KINDS, VEHICLE_STATES } from '../../contracts.ts';
-import type { SceneInfo } from '../../engine/src/edits.ts';
+import type { SceneInfo } from '../../engine/src/index.ts';
 import { closedAreas, closureKey, type ClosedArea } from './barricadeArt.ts';
-import { roadNetFor } from '../../engine/src/traffic.ts';
+import { roadNetFor } from '../../engine/src/index.ts';
 import { VEHICLE_TYPES } from '../../world/src/vehicles.ts';
 import { bandOf, heatBands } from './heat.ts';
 import { STATE_RGB } from './people.ts';
@@ -79,7 +79,8 @@ function paintBase(map: MapBundle): HTMLCanvasElement {
   for (const c of field) vMax = Math.max(vMax, Math.abs(along(c)));
   // Stands in the home team's colour, dark enough that crowds and heat read over it.
   const team = map.theme && map.theme.team !== 'Ohio State Buckeyes' ? parseInt(map.theme.primary.slice(1), 16) : null;
-  const stands: [number, number, number] | null = team === null ? null : [((team >> 16) & 255) * 0.45, ((team >> 8) & 255) * 0.45, (team & 255) * 0.45];
+  const stands: [number, number, number] | null =
+    team === null ? null : [((team >> 16) & 255) * 0.45, ((team >> 8) & 255) * 0.45, (team & 255) * 0.45];
   for (let i = 0; i < map.cells.length; i++) {
     const kind = map.cells[i]!;
     let [r, g, b] = kind === 'stands' && stands ? stands : RGB[kind];
@@ -89,20 +90,26 @@ function paintBase(map: MapBundle): HTMLCanvasElement {
       if (sport === 'cricket' || sport === 'baseball') {
         // Mown in rings, with the pitch (or the dirt infield) at the middle.
         const ringBand = Math.floor(Math.hypot(u, v) / 3) % 2;
-        const pitch = sport === 'cricket' ? Math.abs(u) < 0.8 && Math.abs(v) < 5.5 : Math.abs(u) + Math.abs(v - vMax * 0.25) < 10;
+        const pitch =
+          sport === 'cricket' ? Math.abs(u) < 0.8 && Math.abs(v) < 5.5 : Math.abs(u) + Math.abs(v - vMax * 0.25) < 10;
         [r, g, b] = pitch ? [0xc8, 0xb2, 0x7a] : ringBand ? [0x2f, 0x72, 0x36] : [0x36, 0x80, 0x3d];
       } else {
         // Turf in stripes (about 4.6 cells); team-coloured end zones on a football field.
         const stripe = Math.floor((v + vMax) / 4.57) % 2;
         const endZone = sport === 'football' && team !== null && Math.abs(v) > vMax - 4.6;
-        [r, g, b] = endZone ? [((team! >> 16) & 255) * 0.85, ((team! >> 8) & 255) * 0.85, (team! & 255) * 0.85] : stripe ? [0x2f, 0x72, 0x36] : [0x36, 0x80, 0x3d];
+        [r, g, b] = endZone
+          ? [((team! >> 16) & 255) * 0.85, ((team! >> 8) & 255) * 0.85, (team! & 255) * 0.85]
+          : stripe
+            ? [0x2f, 0x72, 0x36]
+            : [0x36, 0x80, 0x3d];
       }
     }
     const x = i % W;
     const y = (i / W) | 0;
     if (kind === 'blocked') {
       // Roofs read as raised: lighter where they meet open ground.
-      const open = (xx: number, yy: number) => xx >= 0 && yy >= 0 && xx < W && yy < map.height && map.cells[yy * W + xx] !== 'blocked';
+      const open = (xx: number, yy: number) =>
+        xx >= 0 && yy >= 0 && xx < W && yy < map.height && map.cells[yy * W + xx] !== 'blocked';
       if (open(x - 1, y) || open(x, y - 1)) [r, g, b] = [0x2e, 0x37, 0x43];
       else if (open(x + 1, y) || open(x, y + 1)) [r, g, b] = [0x0e, 0x12, 0x17];
     } else if (kind === 'walk') {
@@ -192,11 +199,28 @@ export interface ComparisonMapsProps {
 }
 
 const darkSky = (w?: WeatherState) =>
-  !!w && (w.kind === 'rain' || w.kind === 'heavy_rain' || w.kind === 'thunderstorm' || w.kind === 'fog' || w.kind === 'snow' || (w.kind === 'overcast' && w.intensity > 0.4));
-
+  !!w &&
+  (w.kind === 'rain' ||
+    w.kind === 'heavy_rain' ||
+    w.kind === 'thunderstorm' ||
+    w.kind === 'fog' ||
+    w.kind === 'snow' ||
+    (w.kind === 'overcast' && w.intensity > 0.4));
 
 export function ComparisonMaps(props: ComparisonMapsProps) {
-  const { map, runs, scrubIndex, dangerDensity, incidentCells, selectedBand, vehicleFocus, showVehicles, picked, focus, onPick } = props;
+  const {
+    map,
+    runs,
+    scrubIndex,
+    dangerDensity,
+    incidentCells,
+    selectedBand,
+    vehicleFocus,
+    showVehicles,
+    picked,
+    focus,
+    onPick,
+  } = props;
   // One panel per run handed in: three side by side, or one large 2D plan.
   const N = Math.max(1, runs.length);
   const PX = pxPerCell(map, N);
@@ -216,7 +240,11 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
             x += (c % map.width) + 0.5;
             y += Math.floor(c / map.width) + 0.5;
           }
-          return { x: (x / p.cells.length) * CELL_SIZE_M, y: (y / p.cells.length) * CELL_SIZE_M, n: /(\d+)/.exec(p.name)?.[1] ?? '?' };
+          return {
+            x: (x / p.cells.length) * CELL_SIZE_M,
+            y: (y / p.cells.length) * CELL_SIZE_M,
+            n: /(\d+)/.exec(p.name)?.[1] ?? '?',
+          };
         }),
     [map],
   );
@@ -230,7 +258,10 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
       (map.streets ?? [])
         .filter((st) => st.name || /primary|secondary|tertiary|trunk|motorway/.test(st.kind))
         .map((st) => {
-          let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+          let x0 = Infinity,
+            y0 = Infinity,
+            x1 = -Infinity,
+            y1 = -Infinity;
           for (let i = 0; i < st.points.length; i += 2) {
             x0 = Math.min(x0, st.points[i]!);
             x1 = Math.max(x1, st.points[i]!);
@@ -406,7 +437,8 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
     for (const panel of panels) {
       panel.zone.clear();
       if (!incidentCells || incidentCells.length === 0) continue;
-      for (const cell of incidentCells) panel.zone.rect((cell % map.width) * PX, Math.floor(cell / map.width) * PX, PX, PX);
+      for (const cell of incidentCells)
+        panel.zone.rect((cell % map.width) * PX, Math.floor(cell / map.width) * PX, PX, PX);
       panel.zone.fill({ color: 0xffd166, alpha: 0.06 });
       panel.zone.stroke({ color: 0xffd166, width: 1.2 / settledZoom, alpha: 0.6 });
     }
@@ -452,10 +484,14 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
       const fly = flyRef.current;
       if (fly) {
         const k = Math.min(1, (now - fly.start) / fly.ms);
-        const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+        const e = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2;
         // Zoom moves in log space so the flight feels even.
         const z = Math.exp(Math.log(fly.from.z) + (Math.log(fly.to.z) - Math.log(fly.from.z)) * e);
-        viewRef.current = clampView({ z, cx: fly.from.cx + (fly.to.cx - fly.from.cx) * e, cy: fly.from.cy + (fly.to.cy - fly.from.cy) * e });
+        viewRef.current = clampView({
+          z,
+          cx: fly.from.cx + (fly.to.cx - fly.from.cx) * e,
+          cy: fly.from.cy + (fly.to.cy - fly.from.cy) * e,
+        });
         if (k >= 1) {
           flyRef.current = null;
           setViewTick((t) => t + 1);
@@ -467,7 +503,8 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
       const anyFlashing = p.runs.some((r) => {
         const v = r.latest.current?.frame.vehicles;
         if (!v) return false;
-        for (let i = v.state.length - 2; i < v.state.length; i++) if (i >= 0 && v.state[i] === VS.responding) return true;
+        for (let i = v.state.length - 2; i < v.state.length; i++)
+          if (i >= 0 && v.state[i] === VS.responding) return true;
         return false;
       });
       const due = now - lastDraw >= FPS_MS;
@@ -603,8 +640,11 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
           ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info').trim();
           ctx.globalAlpha = 0.09;
           for (const o of p.runs[index]!.scene.current?.officers ?? []) {
-            if (seen.has(o.cell)) continue; seen.add(o.cell);
-            ctx.beginPath();ctx.arc(toX(o.x),toY(o.y),(o.radiusCells??10)*CELL_SIZE_M*m2px,0,Math.PI*2);ctx.fill();
+            if (seen.has(o.cell)) continue;
+            seen.add(o.cell);
+            ctx.beginPath();
+            ctx.arc(toX(o.x), toY(o.y), (o.radiusCells ?? 10) * CELL_SIZE_M * m2px, 0, Math.PI * 2);
+            ctx.fill();
           }
           ctx.globalAlpha = 1;
         }
@@ -663,7 +703,9 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
             if (sx + size < 0 || sy + size < 0 || sx > panelW || sy > panelH) continue;
             ctx.fillRect(sx, sy, size, size);
           }
-          const sx = toX(area.x), sy = toY(area.y), k = closureScale;
+          const sx = toX(area.x),
+            sy = toY(area.y),
+            k = closureScale;
           if (sx < -24 * k || sy < -24 * k || sx > panelW + 24 * k || sy > panelH + 24 * k) continue;
           ctx.save();
           ctx.translate(sx, sy);
@@ -685,19 +727,33 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
           ctx.fillRect(sx - 4 * k, sy - k, 8 * k, 2 * k);
         }
 
-        ctx.setTransform(1,0,0,1,ox,0);
-        ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
-        ctx.font='12px Public Sans, sans-serif';
-        for(const m of p.runs[index]!.scene.current?.markers??[]) {
-          const x=toX((m.cell%map.width+.5)*CELL_SIZE_M),y=toY((Math.floor(m.cell/map.width)+.5)*CELL_SIZE_M);
-          ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--info').trim();ctx.strokeRect(x-5,y-5,10,10);ctx.fillText(m.name+' marker',x+8,y);
+        ctx.setTransform(1, 0, 0, 1, ox, 0);
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+        ctx.font = '12px Public Sans, sans-serif';
+        for (const m of p.runs[index]!.scene.current?.markers ?? []) {
+          const x = toX(((m.cell % map.width) + 0.5) * CELL_SIZE_M),
+            y = toY((Math.floor(m.cell / map.width) + 0.5) * CELL_SIZE_M);
+          ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--info').trim();
+          ctx.strokeRect(x - 5, y - 5, 10, 10);
+          ctx.fillText(m.name + ' marker', x + 8, y);
         }
-        if(p.showCoverage)for(const o of p.runs[index]!.scene.current?.officers??[]) {
-          const route=o.route??[];if(!route.length)continue;
-          ctx.beginPath();ctx.moveTo(toX(o.x),toY(o.y));
-          for(const c of route)ctx.lineTo(toX((c%map.width+.5)*CELL_SIZE_M),toY((Math.floor(c/map.width)+.5)*CELL_SIZE_M));
-          ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--info').trim();ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
-        }
+        if (p.showCoverage)
+          for (const o of p.runs[index]!.scene.current?.officers ?? []) {
+            const route = o.route ?? [];
+            if (!route.length) continue;
+            ctx.beginPath();
+            ctx.moveTo(toX(o.x), toY(o.y));
+            for (const c of route)
+              ctx.lineTo(
+                toX(((c % map.width) + 0.5) * CELL_SIZE_M),
+                toY((Math.floor(c / map.width) + 0.5) * CELL_SIZE_M),
+              );
+            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--info').trim();
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([5, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
         // Officers: a blue disc with a white ring, a shield when close.
         ctx.setTransform(1, 0, 0, 1, ox, 0);
         if (view) {
@@ -838,7 +894,21 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
 
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [map, net, PX, panelW, panelH, totalW, clampView, viewFor, streetBoxes, gateBadges, team.primary, team.secondary, teamInk]);
+  }, [
+    map,
+    net,
+    PX,
+    panelW,
+    panelH,
+    totalW,
+    clampView,
+    viewFor,
+    streetBoxes,
+    gateBadges,
+    team.primary,
+    team.secondary,
+    teamInk,
+  ]);
 
   // ─── input: wheel zoom, drag pan, click to inspect ───
   const toCanvas = (event: { clientX: number; clientY: number }, el: HTMLElement) => {
@@ -889,7 +959,13 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { x: event.clientX, y: event.clientY, cx: viewRef.current.cx, cy: viewRef.current.cy, moved: false };
+    dragRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      cx: viewRef.current.cx,
+      cy: viewRef.current.cy,
+      moved: false,
+    };
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -998,26 +1074,46 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
   };
   const incidentBox = () => {
     if (!incidentCells || incidentCells.length === 0) return;
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    let x0 = Infinity,
+      y0 = Infinity,
+      x1 = -Infinity,
+      y1 = -Infinity;
     for (const c of incidentCells) {
       const x = c % map.width;
       const y = Math.floor(c / map.width);
-      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+      x0 = Math.min(x0, x);
+      y0 = Math.min(y0, y);
+      x1 = Math.max(x1, x);
+      y1 = Math.max(y1, y);
     }
     const w = (x1 - x0 + 1) * PX;
     const h = (y1 - y0 + 1) * PX;
-    flyTo({ z: Math.max(1, Math.min(panelW / (w * 1.5 + 20), panelH / (h * 1.5 + 20))), cx: ((x0 + x1 + 1) / 2) * PX, cy: ((y0 + y1 + 1) / 2) * PX });
+    flyTo({
+      z: Math.max(1, Math.min(panelW / (w * 1.5 + 20), panelH / (h * 1.5 + 20))),
+      cx: ((x0 + x1 + 1) / 2) * PX,
+      cy: ((y0 + y1 + 1) / 2) * PX,
+    });
   };
   const stadiumBox = () => {
     const bowl = map.places.find((p) => p.kind === 'seating');
     if (!bowl) return;
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    let x0 = Infinity,
+      y0 = Infinity,
+      x1 = -Infinity,
+      y1 = -Infinity;
     for (const c of bowl.cells) {
       const x = c % map.width;
       const y = Math.floor(c / map.width);
-      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+      x0 = Math.min(x0, x);
+      y0 = Math.min(y0, y);
+      x1 = Math.max(x1, x);
+      y1 = Math.max(y1, y);
     }
-    flyTo({ z: Math.min(panelW / ((x1 - x0) * PX * 1.4), panelH / ((y1 - y0) * PX * 1.4)), cx: ((x0 + x1) / 2) * PX, cy: ((y0 + y1) / 2) * PX });
+    flyTo({
+      z: Math.min(panelW / ((x1 - x0) * PX * 1.4), panelH / ((y1 - y0) * PX * 1.4)),
+      cx: ((x0 + x1) / 2) * PX,
+      cy: ((y0 + y1) / 2) * PX,
+    });
   };
 
   return (
@@ -1052,11 +1148,21 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
         onPointerUp={(e) => e.stopPropagation()}
         onDoubleClick={(e) => e.stopPropagation()}
       >
-        <button onClick={() => zoomBy(1.8)} title="Zoom in">＋</button>
-        <button onClick={() => zoomBy(1 / 1.8)} title="Zoom out">－</button>
-        <button onClick={() => flyTo(fit)} title="Whole map">Fit</button>
-        <button onClick={stadiumBox} title="Zoom to the stadium">Stadium</button>
-        <button onClick={incidentBox} title="Zoom to the incident zone" disabled={!incidentCells?.length}>Incident</button>
+        <button onClick={() => zoomBy(1.8)} title="Zoom in">
+          ＋
+        </button>
+        <button onClick={() => zoomBy(1 / 1.8)} title="Zoom out">
+          －
+        </button>
+        <button onClick={() => flyTo(fit)} title="Whole map">
+          Fit
+        </button>
+        <button onClick={stadiumBox} title="Zoom to the stadium">
+          Stadium
+        </button>
+        <button onClick={incidentBox} title="Zoom to the incident zone" disabled={!incidentCells?.length}>
+          Incident
+        </button>
         <span className="zoom-level">{z >= 10 ? Math.round(z) : z.toFixed(1)}×</span>
       </div>
     </div>

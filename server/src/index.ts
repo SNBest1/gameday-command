@@ -1,6 +1,14 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
-import type { BriefingRequest, DecisionAnswer, DecisionAsk, Incident, MapBundle, ResponsePlan, Scorecard } from '../../contracts.ts';
+import type {
+  BriefingRequest,
+  DecisionAnswer,
+  DecisionAsk,
+  Incident,
+  MapBundle,
+  ResponsePlan,
+  Scorecard,
+} from '../../contracts.ts';
 import { DECISION_TIMEOUT_MS } from '../../contracts.ts';
 import { DECISION_DEFAULTS } from '../../brain/src/defaults.ts';
 import { SITUATIONS } from '../../brain/src/situations.ts';
@@ -146,7 +154,10 @@ export function createApp(db: Db): Hono {
   addCommandRoutes(
     app,
     db,
-    [...(extractExists() ? [{ id: STADIUM_MAP_ID, name: 'Ohio Stadium + 0.5 mi', theme: OHIO_THEME }] : []), { id: TEST_MAP_ID, name: 'Three-gate test map' }],
+    [
+      ...(extractExists() ? [{ id: STADIUM_MAP_ID, name: 'Ohio Stadium + 0.5 mi', theme: OHIO_THEME }] : []),
+      { id: TEST_MAP_ID, name: 'Three-gate test map' },
+    ],
     (id) => built.delete(id),
   );
 
@@ -184,9 +195,7 @@ export function createApp(db: Db): Hono {
 
     for (const ask of asks) {
       if (answers.has(ask.key)) continue;
-      const cached = readCache.get(ask.key) as
-        | { odds: string; model: string | null; ms: number | null }
-        | undefined;
+      const cached = readCache.get(ask.key) as { odds: string; model: string | null; ms: number | null } | undefined;
       if (cached) {
         const odds = JSON.parse(cached.odds) as Record<string, number>;
         if (oddsAreValid(odds, optionsFor(ask))) {
@@ -267,9 +276,9 @@ export function createApp(db: Db): Hono {
   });
 
   app.get('/api/comparisons/:id', (c) => {
-    const row = db
-      .prepare('select json from comparisons where id = ?')
-      .get(c.req.param('id')) as { json: string } | undefined;
+    const row = db.prepare('select json from comparisons where id = ?').get(c.req.param('id')) as
+      | { json: string }
+      | undefined;
     return row ? c.json(JSON.parse(row.json)) : c.json({ error: 'no such comparison' }, 404);
   });
 

@@ -68,8 +68,15 @@ describe.skipIf(!haveMap)('vehicle traffic on the stadium map', () => {
 
   it('clears a closed street, keeps vehicles out, and still lets traffic leave', () => {
     const m = map!;
-    const traffic = new TrafficModel({ map: m, config: { ...TRAFFIC, vehicles: 300, emergencyResponse: false },
-      population, incident: gateSurge(m, 0), startAt: GAME_END_S, endAt: GAME_END_S + 1200, gameEndAt: GAME_END_S });
+    const traffic = new TrafficModel({
+      map: m,
+      config: { ...TRAFFIC, vehicles: 300, emergencyResponse: false },
+      population,
+      incident: gateSurge(m, 0),
+      startAt: GAME_END_S,
+      endAt: GAME_END_S + 1200,
+      gameEndAt: GAME_END_S,
+    });
     const input = { dt: 1, weather: CLEAR_SKY, density: DensityField.forMap(m), dots: new DotStore(0) };
     for (let t = GAME_END_S; t < GAME_END_S + 600; t++) traffic.step({ ...input, t, closed: new Set() });
     const before = traffic.frame();
@@ -162,20 +169,48 @@ describe('vehicle closure boundaries', () => {
   const W = 31;
   const H = 15;
   const cells: MapBundle['cells'] = Array.from({ length: W * H }, (_, c) =>
-    c % W >= 23 && Math.floor(c / W) >= 4 && Math.floor(c / W) <= 10 ? 'parking' : 'road');
-  const bundle: MapBundle = { ...makeTestMap(), width: W, height: H, cells,
-    places: [{ id: 'lot', name: 'Lot', kind: 'parking', capacity: 100,
-      cells: cells.flatMap((kind, c) => kind === 'parking' ? [c] : []) }],
-    closables: [{ id: 'barrier', name: 'Barrier', cells: Array.from({ length: H }, (_, y) => y * W + 15) },
-      { id: 'border', name: 'Border', cells: cells.flatMap((_, c) =>
-        c % W === 0 || c % W === W - 1 || c < W || c >= W * (H - 1) ? [c] : []) },
-      { id: 'scene', name: 'Scene', cells: cells.flatMap((_, c) =>
-        c % W >= 12 && c % W <= 18 && Math.floor(c / W) >= 4 && Math.floor(c / W) <= 10 ? [c] : []) }] };
+    c % W >= 23 && Math.floor(c / W) >= 4 && Math.floor(c / W) <= 10 ? 'parking' : 'road',
+  );
+  const bundle: MapBundle = {
+    ...makeTestMap(),
+    width: W,
+    height: H,
+    cells,
+    places: [
+      {
+        id: 'lot',
+        name: 'Lot',
+        kind: 'parking',
+        capacity: 100,
+        cells: cells.flatMap((kind, c) => (kind === 'parking' ? [c] : [])),
+      },
+    ],
+    closables: [
+      { id: 'barrier', name: 'Barrier', cells: Array.from({ length: H }, (_, y) => y * W + 15) },
+      {
+        id: 'border',
+        name: 'Border',
+        cells: cells.flatMap((_, c) => (c % W === 0 || c % W === W - 1 || c < W || c >= W * (H - 1) ? [c] : [])),
+      },
+      {
+        id: 'scene',
+        name: 'Scene',
+        cells: cells.flatMap((_, c) =>
+          c % W >= 12 && c % W <= 18 && Math.floor(c / W) >= 4 && Math.floor(c / W) <= 10 ? [c] : [],
+        ),
+      },
+    ],
+  };
 
   function setup(emergencyResponse = false, m = bundle) {
-    const traffic = new TrafficModel({ map: m, config: { vehicles: 1, seed: 77, emergencyResponse },
-      population, incident: { ...gateSurge(makeTestMap(), 0), cells: [7 * W + 15], placeId: undefined },
-      startAt: -10000, endAt: 1000 });
+    const traffic = new TrafficModel({
+      map: m,
+      config: { vehicles: 1, seed: 77, emergencyResponse },
+      population,
+      incident: { ...gateSurge(makeTestMap(), 0), cells: [7 * W + 15], placeId: undefined },
+      startAt: -10000,
+      endAt: 1000,
+    });
     const input = { t: 0, dt: 1, weather: CLEAR_SKY, density: DensityField.forMap(m), dots: new DotStore(0) };
     return { traffic, input };
   }
@@ -192,9 +227,19 @@ describe('vehicle closure boundaries', () => {
     if (ems) expect(VEHICLE_STATES[traffic.frame().state[traffic.ambulance]!]).toBe('responding');
   });
 
-  it.each([['inbound', 1], ['outbound', 4], ['EMS', 5]] as const)('keeps %s traffic out of a closure and resumes after reopening', (_, mode) => {
+  it.each([
+    ['inbound', 1],
+    ['outbound', 4],
+    ['EMS', 5],
+  ] as const)('keeps %s traffic out of a closure and resumes after reopening', (_, mode) => {
     const { traffic, input } = setup(mode === 5);
-    const saved = traffic.capture() as { hx: Float32Array; hy: Float32Array; mode: Uint8Array; speed: Float32Array; heading: Float32Array };
+    const saved = traffic.capture() as {
+      hx: Float32Array;
+      hy: Float32Array;
+      mode: Uint8Array;
+      speed: Float32Array;
+      heading: Float32Array;
+    };
     saved.hx[0] = 21;
     saved.hy[0] = 15;
     saved.heading[0] = 0;
@@ -244,7 +289,13 @@ describe('vehicle closure boundaries', () => {
 
   it.each([1, 4])('does not drive a parking maneuver across a newly closed cell with dt=%s', (dt) => {
     const { traffic, input } = setup();
-    const saved = traffic.capture() as { hx: Float32Array; hy: Float32Array; mode: Uint8Array; targetX: Float32Array; targetY: Float32Array };
+    const saved = traffic.capture() as {
+      hx: Float32Array;
+      hy: Float32Array;
+      mode: Uint8Array;
+      targetX: Float32Array;
+      targetY: Float32Array;
+    };
     saved.hx[0] = 29;
     saved.hy[0] = 15;
     saved.mode[0] = 2;

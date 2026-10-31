@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GateStat } from '../../engine/src/edits.ts';
+import type { GateStat } from '../../engine/src/index.ts';
 import {
   SEIZED_HOLD_S,
   SEIZED_WAITING,
@@ -70,10 +70,7 @@ describe('gate health', () => {
   });
 
   it('flags seized after 120 sim s of a queue with 0 in/min', () => {
-    const current = sample(180, [
-      gate(1, { inPerMin: 160, waiting: 5 }),
-      gate(2, { waiting: 990 }),
-    ]);
+    const current = sample(180, [gate(1, { inPerMin: 160, waiting: 5 }), gate(2, { waiting: 990 })]);
     const seized = healthOf(classifyGates(stalledHistory(), current), 2);
 
     expect(SEIZED_HOLD_S).toBe(120);
@@ -99,10 +96,7 @@ describe('gate health', () => {
   });
 
   it('clears a seized gate as soon as in/min is non-zero again, and restarts the hold', () => {
-    const recovered = sample(300, [
-      gate(1, { inPerMin: 160, waiting: 5 }),
-      gate(2, { inPerMin: 160, waiting: 600 }),
-    ]);
+    const recovered = sample(300, [gate(1, { inPerMin: 160, waiting: 5 }), gate(2, { inPerMin: 160, waiting: 600 })]);
     const healed = healthOf(classifyGates(stalledHistory(), recovered), 2);
     expect(healed).toMatchObject({ health: 'ok', stalledForS: 0 });
     expect(healed.reason).not.toContain('seized');

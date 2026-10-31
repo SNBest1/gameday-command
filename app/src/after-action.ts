@@ -1,5 +1,5 @@
 import type { Scorecard } from '../../contracts.ts';
-import type { PoliceOrder, SceneInfo } from '../../engine/src/edits.ts';
+import type { PoliceOrder, SceneInfo } from '../../engine/src/index.ts';
 import { clockText } from './story.ts';
 
 /**
@@ -60,9 +60,12 @@ export function timeline(
   const entries: TimelineEntry[] = [];
   for (const { t, order } of scene.orders ?? []) {
     const kind: TimelineEntry['kind'] =
-      order.type === 'respond' && order.suggestionAt !== undefined ? 'suggestion accepted'
-        : order.type === 'dismiss_suggestion' ? 'suggestion dismissed'
-          : order.type === 'officer_report' ? 'officer report'
+      order.type === 'respond' && order.suggestionAt !== undefined
+        ? 'suggestion accepted'
+        : order.type === 'dismiss_suggestion'
+          ? 'suggestion dismissed'
+          : order.type === 'officer_report'
+            ? 'officer report'
             : 'order';
     entries.push({ t, clock: clockText(t), kind, text: describe(order) });
   }

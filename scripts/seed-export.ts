@@ -56,9 +56,7 @@ if (!dbPath) {
 }
 
 const outPath =
-  process.argv[2] ??
-  process.env.SEED_OUT ??
-  join(import.meta.dirname, '..', 'server', 'data', 'decision-seed.json');
+  process.argv[2] ?? process.env.SEED_OUT ?? join(import.meta.dirname, '..', 'server', 'data', 'decision-seed.json');
 
 // `DatabaseSync` creates a missing file, so a typo would otherwise export an
 // empty table instead of telling the operator the path is wrong.
@@ -68,13 +66,9 @@ let rows: SeedRow[] = [];
 let db: DatabaseSync | undefined;
 try {
   db = new DatabaseSync(dbPath);
-  const table = db
-    .prepare("select name from sqlite_master where type = 'table' and name = 'decision_cache'")
-    .get();
+  const table = db.prepare("select name from sqlite_master where type = 'table' and name = 'decision_cache'").get();
   if (!table) fail(`${dbPath} has no decision_cache table — is this a gameday database?`);
-  rows = db
-    .prepare('select key, odds, model, ms from decision_cache order by key')
-    .all() as unknown as SeedRow[];
+  rows = db.prepare('select key, odds, model, ms from decision_cache order by key').all() as unknown as SeedRow[];
 } catch (error) {
   fail(`could not read decision_cache from ${dbPath}: ${(error as Error).message}`);
 } finally {

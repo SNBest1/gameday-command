@@ -10,7 +10,8 @@ export interface FmOptions {
 export const PROMPT_TOKEN_BUDGET = 4000;
 export const PROMPT_CHAR_BUDGET = PROMPT_TOKEN_BUDGET * 4;
 
-const minutes = (value: number | null) => (value === null ? 'never cleared in this window' : `${Math.round(value)} minutes`);
+const minutes = (value: number | null) =>
+  value === null ? 'never cleared in this window' : `${Math.round(value)} minutes`;
 
 function planLine(card: Scorecard, name: string): string {
   return [

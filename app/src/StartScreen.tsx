@@ -142,7 +142,7 @@ export function StartScreen({ onPick }: { onPick: (id: string) => void }) {
         const step = Number(event.step);
         const steps = Number(event.steps);
         setProgress({
-          label: event.label ?? (event.stage ? STAGE_LABELS[event.stage] ?? event.stage : 'Importing'),
+          label: event.label ?? (event.stage ? (STAGE_LABELS[event.stage] ?? event.stage) : 'Importing'),
           step: Number.isFinite(step) && step >= 0 ? step : 0,
           steps: Number.isFinite(steps) && steps > 0 ? steps : 0,
           bytes: typeof bytes === 'number' ? bytes : undefined,
@@ -183,7 +183,8 @@ export function StartScreen({ onPick }: { onPick: (id: string) => void }) {
     }
   };
 
-  const percent = progress && progress.steps > 0 ? Math.min(100, Math.round((progress.step / progress.steps) * 100)) : null;
+  const percent =
+    progress && progress.steps > 0 ? Math.min(100, Math.round((progress.step / progress.steps) * 100)) : null;
   const downloading = progress !== null && progress.bytes !== undefined;
 
   return (
@@ -193,12 +194,20 @@ export function StartScreen({ onPick }: { onPick: (id: string) => void }) {
           <h1>Gameday Command</h1>
           <ThemeToggle />
         </div>
-        <p className="lead">Test crowd and traffic plans for a stadium before game day. Pick one you have, or bring in any stadium from OpenStreetMap.</p>
+        <p className="lead">
+          Test crowd and traffic plans for a stadium before game day. Pick one you have, or bring in any stadium from
+          OpenStreetMap.
+        </p>
 
         <h2>Your stadiums</h2>
         <div className="start-maps">
           {orderStadiums(maps).map((m) => (
-            <button key={m.id} className="start-map" onClick={() => onPick(m.id)} style={m.theme ? ({ '--edge': m.theme.primary } as CSSProperties) : undefined}>
+            <button
+              key={m.id}
+              className="start-map"
+              onClick={() => onPick(m.id)}
+              style={m.theme ? ({ '--edge': m.theme.primary } as CSSProperties) : undefined}
+            >
               <strong>{m.name.replace(/ \+ 0\.5 mi$/, '')}</strong>
               {m.imported ? (
                 <em>{[whereText(m.name, placeText(m)), 'imported from OpenStreetMap'].filter(Boolean).join(', ')}</em>
@@ -224,19 +233,29 @@ export function StartScreen({ onPick }: { onPick: (id: string) => void }) {
             void search();
           }}
         >
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Michigan Stadium, Beaver Stadium, Wembley" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Michigan Stadium, Beaver Stadium, Wembley"
+          />
           <button className="go" disabled={q.trim().length < 3 || busy !== null}>
             {busy === 'search' ? 'Searching…' : 'Search'}
           </button>
         </form>
-        {hits && hits.length === 0 && <p className="muted">No stadiums by that name on OpenStreetMap. Try the full name.</p>}
+        {hits && hits.length === 0 && (
+          <p className="muted">No stadiums by that name on OpenStreetMap. Try the full name.</p>
+        )}
         {hits && hits.length > 0 && (
           <ul className="start-hits">
             {hits.map((h) => (
               <li key={`${h.osmType}-${h.osmId}`}>
                 <span>
                   <strong>{h.name}</strong>
-                  <em>{[placeText(h), h.capacity ? `${h.capacity.toLocaleString()} seats` : ''].filter(Boolean).join(', ')}</em>
+                  <em>
+                    {[placeText(h), h.capacity ? `${h.capacity.toLocaleString()} seats` : '']
+                      .filter(Boolean)
+                      .join(', ')}
+                  </em>
                 </span>
                 <button className="small" disabled={busy !== null} onClick={() => void importHit(h)}>
                   {busy === `${h.osmType}-${h.osmId}` ? 'Importing…' : 'Import'}
@@ -264,7 +283,13 @@ export function StartScreen({ onPick }: { onPick: (id: string) => void }) {
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={percent ?? undefined}
-              aria-valuetext={downloading ? `${megabytes(progress.bytes ?? 0)} downloaded` : percent !== null ? `${percent}%` : 'working'}
+              aria-valuetext={
+                downloading
+                  ? `${megabytes(progress.bytes ?? 0)} downloaded`
+                  : percent !== null
+                    ? `${percent}%`
+                    : 'working'
+              }
             >
               <i style={percent !== null ? { width: `${percent}%` } : undefined} />
             </div>
@@ -280,8 +305,8 @@ export function StartScreen({ onPick }: { onPick: (id: string) => void }) {
         )}
         {!failed && error && <p className="error">{error}</p>}
         <p className="muted small-print">
-          Map data © OpenStreetMap contributors (ODbL). Gates are placed evenly around the bowl and capacity comes from OSM where it is
-          tagged: assumptions, shown as such.
+          Map data © OpenStreetMap contributors (ODbL). Gates are placed evenly around the bowl and capacity comes from
+          OSM where it is tagged: assumptions, shown as such.
         </p>
       </div>
     </div>

@@ -83,7 +83,9 @@ suite('Ohio Stadium map from OpenStreetMap', () => {
     fields.setClosed(new Set(['street-woody-hayes-drive']));
     const after = fields.field(gate, true).dist;
     const changed = lots.some((lot) =>
-      lot.cells.some((cell) => before[cell] !== UNREACHABLE && (after[cell] === UNREACHABLE || after[cell]! > before[cell]!)),
+      lot.cells.some(
+        (cell) => before[cell] !== UNREACHABLE && (after[cell] === UNREACHABLE || after[cell]! > before[cell]!),
+      ),
     );
     expect(changed).toBe(true);
   });
@@ -118,11 +120,13 @@ suite('Ohio Stadium map from OpenStreetMap', () => {
 
   it('lets the crowd into the bowl only through a gate', () => {
     const inBowl = (cell: number) => map.cells[cell] === 'stands' || map.cells[cell] === 'concourse';
-    const gates = map.places.filter((p) => p.kind === 'gate').map((p) => {
-      const xs = p.cells.map((c) => c % map.width);
-      const ys = p.cells.map((c) => Math.floor(c / map.width));
-      return { x: xs.reduce((a, b) => a + b) / xs.length, y: ys.reduce((a, b) => a + b) / ys.length };
-    });
+    const gates = map.places
+      .filter((p) => p.kind === 'gate')
+      .map((p) => {
+        const xs = p.cells.map((c) => c % map.width);
+        const ys = p.cells.map((c) => Math.floor(c / map.width));
+        return { x: xs.reduce((a, b) => a + b) / xs.length, y: ys.reduce((a, b) => a + b) / ys.length };
+      });
     // Any open cell outside the bowl that touches it, diagonals included, is a doorway.
     const doorways: number[] = [];
     for (let cell = 0; cell < map.cells.length; cell++) {
@@ -212,9 +216,7 @@ suite('Ohio Stadium map from OpenStreetMap', () => {
     const gates = map.places.flatMap((place, index) => (place.kind === 'gate' ? [fields.field(index)] : []));
     expect(gates.length).toBeGreaterThan(0);
     for (const tailgate of map.places.filter((p) => p.kind === 'tailgate')) {
-      const open = gates.some((field) =>
-        tailgate.cells.every((cell) => field.dist[cell] !== UNREACHABLE),
-      );
+      const open = gates.some((field) => tailgate.cells.every((cell) => field.dist[cell] !== UNREACHABLE));
       expect(open, `${tailgate.name} cannot reach a gate`).toBe(true);
     }
   });
