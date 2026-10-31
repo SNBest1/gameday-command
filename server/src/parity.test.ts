@@ -104,7 +104,8 @@ async function runServer(init: Init): Promise<Result> {
     const frames: Result['frames'] = [];
     const result = new Promise<Result>((resolve, reject) => {
       ws.onmessage = (event) => {
-        const message = typeof event.data === 'string' ? (JSON.parse(event.data) as WorkerOut) : (decode(event.data) as WorkerOut);
+        const message =
+          typeof event.data === 'string' ? (JSON.parse(event.data) as WorkerOut) : (decode(event.data) as WorkerOut);
         if (message.type === 'frame') frames.push(message);
         else if (message.type === 'done') resolve({ scorecard: message.scorecard, frames });
         else if (message.type === 'error') reject(new Error(message.message));
