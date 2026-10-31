@@ -42,6 +42,7 @@ import { cellCentreLngLat } from '../../world/src/osm/georef.ts';
 import type { MapGeoref } from '../../world/src/osm/georef.ts';
 
 const DEFAULT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
+const DEFAULT_DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark';
 const STYLE_TIMEOUT_MS = 5000;
 
 const themeColour = (theme: 'light' | 'dark') => (theme === 'dark' ? '#14171a' : '#e9e7e1');
@@ -52,19 +53,18 @@ function currentTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-/** The configured styles. `dark` is null unless VITE_MAP_STYLE_DARK is set. */
-function configuredStyles(): { light: string; dark: string | null } {
+/** The configured styles. Dark falls back to the keyless OpenFreeMap Dark. */
+function configuredStyles(): { light: string; dark: string } {
   const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
   const value = env?.VITE_MAP_STYLE;
-  const dark = env?.VITE_MAP_STYLE_DARK?.trim();
   return {
     light: value === undefined ? DEFAULT_STYLE : value.trim(),
-    dark: dark ? dark : null,
+    dark: env?.VITE_MAP_STYLE_DARK?.trim() || DEFAULT_DARK_STYLE,
   };
 }
 
-function styleForTheme(theme: 'light' | 'dark', styles: { light: string; dark: string | null }): string {
-  return theme === 'dark' && styles.dark ? styles.dark : styles.light;
+function styleForTheme(theme: 'light' | 'dark', styles: { light: string; dark: string }): string {
+  return theme === 'dark' ? styles.dark : styles.light;
 }
 
 function blankStyle(theme: 'light' | 'dark'): StyleSpecification {
