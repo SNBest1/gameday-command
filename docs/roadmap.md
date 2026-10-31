@@ -32,23 +32,24 @@ Everything must work on both macOS and Windows; CI checks Ubuntu, Windows and ma
 | # | Phase | Status | Plan | Done when |
 | --- | --- | --- | --- | --- |
 | 0 | Foundations | Done, merged into `main` (0cdbb5e) | [phase-0-foundations.md](plans/phase-0-foundations.md) | CI green on every PR; lint and format enforced; `App.tsx` split; app imports engine only through `engine/src/index.ts` |
-| 1 | Headless engine and validation | **Ready for review** on `phase-1/headless-engine` | [phase-1-headless-engine.md](plans/phase-1-headless-engine.md) | Server-side and browser runs give identical scorecards; validation report compares the model with cited published data |
+| 1 | Headless engine and validation | Done, merged into `main` (dd52adb) | [phase-1-headless-engine.md](plans/phase-1-headless-engine.md) | Server-side and browser runs give identical scorecards; validation report compares the model with cited published data |
 | 2 | Real data | Needs people, not code | [briefs/real-data.md](plans/briefs/real-data.md) | One past game day replayed against its real gate counts |
-| 3 | Map UI | **Ready for review** on `phase-3/map-ui` (stacked on Phase 1) | [phase-3-map-ui.md](plans/phase-3-map-ui.md) | GIS map replaces the gamified view as the default |
-| 4 | Voice | **Ready for review** on `phase-4/voice` (stacked on Phase 3) | [phase-4-voice.md](plans/phase-4-voice.md) | Spoken orders go through tool calling to typed `PoliceOrder`s, confirmed and audited |
+| 3 | Map UI | Done, merged into `main` (7fcba7d) | [phase-3-map-ui.md](plans/phase-3-map-ui.md) | GIS map replaces the gamified view as the default |
+| 4 | Voice | Done, merged into `main` (2a3d9cb) | [phase-4-voice.md](plans/phase-4-voice.md) | Spoken orders go through tool calling to typed `PoliceOrder`s, confirmed and audited |
 | — | Vision | **On hold** | [briefs/vision.md](plans/briefs/vision.md) | Not started until the team decides |
 
 A brief becomes a full plan when the phases before it are done, because each depends on what those phases find.
 
 ## Merging (2026-10-31)
 
-Phases 1, 3 and 4 are **stacked**: `phase-3/map-ui` was cut from the tip of `phase-1/headless-engine`, and `phase-4/voice` from the tip of `phase-3/map-ui`. Merge them into `main` in that order: 1, then 3, then 4. Merging `phase-4/voice` alone brings in all three. Each branch is green in CI on Ubuntu, Windows and macOS and was reviewed by the planner. Each was checked in Chrome on Windows only, so check each on a Mac before merging.
+Phases 1, 3 and 4 were stacked branches and are merged into `main` in that order, one merge commit each, followed by `feat/satellite-basemap` (e8f84b0), which adds a **Satellite** imagery button to the operations map. Each branch was green in CI on Ubuntu, Windows and macOS and was reviewed by the planner. Each was checked in Chrome on Windows only, so check the merged `main` on a Mac.
 
 | Branch | Adds | Review fixes made |
 | --- | --- | --- |
 | `phase-1/headless-engine` | Engine in Node workers behind `POST /api/runs` and a WebSocket (`gameday-wire.1`); `?engine=server` in the app; parity test; `npm run validate` against Jülich data; engine boundary proposal | Idle timer, bounded pre-viewer buffer, errors back to the right socket, `RUNS_MAX` cap, frame-by-frame parity |
 | `phase-3/map-ui` | MapLibre + deck.gl operations map as the default view; `/api/maps/:id/geo`; offline grid basemap; PMTiles support; neutral comparison wording | Parked cars no longer drawn as jams; grid basemap only when tiles fail; dark tile style; root `.env` reaches Vite; readable labels in both themes |
 | `phase-4/voice` | Recorded speech through any OpenAI-compatible speech-to-text server; LLM tool calling over the existing orders with fallback to the old parser; voice audit log in the after-action report | Body limits, a 500-character cap and a per-IP rate limit on the voice routes; bounded log entries; malformed tool calls fall back |
+| `feat/satellite-basemap` | Satellite imagery option on the operations map (`VITE_SATELLITE_TILES`, default Esri World Imagery; check its terms before operational use) | None |
 
 ## Findings and next steps
 
