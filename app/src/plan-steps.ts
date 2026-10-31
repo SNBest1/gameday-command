@@ -31,7 +31,9 @@ export interface StepChoices {
 /** What every dropdown offers on this map: gates first, then streets, then the named places. */
 export function stepChoices(map: MapBundle): StepChoices {
   const gates = map.places.filter((p) => p.kind === 'gate').map((p) => ({ id: p.id, label: p.name }));
-  const doors = map.closables.filter((c) => c.id.endsWith('-door')).map((c) => ({ id: c.id, label: c.name.replace(/ door$/, '') }));
+  const doors = map.closables
+    .filter((c) => c.id.endsWith('-door'))
+    .map((c) => ({ id: c.id, label: c.name.replace(/ door$/, '') }));
   const streets = map.closables
     .filter((c) => !c.id.endsWith('-door'))
     .map((c) => ({ id: c.id, label: c.name }))
@@ -39,7 +41,9 @@ export function stepChoices(map: MapBundle): StepChoices {
   const named = map.places
     .filter((p) => p.kind !== 'gate' && !(p.kind === 'parking' && /^Lot \d+$/.test(p.name)) && p.id !== 'lots')
     .map((p) => ({ id: p.id, label: p.name }));
-  const shelters = map.places.filter((p) => p.kind === 'shelter' || p.kind === 'concourse').map((p) => ({ id: p.id, label: p.name }));
+  const shelters = map.places
+    .filter((p) => p.kind === 'shelter' || p.kind === 'concourse')
+    .map((p) => ({ id: p.id, label: p.name }));
   return { closables: [...doors, ...streets], gates, places: [...gates, ...named], shelters };
 }
 
@@ -71,12 +75,19 @@ export function buildStep(draft: StepDraft, choices: StepChoices): PlanAction | 
     }
     case 'redirect':
       if (!draft.from || !draft.to || draft.from === draft.to) return null;
-      if (!choices.gates.some((g) => g.id === draft.from) || !choices.places.some((p) => p.id === draft.to)) return null;
+      if (!choices.gates.some((g) => g.id === draft.from) || !choices.places.some((p) => p.id === draft.to))
+        return null;
       return { at, type: 'redirect', fromPlaceId: draft.from, toPlaceId: draft.to };
     case 'alert': {
       const reachShare = Math.min(1, Math.max(0, (draft.reachPct ?? 60) / 100));
       if (reachShare === 0) return null;
-      return { at, type: 'alert', channel: draft.channel ?? 'pa', message: draft.message?.trim() || 'Follow the directions of officers.', reachShare };
+      return {
+        at,
+        type: 'alert',
+        channel: draft.channel ?? 'pa',
+        message: draft.message?.trim() || 'Follow the directions of officers.',
+        reachShare,
+      };
     }
     case 'shelter_order':
       return { at, type: 'shelter_order', shelterPlaceIds: choices.shelters.map((s) => s.id) };

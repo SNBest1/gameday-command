@@ -104,7 +104,9 @@ async function importStadium(hit: ImportRequest, report: (event: ImportEvent) =>
     step: 1,
     steps: IMPORT_STEPS,
   });
-  const factsPromise = hit.wikidata ? stadiumFacts(hit.wikidata) : Promise.resolve({ teams: [] as string[], capacity: undefined });
+  const factsPromise = hit.wikidata
+    ? stadiumFacts(hit.wikidata)
+    : Promise.resolve({ teams: [] as string[], capacity: undefined });
   report({ stage: 'download', label: 'Downloading the map from OpenStreetMap', step: 2, steps: IMPORT_STEPS });
 
   // Overpass answers in many small chunks, so throttle the byte lines and always
@@ -134,7 +136,8 @@ async function importStadium(hit: ImportRequest, report: (event: ImportEvent) =>
   const state = hit.state?.trim() || undefined;
   const country = hit.country?.trim() || undefined;
   const where = hit.where?.trim() || [city, state, country].filter(Boolean).join(', ') || undefined;
-  const location: ImportedLocation | undefined = city || state || country || where ? { city, state, country, where } : undefined;
+  const location: ImportedLocation | undefined =
+    city || state || country || where ? { city, state, country, where } : undefined;
 
   // Build once before saving, so a stadium that cannot be mapped is refused now.
   report({ stage: 'build', label: 'Building the walkable map', step: 3, steps: IMPORT_STEPS });
@@ -167,7 +170,12 @@ export function migrateCommandTables(db: Db): void {
   `);
 }
 
-export function addCommandRoutes(app: Hono, db: Db, builtIn: { id: string; name: string; theme?: unknown }[], forget: (id: string) => void): void {
+export function addCommandRoutes(
+  app: Hono,
+  db: Db,
+  builtIn: { id: string; name: string; theme?: unknown }[],
+  forget: (id: string) => void,
+): void {
   migrateCommandTables(db);
 
   app.get('/api/maps', (c) => c.json([...builtIn, ...importedIds().map((m) => ({ ...m, imported: true }))]));
@@ -184,7 +192,8 @@ export function addCommandRoutes(app: Hono, db: Db, builtIn: { id: string; name:
 
   app.post('/api/stadiums/import', async (c) => {
     const hit = await c.req.json<ImportRequest>();
-    if (hit.osmType !== 'way' && hit.osmType !== 'relation') return c.json({ error: 'need a stadium way or relation' }, 400);
+    if (hit.osmType !== 'way' && hit.osmType !== 'relation')
+      return c.json({ error: 'need a stadium way or relation' }, 400);
 
     // Old callers ask for JSON and get the single response they always have.
     if ((c.req.header('accept') ?? '').toLowerCase().includes('application/json')) {
@@ -219,11 +228,21 @@ export function addCommandRoutes(app: Hono, db: Db, builtIn: { id: string; name:
 
   // History: every finished run adds its gate queues and stopped traffic by minute to kickoff.
   app.post('/api/history', async (c) => {
-    const body = await c.req.json<{ mapId: string; runId: string; samples: { kind: string; subject: string; minute: number; value: number }[] }>();
-    const insert = db.prepare('insert into history (map_id, kind, subject, minute, value, run_id, created_at) values (?, ?, ?, ?, ?, ?, ?)');
+    const body = await c.req.json<{
+      mapId: string;
+      runId: string;
+      samples: { kind: string; subject: string; minute: number; value: number }[];
+    }>();
+    const insert = db.prepare(
+      'insert into history (map_id, kind, subject, minute, value, run_id, created_at) values (?, ?, ?, ?, ?, ?, ?)',
+    );
     const now = Date.now();
     const valid = (body.samples ?? []).filter(
-      (s) => (s.kind === 'gate_waiting' || s.kind === 'street_stopped') && typeof s.subject === 'string' && Number.isFinite(s.minute) && Number.isFinite(s.value),
+      (s) =>
+        (s.kind === 'gate_waiting' || s.kind === 'street_stopped') &&
+        typeof s.subject === 'string' &&
+        Number.isFinite(s.minute) &&
+        Number.isFinite(s.value),
     );
     // `node:sqlite` has no `.transaction()` helper: one BEGIN/COMMIT around the batch.
     db.exec('BEGIN');
@@ -245,15 +264,29 @@ export function addCommandRoutes(app: Hono, db: Db, builtIn: { id: string; name:
          from history where map_id = ? group by kind, subject, minute`,
       )
       .all(mapId) as unknown as { kind: string; subject: string; minute: number; mean: number; n: number }[];
-    const runs = Number((db.prepare('select count(distinct run_id) as runs from history where map_id = ?').get(mapId) as { runs: number } | undefined)?.runs ?? 0);
-    return c.json({ runs, samples: rows.map(({ kind, subject, minute, mean, n }) => ({ kind, subject, minute, mean, n })) });
+    const runs = Number(
+      (
+        db.prepare('select count(distinct run_id) as runs from history where map_id = ?').get(mapId) as
+          | { runs: number }
+          | undefined
+      )?.runs ?? 0,
+    );
+    return c.json({
+      runs,
+      samples: rows.map(({ kind, subject, minute, mean, n }) => ({ kind, subject, minute, mean, n })),
+    });
   });
 
   // What the officer thought: the plan they would pick, whether they agree with the ranking, a note.
   app.post('/api/feedback', async (c) => {
     const body = await c.req.json<Record<string, unknown> & { mapId: string }>();
     const id = crypto.randomUUID();
-    db.prepare('insert into feedback (id, map_id, json, created_at) values (?, ?, ?, ?)').run(id, String(body.mapId ?? ''), JSON.stringify(body), Date.now());
+    db.prepare('insert into feedback (id, map_id, json, created_at) values (?, ?, ?, ?)').run(
+      id,
+      String(body.mapId ?? ''),
+      JSON.stringify(body),
+      Date.now(),
+    );
     return c.json({ id });
   });
 
@@ -273,9 +306,13 @@ export function addCommandRoutes(app: Hono, db: Db, builtIn: { id: string; name:
     } catch {
       return c.json({ error: 'not a URL' }, 400);
     }
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return c.json({ error: 'only http and https feeds' }, 400);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:')
+      return c.json({ error: 'only http and https feeds' }, 400);
     try {
-      const res = await fetch(parsed, { signal: AbortSignal.timeout(FEED_TIMEOUT_MS), headers: { accept: 'application/json, text/csv, text/plain' } });
+      const res = await fetch(parsed, {
+        signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
+        headers: { accept: 'application/json, text/csv, text/plain' },
+      });
       if (!res.ok) return c.json({ error: `feed returned ${res.status}` }, 502);
       const text = await res.text();
       if (text.length > FEED_MAX_BYTES) return c.json({ error: 'feed is larger than 512 KB' }, 413);

@@ -40,7 +40,9 @@ describe('briefing', () => {
   it('cites traffic numbers only when the run had vehicles, and they verify', () => {
     const withTraffic: BriefingRequest = {
       ...request,
-      scorecards: [card('A', { emergencyResponseMin: 4.25, vehicleDelayMin: 812.4, peakVehiclesStopped: 96, vehiclesOut: 1310 })],
+      scorecards: [
+        card('A', { emergencyResponseMin: 4.25, vehicleDelayMin: 812.4, peakVehiclesStopped: 96, vehiclesOut: 1310 }),
+      ],
     };
     const text = templateBriefing(withTraffic).text;
     expect(text).toContain('Ambulance on scene in 4.3 minutes');

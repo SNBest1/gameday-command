@@ -1,4 +1,14 @@
-import type { Briefing, BriefingRequest, DecisionDefaults, Id, Incident, IncidentKind, MapBundle, ResponsePlan, Scorecard } from '../../contracts.ts';
+import type {
+  Briefing,
+  BriefingRequest,
+  DecisionDefaults,
+  Id,
+  Incident,
+  IncidentKind,
+  MapBundle,
+  ResponsePlan,
+  Scorecard,
+} from '../../contracts.ts';
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path);

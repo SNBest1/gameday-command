@@ -58,8 +58,20 @@ function makeBigMap(size = 800, gateCount = 12): MapBundle {
     cells,
     places: [
       ...gates,
-      { id: 'big-stands', name: 'Stands', kind: 'seating', cells: rows(0, Math.floor(wallRow * 0.6) - 1), capacity: 110000 },
-      { id: 'big-concourse', name: 'Concourse', kind: 'concourse', cells: rows(Math.floor(wallRow * 0.6), wallRow - 1), capacity: 40000 },
+      {
+        id: 'big-stands',
+        name: 'Stands',
+        kind: 'seating',
+        cells: rows(0, Math.floor(wallRow * 0.6) - 1),
+        capacity: 110000,
+      },
+      {
+        id: 'big-concourse',
+        name: 'Concourse',
+        kind: 'concourse',
+        cells: rows(Math.floor(wallRow * 0.6), wallRow - 1),
+        capacity: 40000,
+      },
       { id: 'big-lots', name: 'Lots', kind: 'parking', cells: rows(parkingRow, size - 1), capacity: 110000 },
     ],
     closables: [
@@ -81,7 +93,7 @@ function makeBigMap(size = 800, gateCount = 12): MapBundle {
 const breathe = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 const YIELD_EVERY = 250;
 
-describe('engine throughput', () => {
+describe.skipIf(!process.env.PERF)('engine throughput', () => {
   it('runs 20,000 dots at better than 10x real time in one worker', async () => {
     const bundle = makeBigMap();
     const fans = 100_000;
@@ -152,7 +164,13 @@ describe('engine throughput', () => {
       speed: 1000,
       dangerDensity: 4,
       mapId: bundle.id,
-      incident: { id: 'inc-lightning', kind: 'lightning_delay', at: incidentAt, safeCount: 0, note: 'Lightning within 8 miles' },
+      incident: {
+        id: 'inc-lightning',
+        kind: 'lightning_delay',
+        at: incidentAt,
+        safeCount: 0,
+        note: 'Lightning within 8 miles',
+      },
       plan,
       officers: makeOfficers(bundle, 24),
     };

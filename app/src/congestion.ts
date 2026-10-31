@@ -35,7 +35,11 @@ export function flowLevel(state: number, speed: number): number {
 }
 
 const isDriving = (state: number) =>
-  state === VS.driving || state === VS.stopped || state === VS.departing || state === VS.responding || state === VS.parking;
+  state === VS.driving ||
+  state === VS.stopped ||
+  state === VS.departing ||
+  state === VS.responding ||
+  state === VS.parking;
 
 /**
  * Paint each moving vehicle's footprint onto the cells, worst level wins, and
@@ -102,8 +106,8 @@ const STOPPED_MIN = 2;
 
 /**
  * Cells a pedestrian can be on. The engine's flow field treats every cell that
- * is not `blocked` as walkable (`engine/src/flowfield.ts`, `passable()`), so a
- * dot may stand on `road`, `parking`, `concourse`, `stands` and `shelter` cells.
+ * is not `blocked` as walkable (its `passable()`), so a dot may stand on `road`,
+ * `parking`, `concourse`, `stands` and `shelter` cells.
  * Density on a `blocked` cell is not people — nothing can stand inside a wall —
  * so it is an artefact and is not counted.
  */
@@ -112,7 +116,7 @@ const pedestrianCell = (kind: CellKind) => kind !== 'blocked';
 /**
  * Cells a vehicle can be on: the road network and the parking lots.
  *
- * The engine's road network (`engine/src/traffic.ts`) also accepts walk cells
+ * The engine's traffic network also accepts walk cells
  * within 3 cells of a lot as a *driveway*, because OSM rarely maps the stub into
  * a lot, and it lets an emergency vehicle drive the plazas and the concourse
  * ring. Both are left out here on purpose: a car creeping down a driveway is
@@ -200,7 +204,7 @@ export function policeHotspots(
       // 5/m² by design, and `standingDensity()` has already removed the seated
       // fans, so what is left there is a seated crowd, not a crush.
       if (v < CROWDED || !pedestrianCell(kind) || kind === 'stands') continue;
-      const b = (((c / W) | 0) / BLOCK | 0) * BW + (((c % W) / BLOCK) | 0);
+      const b = ((((c / W) | 0) / BLOCK) | 0) * BW + (((c % W) / BLOCK) | 0);
       crowd[b] = crowd[b]! + v * area;
       if (v > peak[b]!) peak[b] = v;
     }
@@ -236,8 +240,21 @@ export function policeHotspots(
   const stack: number[] = [];
   for (let start = 0; start < BW * BH; start++) {
     if (seen[start] || !hot(start)) continue;
-    let people = 0, pk = 0, st = 0, sl = 0, bx0 = BW, by0 = BH, bx1 = 0, by1 = 0, sx = 0, sy = 0, wsum = 0;
-    let crowdBlock = -1, crowdBlockPeople = 0, vehBlock = -1, vehBlockWeight = 0;
+    let people = 0,
+      pk = 0,
+      st = 0,
+      sl = 0,
+      bx0 = BW,
+      by0 = BH,
+      bx1 = 0,
+      by1 = 0,
+      sx = 0,
+      sy = 0,
+      wsum = 0;
+    let crowdBlock = -1,
+      crowdBlockPeople = 0,
+      vehBlock = -1,
+      vehBlockWeight = 0;
     stack.push(start);
     seen[start] = 1;
     while (stack.length) {
@@ -360,7 +377,8 @@ export function policeHotspots(
   return found.slice(0, limit).map((h, i) => {
     // Name the area by whichever agent dominates it. A jam is weighted the way
     // the area's weight is above, so "mostly cars" means what the ranking means.
-    const byCrowd = h.kind === 'crowd' || (h.kind === 'both' && h.crowdedPeople >= h.stoppedVehicles * 20 + h.slowVehicles * 5);
+    const byCrowd =
+      h.kind === 'crowd' || (h.kind === 'both' && h.crowdedPeople >= h.stoppedVehicles * 20 + h.slowVehicles * 5);
     const block = byCrowd ? h.crowdBlock : h.vehBlock;
     const cell =
       block >= 0

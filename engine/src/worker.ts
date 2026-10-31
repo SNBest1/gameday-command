@@ -37,14 +37,21 @@ let responseOfficer: string | undefined;
 
 function recordMotion(): void {
   if (!sim || !motionOn) return;
-  const {t, dots} = sim.ctx;
+  const { t, dots } = sim.ctx;
   peopleMotion.capture(t, dots.x, dots.y);
   const v = sim.traffic?.frame();
   if (v) vehicleMotion.capture(t, v.x, v.y, v.heading, v.speed);
   const officers = sim.officerStatus();
-  const key=officers.map(o=>o.id).join(',');
-  if(key!==officerMotionKey){officerMotion=new MotionRecorder();officerMotionKey=key;}
-  officerMotion.capture(t, officers.map(o => o.x), officers.map(o => o.y));
+  const key = officers.map((o) => o.id).join(',');
+  if (key !== officerMotionKey) {
+    officerMotion = new MotionRecorder();
+    officerMotionKey = key;
+  }
+  officerMotion.capture(
+    t,
+    officers.map((o) => o.x),
+    officers.map((o) => o.y),
+  );
 }
 
 function resetMotion(): void {
@@ -83,7 +90,16 @@ function sendFrame(frame: TickFrame, density: DensityGrid): void {
     density.peoplePerM2.buffer,
   ];
   const v = frame.vehicles;
-  if (v) transfer.push(v.x.buffer, v.y.buffer, v.heading.buffer, v.speed.buffer, v.kind.buffer, v.state.buffer, v.waitedS.buffer);
+  if (v)
+    transfer.push(
+      v.x.buffer,
+      v.y.buffer,
+      v.heading.buffer,
+      v.speed.buffer,
+      v.kind.buffer,
+      v.state.buffer,
+      v.waitedS.buffer,
+    );
   send({ type: 'frame', frame, density }, transfer);
 }
 
@@ -112,7 +128,12 @@ function emitFrame(): void {
     : null;
   const transfer = alerts.map((alert) => alert.dots.buffer);
   if (motion) {
-    transfer.push(...[motion.people, motion.vehicles, motion.officers].flatMap((path) => [path.offsets.buffer, path.samples.buffer]));
+    transfer.push(
+      ...[motion.people, motion.vehicles, motion.officers].flatMap((path) => [
+        path.offsets.buffer,
+        path.samples.buffer,
+      ]),
+    );
   }
   send(
     {
@@ -278,8 +299,13 @@ host.onmessage = (event) => {
         return;
       case 'response_targets':
         responseOfficer = message.officerId;
-        responseTargets = [...new Set(message.cells.filter(c => Number.isInteger(c) && c >= 0 && c < (sim?.ctx.map.cells.length ?? 0)))].slice(0, 8);
-        if (sim) send({type: 'responses', t: sim.ctx.t, responses: sim.responseTimes(responseTargets,responseOfficer)});
+        responseTargets = [
+          ...new Set(
+            message.cells.filter((c) => Number.isInteger(c) && c >= 0 && c < (sim?.ctx.map.cells.length ?? 0)),
+          ),
+        ].slice(0, 8);
+        if (sim)
+          send({ type: 'responses', t: sim.ctx.t, responses: sim.responseTimes(responseTargets, responseOfficer) });
         return;
       case 'inspect': {
         const info = sim?.inspect(message.dot);

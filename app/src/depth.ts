@@ -19,7 +19,7 @@ export function vehicleDiagonal(x: number, y: number, heading: number, lengthM: 
   const fx = Math.cos(heading);
   const fy = Math.sin(heading);
   // Maximising each local axis is equivalent to taking max(cx + cy) over all four corners.
-  const maxSum = x + y + Math.abs(fx + fy) * lengthM / 2 + Math.abs(fx - fy) * widthM / 2;
+  const maxSum = x + y + (Math.abs(fx + fy) * lengthM) / 2 + (Math.abs(fx - fy) * widthM) / 2;
   return Math.max(0, Math.floor(maxSum / C));
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Incident, MapBundle, ResponsePlan, Scorecard } from '../../contracts.ts';
-import type { GateStat } from '../../engine/src/edits.ts';
+import type { GateStat } from '../../engine/src/index.ts';
 import {
   briefLine,
   PRIORITIES,
@@ -92,11 +92,15 @@ export function CommandPanel(props: CommandPanelProps) {
     try {
       const parsed = parseConditions(text, map, source);
       if (parsed.gates.size + parsed.streets.size === 0) {
-        setFeedNote(`Nothing in it matched this map's gates or streets${parsed.unmatched.length ? ` (e.g. ${parsed.unmatched[0]})` : ''}.`);
+        setFeedNote(
+          `Nothing in it matched this map's gates or streets${parsed.unmatched.length ? ` (e.g. ${parsed.unmatched[0]})` : ''}.`,
+        );
         return;
       }
       setConditions(parsed);
-      setFeedNote(parsed.unmatched.length ? `${parsed.unmatched.length} entries did not match this map and were left out.` : null);
+      setFeedNote(
+        parsed.unmatched.length ? `${parsed.unmatched.length} entries did not match this map and were left out.` : null,
+      );
     } catch (error) {
       setFeedNote(`Could not read it: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -104,7 +108,11 @@ export function CommandPanel(props: CommandPanelProps) {
 
   const fetchFeed = async () => {
     setFeedNote('Fetching…');
-    const res = await fetch('/api/conditions/fetch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: feedUrl }) });
+    const res = await fetch('/api/conditions/fetch', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: feedUrl }),
+    });
     const body = (await res.json()) as { text?: string; fetchedAt?: string; error?: string };
     if (!res.ok || !body.text) {
       setFeedNote(body.error ?? `Feed failed (${res.status}).`);
@@ -124,7 +132,9 @@ export function CommandPanel(props: CommandPanelProps) {
             <span>
               {conditions.source}
               {conditions.at && `, as of ${new Date(conditions.at).toLocaleTimeString()}`}
-              {feedMinute === null ? '. No time to kickoff given, so fixed thresholds.' : `, ${Math.abs(feedMinute)} min ${feedMinute < 0 ? 'before' : 'after'} kickoff`}
+              {feedMinute === null
+                ? '. No time to kickoff given, so fixed thresholds.'
+                : `, ${Math.abs(feedMinute)} min ${feedMinute < 0 ? 'before' : 'after'} kickoff`}
             </span>
             <button className="small ghost" onClick={() => setConditions(null)}>
               Back to simulation
@@ -135,14 +145,20 @@ export function CommandPanel(props: CommandPanelProps) {
             <span className="src sim">Simulation</span>
             <span>
               Plan {label}
-              {history.runs > 0 ? `, compared with ${history.runs} past runs` : '. No history yet, so fixed thresholds.'}
+              {history.runs > 0
+                ? `, compared with ${history.runs} past runs`
+                : '. No history yet, so fixed thresholds.'}
             </span>
           </>
         )}
       </div>
 
       {busy.length === 0 && !showAll ? (
-        <p className="muted">{run.ready && run.frameCount > 1 ? 'All gates and streets are at low levels.' : 'Starts with the run, or load real conditions below.'}</p>
+        <p className="muted">
+          {run.ready && run.frameCount > 1
+            ? 'All gates and streets are at low levels.'
+            : 'Starts with the run, or load real conditions below.'}
+        </p>
       ) : (
         <ul className="brief">
           {shown.map((r) => (
@@ -161,7 +177,10 @@ export function CommandPanel(props: CommandPanelProps) {
 
       <details className="feed">
         <summary>Load real conditions (gate scans, traffic)</summary>
-        <p className="muted">JSON or CSV with gate queues and stopped vehicles by name. Only what the feed reports is shown; nothing is filled in.</p>
+        <p className="muted">
+          JSON or CSV with gate queues and stopped vehicles by name. Only what the feed reports is shown; nothing is
+          filled in.
+        </p>
         <label className="file">
           <input
             aria-label="Load a conditions file"
@@ -193,7 +212,6 @@ export function CommandPanel(props: CommandPanelProps) {
         </button>
         <p className="muted">Fills A, B and C with a redirect, a closure and an officer plan. Edit them, then run.</p>
       </div>
-
     </section>
   );
 }
@@ -217,24 +235,56 @@ export function Ranking({ map, incident, labels, planNames, cards, allDone, prio
       </label>
       {best !== null && cards[best] && noneAchieve(cards, priority) ? (
         <p className="best-line">
-          <strong>No plan managed this:</strong> {cards.map((c, i) => `${labels[i]} ${c ? why.why(c) : '…'}`).join(', ')}. Ranked by crush risk instead:
-          Plan {labels[best]} ({planNames[best]}) comes first. Your call.
+          <strong>No plan managed this:</strong>{' '}
+          {cards.map((c, i) => `${labels[i]} ${c ? why.why(c) : '…'}`).join(', ')}. Ranked by crush risk instead: Plan{' '}
+          {labels[best]} ({planNames[best]}) comes first. Your call.
         </p>
       ) : best !== null && cards[best] ? (
         <p className="best-line">
-          <strong>Best for “{why.label.toLowerCase()}”: Plan {labels[best]}</strong> ({planNames[best]}), {why.why(cards[best]!)}.
-          <span className="muted"> Then {order!.slice(1).map((i) => `${labels[i]} (${cards[i] ? why.why(cards[i]!) : '…'})`).join(', ')}. Your call.</span>
+          <strong>
+            Best for “{why.label.toLowerCase()}”: Plan {labels[best]}
+          </strong>{' '}
+          ({planNames[best]}), {why.why(cards[best]!)}.
+          <span className="muted">
+            {' '}
+            Then{' '}
+            {order!
+              .slice(1)
+              .map((i) => `${labels[i]} (${cards[i] ? why.why(cards[i]!) : '…'})`)
+              .join(', ')}
+            . Your call.
+          </span>
         </p>
       ) : (
         <p className="muted">The ranking appears when all three plans finish.</p>
       )}
 
-      {allDone && <Feedback mapId={map.id} incident={incident.kind} labels={labels} best={best !== null ? labels[best]! : null} priority={priority} />}
+      {allDone && (
+        <Feedback
+          mapId={map.id}
+          incident={incident.kind}
+          labels={labels}
+          best={best !== null ? labels[best]! : null}
+          priority={priority}
+        />
+      )}
     </section>
   );
 }
 
-function Feedback({ mapId, incident, labels, best, priority }: { mapId: string; incident: string; labels: readonly string[]; best: string | null; priority: Priority }) {
+function Feedback({
+  mapId,
+  incident,
+  labels,
+  best,
+  priority,
+}: {
+  mapId: string;
+  incident: string;
+  labels: readonly string[];
+  best: string | null;
+  priority: Priority;
+}) {
   const [pick, setPick] = useState(best ?? 'A');
   const [agree, setAgree] = useState<boolean | null>(null);
   const [note, setNote] = useState('');
@@ -275,7 +325,12 @@ function Feedback({ mapId, incident, labels, best, priority }: { mapId: string; 
               No
             </button>
           </div>
-          <textarea placeholder="What would you do differently? (optional)" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
+          <textarea
+            placeholder="What would you do differently? (optional)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+          />
           <button
             className="small"
             onClick={() =>

@@ -26,7 +26,7 @@ import { Scorer, type ScorerState } from '../../world/src/scoring.ts';
 import { createWorldHooks, type WorldRuntime } from '../../world/src/hooks.ts';
 import { GAME_END_S, lateRushFor } from '../../world/src/incidents.ts';
 import { CLEAR_SKY, decisionWeather, walkFactor, weatherAt } from '../../world/src/weather.ts';
-import {OFFICER_REACH_CELLS, OFFICER_SPEED_MPS} from '../../world/src/officers.ts';
+import { OFFICER_REACH_CELLS, OFFICER_SPEED_MPS } from '../../world/src/officers.ts';
 import { TrafficModel } from './traffic.ts';
 import { DensityField, type DensityContribution } from './density.ts';
 import { DotStore, STATE_INDEX } from './dots.ts';
@@ -113,7 +113,7 @@ export interface Checkpoint {
     patrols?: [Id, NonNullable<OfficerStatus['patrol']>][];
     officerHome?: [Id, number][];
     nextOfficer?: number;
-    arrivals?: {officerId:Id;startedAt:number;arrivedAt:number;targetCell:number}[];
+    arrivals?: { officerId: Id; startedAt: number; arrivedAt: number; targetCell: number }[];
     officerRelief?: [Id, number][];
     vehicleClosed?: Id[];
     pedestrianOnly?: Id[];
@@ -158,8 +158,14 @@ export class Simulation {
   private readonly missions = new Map<Id, PoliceMission>();
   private readonly patrols = new Map<Id, NonNullable<OfficerStatus['patrol']>>();
   private nextOfficer = 1;
-  private arrivals: {officerId:Id;startedAt:number;arrivedAt:number;targetCell:number;suggestionAt?:number}[] = [];
-  private instructionStats: {t:number;gates:GateStat[]}|null = null;
+  private arrivals: {
+    officerId: Id;
+    startedAt: number;
+    arrivedAt: number;
+    targetCell: number;
+    suggestionAt?: number;
+  }[] = [];
+  private instructionStats: { t: number; gates: GateStat[] } | null = null;
   private readonly instructionAt = new Map<Id, number>();
   private readonly instructionAreas = new Map<number, number>();
   private reliefFields: FlowFields | null = null;
@@ -269,7 +275,12 @@ export class Simulation {
           incident: config.incident,
           startAt: config.startAt,
           endAt: config.endAt,
-          gameEndAt: config.incident.kind === 'suspicious_package' ? config.incident.at : config.endAt > GAME_END_S ? GAME_END_S : undefined,
+          gameEndAt:
+            config.incident.kind === 'suspicious_package'
+              ? config.incident.at
+              : config.endAt > GAME_END_S
+                ? GAME_END_S
+                : undefined,
         })
       : null;
   }
@@ -422,7 +433,15 @@ export class Simulation {
             this.officerTargets.set(officer.id, patrol.waypoints[patrol.index]!);
           } else {
             patrol.active = false;
-            this.missions.set(officer.id, {kind:'crowd',reason:patrol.name,targetCell:target,startedAt:this.ctx.t,arrivedAt:this.ctx.t,returnAfterS:null,phase:'working'});
+            this.missions.set(officer.id, {
+              kind: 'crowd',
+              reason: patrol.name,
+              targetCell: target,
+              startedAt: this.ctx.t,
+              arrivedAt: this.ctx.t,
+              returnAfterS: null,
+              phase: 'working',
+            });
           }
           continue;
         }
@@ -438,41 +457,58 @@ export class Simulation {
         // plans that differ only in officers score alike. The world hooks
         // repeat it while they stay on station.
         if (mission) {
-          mission.phase = 'working'; mission.arrivedAt = this.ctx.t;
-          if (mission.returnAfterS !== null) this.arrivals.push({officerId:officer.id,startedAt:mission.startedAt,arrivedAt:this.ctx.t,targetCell:target,...(mission.suggestionAt !== undefined ? { suggestionAt: mission.suggestionAt } : {})});
+          mission.phase = 'working';
+          mission.arrivedAt = this.ctx.t;
+          if (mission.returnAfterS !== null)
+            this.arrivals.push({
+              officerId: officer.id,
+              startedAt: mission.startedAt,
+              arrivedAt: this.ctx.t,
+              targetCell: target,
+              ...(mission.suggestionAt !== undefined ? { suggestionAt: mission.suggestionAt } : {}),
+            });
           this.instructLive(officer.id);
-        } else this.raised.push({ situation: 'officer_instruction', cells: this.cellsAround(target, officer.radiusCells) });
+        } else
+          this.raised.push({ situation: 'officer_instruction', cells: this.cellsAround(target, officer.radiusCells) });
       }
     }
   }
 
   private instructLive(id: Id): void {
-    const officer = this.ctx.officers.find(o => o.id === id);
+    const officer = this.ctx.officers.find((o) => o.id === id);
     if (!officer) return;
     this.instructionAt.set(id, this.ctx.t);
     this.reliefFields ??= new FlowFields(this.ctx.map);
     this.reliefFields.setClosed(this.ctx.closed);
     // Rank open gates by current queue clearance plus walking cost, not a forecast.
-    let best = -1, score = Infinity;
-    if (!this.instructionStats || this.instructionStats.t !== this.ctx.t) this.instructionStats = {t:this.ctx.t,gates:this.gateStats()};
+    let best = -1,
+      score = Infinity;
+    if (!this.instructionStats || this.instructionStats.t !== this.ctx.t)
+      this.instructionStats = { t: this.ctx.t, gates: this.gateStats() };
     for (const gate of this.instructionStats.gates) {
       if (!gate.open || gate.capacityPerMin <= 0) continue;
       const cost = this.reliefFields.field(gate.place, true).dist[officer.cell]!;
       if (cost === 0xffff) continue;
-      const candidate = gate.waiting / gate.capacityPerMin * 60 + cost / WALK_STEP * CELL_SIZE_M / 1.2;
-      if (candidate < score) {score = candidate; best = gate.place;}
+      const candidate = (gate.waiting / gate.capacityPerMin) * 60 + ((cost / WALK_STEP) * CELL_SIZE_M) / 1.2;
+      if (candidate < score) {
+        score = candidate;
+        best = gate.place;
+      }
     }
     if (best >= 0) this.ctx.officerRelief?.set(id, best);
-    const block = Math.floor(officer.cell / this.ctx.map.width / 6) * Math.ceil(this.ctx.map.width / 6) + Math.floor(officer.cell % this.ctx.map.width / 6);
+    const block =
+      Math.floor(officer.cell / this.ctx.map.width / 6) * Math.ceil(this.ctx.map.width / 6) +
+      Math.floor((officer.cell % this.ctx.map.width) / 6);
     if (this.ctx.t - (this.instructionAreas.get(block) ?? -Infinity) < 90) return;
     this.instructionAreas.set(block, this.ctx.t);
-    this.raised.push({situation: 'officer_instruction', cells: this.cellsAround(officer.cell, officer.radiusCells)});
+    this.raised.push({ situation: 'officer_instruction', cells: this.cellsAround(officer.cell, officer.radiusCells) });
   }
 
   /** The route to the place an officer was sent to, or null if it is not a place. */
   private officerField(id: Id) {
     const target = this.officerTargets.get(id);
-    if (target !== undefined && (this.missions.has(id) || this.recalling.has(id) || this.patrols.get(id)?.active)) return this.officerFields.toCell(target);
+    if (target !== undefined && (this.missions.has(id) || this.recalling.has(id) || this.patrols.get(id)?.active))
+      return this.officerFields.toCell(target);
     const place = this.ctx.officerPost.get(id);
     if (place === undefined) return null;
     const kind = this.ctx.map.places[place]?.kind;
@@ -493,15 +529,27 @@ export class Simulation {
       const field = target !== undefined ? this.officerField(officer.id) : null;
       const cost = field ? field.dist[officer.cell] : undefined;
       const pos = this.officerPos.get(officer.id)!;
-      let route: number[] | undefined, routeMeters = 0;
+      let route: number[] | undefined,
+        routeMeters = 0;
       if (withRoutes && target !== undefined && field && cost !== 0xffff) {
-        route = [officer.cell];let at = officer.cell,guard = this.ctx.map.cells.length;
+        route = [officer.cell];
+        let at = officer.cell,
+          guard = this.ctx.map.cells.length;
         while (at !== target && guard-- > 0) {
-          const dir = field.dir[at]!;if (!dir) break;
-          routeMeters += Math.hypot(DIR_X[dir]!,DIR_Y[dir]!) * CELL_SIZE_M;
-          at += DIR_X[dir]! + DIR_Y[dir]! * this.ctx.map.width;route.push(at);
+          const dir = field.dir[at]!;
+          if (!dir) break;
+          routeMeters += Math.hypot(DIR_X[dir]!, DIR_Y[dir]!) * CELL_SIZE_M;
+          at += DIR_X[dir]! + DIR_Y[dir]! * this.ctx.map.width;
+          route.push(at);
         }
-        if (at !== target && field.dist[at] === 0) {routeMeters += Math.hypot(at % this.ctx.map.width - target % this.ctx.map.width,Math.floor(at / this.ctx.map.width)-Math.floor(target / this.ctx.map.width))*CELL_SIZE_M;route.push(target);}
+        if (at !== target && field.dist[at] === 0) {
+          routeMeters +=
+            Math.hypot(
+              (at % this.ctx.map.width) - (target % this.ctx.map.width),
+              Math.floor(at / this.ctx.map.width) - Math.floor(target / this.ctx.map.width),
+            ) * CELL_SIZE_M;
+          route.push(target);
+        }
       }
       return {
         id: officer.id,
@@ -509,7 +557,13 @@ export class Simulation {
         cell: officer.cell,
         x: pos.x,
         y: pos.y,
-        state: this.patrols.get(officer.id)?.active ? 'patrolling' : target !== undefined ? 'en_route' : place >= 0 || this.missions.has(officer.id) ? 'on_scene' : 'standby',
+        state: this.patrols.get(officer.id)?.active
+          ? 'patrolling'
+          : target !== undefined
+            ? 'en_route'
+            : place >= 0 || this.missions.has(officer.id)
+              ? 'on_scene'
+              : 'standby',
         route,
         radiusCells: officer.radiusCells,
         patrol: this.patrols.has(officer.id) ? structuredClone(this.patrols.get(officer.id)) : undefined,
@@ -520,7 +574,11 @@ export class Simulation {
         told: this.officerTold.get(officer.id) ?? 0,
         followed: this.officerFollowed.get(officer.id) ?? 0,
         // Route cost back to steps of open ground, then to seconds at their pace.
-        etaS: cost === undefined || cost >= 0xffff ? null : (route ? routeMeters : (cost / WALK_STEP) * CELL_SIZE_M) / (officer.speedMps * (this.ctx.walkFactor ?? 1)),
+        etaS:
+          cost === undefined || cost >= 0xffff
+            ? null
+            : (route ? routeMeters : (cost / WALK_STEP) * CELL_SIZE_M) /
+              (officer.speedMps * (this.ctx.walkFactor ?? 1)),
       };
     });
   }
@@ -530,29 +588,41 @@ export class Simulation {
     return this.opts.movement.gateStats?.(this.ctx) ?? [];
   }
 
-  responseArrivals() {return this.arrivals.map(v=>({...v}));}
+  responseArrivals() {
+    return this.arrivals.map((v) => ({ ...v }));
+  }
 
   /** Actual length of each outdoor flow route, evaluated at frame boundaries. */
   responseTimes(cells: number[], officerId?: Id) {
-    const eligible=this.ctx.officers.filter(o=>officerId===o.id || !this.officerTargets.has(o.id) || this.patrols.get(o.id)?.active);
-    const reverse=!officerId && new Set(eligible.map(o=>o.cell)).size<=cells.length;
-    const memo=new Map<string,number|null>();
-    return cells.map(cell=>({cell,units:this.ctx.officers.map(o=>{
-      if(!eligible.includes(o))return {id:o.id,etaS:null};
-      const from=reverse?cell:o.cell,to=reverse?o.cell:cell,key=from+':'+to;
-      if(!memo.has(key)) {
-        const field=this.officerFields.toCell(to);
-        let at=from,distance=0,guard=this.ctx.map.cells.length;
-        while(at!==to && guard-->0 && field.dist[at]!==0xffff) {
-          const dir=field.dir[at]!;if(!dir)break;
-          distance+=Math.hypot(DIR_X[dir]!,DIR_Y[dir]!)*CELL_SIZE_M;
-          at+=DIR_X[dir]!+DIR_Y[dir]!*this.ctx.map.width;
+    const eligible = this.ctx.officers.filter(
+      (o) => officerId === o.id || !this.officerTargets.has(o.id) || this.patrols.get(o.id)?.active,
+    );
+    const reverse = !officerId && new Set(eligible.map((o) => o.cell)).size <= cells.length;
+    const memo = new Map<string, number | null>();
+    return cells.map((cell) => ({
+      cell,
+      units: this.ctx.officers.map((o) => {
+        if (!eligible.includes(o)) return { id: o.id, etaS: null };
+        const from = reverse ? cell : o.cell,
+          to = reverse ? o.cell : cell,
+          key = from + ':' + to;
+        if (!memo.has(key)) {
+          const field = this.officerFields.toCell(to);
+          let at = from,
+            distance = 0,
+            guard = this.ctx.map.cells.length;
+          while (at !== to && guard-- > 0 && field.dist[at] !== 0xffff) {
+            const dir = field.dir[at]!;
+            if (!dir) break;
+            distance += Math.hypot(DIR_X[dir]!, DIR_Y[dir]!) * CELL_SIZE_M;
+            at += DIR_X[dir]! + DIR_Y[dir]! * this.ctx.map.width;
+          }
+          memo.set(key, at === to ? distance : null);
         }
-        memo.set(key,at===to?distance:null);
-      }
-      const distance=memo.get(key)!;
-      return {id:o.id,etaS:distance===null?null:distance/(o.speedMps*(this.ctx.walkFactor??1))};
-    })}));
+        const distance = memo.get(key)!;
+        return { id: o.id, etaS: distance === null ? null : distance / (o.speedMps * (this.ctx.walkFactor ?? 1)) };
+      }),
+    }));
   }
 
   /** Alerts raised since the last call, each with the dots it reached. */
@@ -702,7 +772,8 @@ export class Simulation {
           const officer = cell >= 0 ? this.officerOver(cell) : null;
           if (officer !== null) {
             this.officerTold.set(officer, (this.officerTold.get(officer) ?? 0) + DOT_GROUP_SIZE);
-            if (picked === 'follow') this.officerFollowed.set(officer, (this.officerFollowed.get(officer) ?? 0) + DOT_GROUP_SIZE);
+            if (picked === 'follow')
+              this.officerFollowed.set(officer, (this.officerFollowed.get(officer) ?? 0) + DOT_GROUP_SIZE);
           }
         }
         this.opts.movement.onChoice?.(this.ctx, dot, ask.situation, picked);
@@ -769,11 +840,16 @@ export class Simulation {
 
   /** Advance one sim second: world, live orders, decisions, movement, density, score. */
   private committedOfficerCount(): number {
-    const planned=this.hooks.committedOfficers();
-    if(!this.missions.size&&!this.patrols.size&&this.ctx.officers.length===this.opts.config.officers.length)return planned;
-    const active=new Set([...this.officerTargets.keys(),...this.ctx.officerPost.keys(),...this.missions.keys(),
-      ...[...this.patrols].filter(([,p])=>p.active).map(([id])=>id)]);
-    return Math.min(this.ctx.officers.length,Math.max(planned,active.size));
+    const planned = this.hooks.committedOfficers();
+    if (!this.missions.size && !this.patrols.size && this.ctx.officers.length === this.opts.config.officers.length)
+      return planned;
+    const active = new Set([
+      ...this.officerTargets.keys(),
+      ...this.ctx.officerPost.keys(),
+      ...this.missions.keys(),
+      ...[...this.patrols].filter(([, p]) => p.active).map(([id]) => id),
+    ]);
+    return Math.min(this.ctx.officers.length, Math.max(planned, active.size));
   }
 
   async step(): Promise<void> {
@@ -796,7 +872,9 @@ export class Simulation {
       density: this.ctx.density,
       dots: this.ctx.dots,
       closed: this.trafficClosures(),
-      controlPoints: [...this.missions].filter(([,m])=>m.kind==='traffic' && m.phase==='working').map(([,m])=>m.targetCell),
+      controlPoints: [...this.missions]
+        .filter(([, m]) => m.kind === 'traffic' && m.phase === 'working')
+        .map(([, m]) => m.targetCell),
     });
     const traffic = this.traffic?.metrics();
 
@@ -870,14 +948,19 @@ export class Simulation {
     this.restore(point.snapshot);
     const state = point.simulation;
     if (state) {
-      this.markers=structuredClone(state.markers??[]);
-      this.vehicleClosed.clear();for(const id of state.vehicleClosed??[])this.vehicleClosed.add(id);
-      this.pedestrianOnly.clear();for(const id of state.pedestrianOnly??[])this.pedestrianOnly.add(id);
+      this.markers = structuredClone(state.markers ?? []);
+      this.vehicleClosed.clear();
+      for (const id of state.vehicleClosed ?? []) this.vehicleClosed.add(id);
+      this.pedestrianOnly.clear();
+      for (const id of state.pedestrianOnly ?? []) this.pedestrianOnly.add(id);
       this.patrols.clear();
       for (const [id, beat] of state.patrols ?? []) this.patrols.set(id, structuredClone(beat));
-      if (state.officerHome) {this.officerHome.clear(); for (const [id, cell] of state.officerHome) this.officerHome.set(id, cell);}
+      if (state.officerHome) {
+        this.officerHome.clear();
+        for (const [id, cell] of state.officerHome) this.officerHome.set(id, cell);
+      }
       this.nextOfficer = state.nextOfficer ?? 1;
-      this.arrivals = (state.arrivals ?? []).map(v=>({...v}));
+      this.arrivals = (state.arrivals ?? []).map((v) => ({ ...v }));
       this.instructionStats = null;
       this.missions.clear();
       for (const [id, mission] of state.missions ?? []) this.missions.set(id, structuredClone(mission));
@@ -911,7 +994,10 @@ export class Simulation {
     // checkpoint stayed shut in every route. A key that matches nothing makes
     // its next step re-apply ctx.closed. Calling spawn() instead also fixed it
     // but cost ~2.5 s per worker per seek on the stadium map.
-    const movement = point.movement && typeof point.movement === 'object' ? { ...point.movement, closedKey: '\u0000rewound' } : point.movement;
+    const movement =
+      point.movement && typeof point.movement === 'object'
+        ? { ...point.movement, closedKey: '\u0000rewound' }
+        : point.movement;
     this.opts.movement.restore?.(movement);
     this.scorer.restore(point.scorer);
     if (point.traffic !== undefined) this.traffic?.restore(point.traffic);
@@ -954,14 +1040,20 @@ export class Simulation {
 
   /** Commander-placed barricades that are closed at this moment. */
   liveBarricades(): Barricade[] {
-    return this.barricades.filter((barricade) => this.ctx.closed.has(barricade.id)||this.vehicleClosed.has(barricade.id));
+    return this.barricades.filter(
+      (barricade) => this.ctx.closed.has(barricade.id) || this.vehicleClosed.has(barricade.id),
+    );
   }
 
-  closedIds(): Id[] {return [...new Set([...this.ctx.closed,...this.vehicleClosed])];}
-  markerStatus() {return structuredClone(this.markers);}
+  closedIds(): Id[] {
+    return [...new Set([...this.ctx.closed, ...this.vehicleClosed])];
+  }
+  markerStatus() {
+    return structuredClone(this.markers);
+  }
   trafficClosures(): ReadonlySet<Id> {
-    if(!this.vehicleClosed.size&&!this.pedestrianOnly.size)return this.ctx.closed;
-    return new Set([...this.ctx.closed].filter(id=>!this.pedestrianOnly.has(id)).concat([...this.vehicleClosed]));
+    if (!this.vehicleClosed.size && !this.pedestrianOnly.size) return this.ctx.closed;
+    return new Set([...this.ctx.closed].filter((id) => !this.pedestrianOnly.has(id)).concat([...this.vehicleClosed]));
   }
 
   private applyOrders(): void {
@@ -970,41 +1062,101 @@ export class Simulation {
       if (t !== this.ctx.t) continue;
       switch (order.type) {
         case 'place_marker': {
-          const m=order.marker,kind=this.ctx.map.cells[m.cell];
-          if(!Number.isInteger(m.cell)||!kind||kind==='blocked'||kind==='stands'||kind==='concourse')break;
-          this.markers=this.markers.filter(v=>v.id!==m.id);
-          this.markers.push({...m,name:m.name.slice(0,64),radiusCells:Math.max(1,Math.min(100,m.radiusCells))});break;
+          const m = order.marker,
+            kind = this.ctx.map.cells[m.cell];
+          if (!Number.isInteger(m.cell) || !kind || kind === 'blocked' || kind === 'stands' || kind === 'concourse')
+            break;
+          this.markers = this.markers.filter((v) => v.id !== m.id);
+          this.markers.push({
+            ...m,
+            name: m.name.slice(0, 64),
+            radiusCells: Math.max(1, Math.min(100, m.radiusCells)),
+          });
+          break;
         }
-        case 'remove_marker': this.markers=this.markers.filter(v=>v.id!==order.id);break;
+        case 'remove_marker':
+          this.markers = this.markers.filter((v) => v.id !== order.id);
+          break;
         case 'officer_report':
-        case 'report_decision': break;
-        case 'dismiss_suggestion': break;
+        case 'report_decision':
+          break;
+        case 'dismiss_suggestion':
+          break;
         case 'add_officer': {
           const kind = this.ctx.map.cells[order.cell];
-          if (!Number.isInteger(order.cell) || !kind || kind === 'blocked' || kind === 'stands' || kind === 'concourse' || !order.unit.trim()) break;
+          if (
+            !Number.isInteger(order.cell) ||
+            !kind ||
+            kind === 'blocked' ||
+            kind === 'stands' ||
+            kind === 'concourse' ||
+            !order.unit.trim()
+          )
+            break;
           let id: string;
-          do {id = 'live-off-' + this.nextOfficer++;} while (this.officerHome.has(id));
-          this.ctx.officers.push({id,unit:order.unit.trim().slice(0,64),cell:order.cell,speedMps:OFFICER_SPEED_MPS,radiusCells:OFFICER_REACH_CELLS});
-          this.officerHome.set(id, order.cell); this.officerPos.set(id, this.cellCenter(order.cell));
+          do {
+            id = 'live-off-' + this.nextOfficer++;
+          } while (this.officerHome.has(id));
+          this.ctx.officers.push({
+            id,
+            unit: order.unit.trim().slice(0, 64),
+            cell: order.cell,
+            speedMps: OFFICER_SPEED_MPS,
+            radiusCells: OFFICER_REACH_CELLS,
+          });
+          this.officerHome.set(id, order.cell);
+          this.officerPos.set(id, this.cellCenter(order.cell));
           break;
         }
         case 'remove_officer': {
-          const index = this.ctx.officers.findIndex(o=>o.id===order.officerId);
+          const index = this.ctx.officers.findIndex((o) => o.id === order.officerId);
           if (index < 0) break;
-          this.ctx.officers.splice(index,1);
-          for (const values of [this.officerHome,this.officerTargets,this.officerPos,this.ctx.officerPost,this.ctx.officerRelief,this.missions,this.patrols,this.instructionAt]) values?.delete(order.officerId);
+          this.ctx.officers.splice(index, 1);
+          for (const values of [
+            this.officerHome,
+            this.officerTargets,
+            this.officerPos,
+            this.ctx.officerPost,
+            this.ctx.officerRelief,
+            this.missions,
+            this.patrols,
+            this.instructionAt,
+          ])
+            values?.delete(order.officerId);
           this.recalling.delete(order.officerId);
           break;
         }
         case 'patrol':
         case 'resume_patrol': {
           for (const id of order.officerIds) {
-            const officer = this.ctx.officers.find(o=>o.id===id);
-            const beat = order.type === 'patrol' ? {waypoints: [...order.waypoints],loop:order.loop,name:order.name ?? 'Outdoor patrol',index:0,active:true,direction:1 as const} : this.patrols.get(id);
-            if (!officer || !beat || !beat.waypoints.length || beat.waypoints.some(c=>!Number.isInteger(c)||!['walk','road','parking'].includes(this.ctx.map.cells[c]!)||this.officerFields.toCell(c).dist[officer.cell]===0xffff)) continue;
-            act.moveOfficer(id,beat.waypoints[beat.index]!);
+            const officer = this.ctx.officers.find((o) => o.id === id);
+            const beat =
+              order.type === 'patrol'
+                ? {
+                    waypoints: [...order.waypoints],
+                    loop: order.loop,
+                    name: order.name ?? 'Outdoor patrol',
+                    index: 0,
+                    active: true,
+                    direction: 1 as const,
+                  }
+                : this.patrols.get(id);
+            if (
+              !officer ||
+              !beat ||
+              !beat.waypoints.length ||
+              beat.waypoints.some(
+                (c) =>
+                  !Number.isInteger(c) ||
+                  !['walk', 'road', 'parking'].includes(this.ctx.map.cells[c]!) ||
+                  this.officerFields.toCell(c).dist[officer.cell] === 0xffff,
+              )
+            )
+              continue;
+            act.moveOfficer(id, beat.waypoints[beat.index]!);
             this.ctx.officerPost.delete(id);
-            beat.active = true; this.patrols.set(id,beat);
+            beat.active = true;
+            this.patrols.set(id, beat);
           }
           break;
         }
@@ -1037,13 +1189,21 @@ export class Simulation {
           }
           const field = this.officerFields.toCell(cell);
           for (const id of order.officerIds) {
-            const officer = this.ctx.officers.find(o => o.id === id);
+            const officer = this.ctx.officers.find((o) => o.id === id);
             if (!officer || field.dist[officer.cell] === 0xffff) continue;
             act.moveOfficer(id, cell);
-            this.missions.set(id, {kind: order.type === 'respond' ? order.kind : 'crowd',
-              reason: order.type === 'respond' ? order.reason : '', targetCell: cell,
-              startedAt: this.ctx.t, arrivedAt: null, returnAfterS: order.type === 'respond' ? Math.max(60, Math.min(900, order.returnAfterS || 180)) : null,
-              phase: 'responding', ...(order.type === 'respond' && order.suggestionAt !== undefined ? { suggestionAt: order.suggestionAt } : {})});
+            this.missions.set(id, {
+              kind: order.type === 'respond' ? order.kind : 'crowd',
+              reason: order.type === 'respond' ? order.reason : '',
+              targetCell: cell,
+              startedAt: this.ctx.t,
+              arrivedAt: null,
+              returnAfterS: order.type === 'respond' ? Math.max(60, Math.min(900, order.returnAfterS || 180)) : null,
+              phase: 'responding',
+              ...(order.type === 'respond' && order.suggestionAt !== undefined
+                ? { suggestionAt: order.suggestionAt }
+                : {}),
+            });
           }
           break;
         }
@@ -1061,12 +1221,17 @@ export class Simulation {
           act.setClosed(order.closableId, order.closed);
           break;
         case 'barricade':
-          if (!this.barricades.some(b=>b.id===order.closableId)) {
-            const known=this.ctx.map.closables.find(c=>c.id===order.closableId);
-            if(known)this.barricades.push({...known,...(order.blocks?{blocks:order.blocks}:{})});
+          if (!this.barricades.some((b) => b.id === order.closableId)) {
+            const known = this.ctx.map.closables.find((c) => c.id === order.closableId);
+            if (known) this.barricades.push({ ...known, ...(order.blocks ? { blocks: order.blocks } : {}) });
           }
           if (order.cells && !this.ctx.map.closables.some((c) => c.id === order.closableId)) {
-            const barricade = { id: order.closableId, name: order.name ?? order.closableId, cells: order.cells,...(order.blocks?{blocks:order.blocks}:{}) };
+            const barricade = {
+              id: order.closableId,
+              name: order.name ?? order.closableId,
+              cells: order.cells,
+              ...(order.blocks ? { blocks: order.blocks } : {}),
+            };
             // Each worker owns its map; retaining the registration across
             // rewinds lets closures replay without duplicate geometry.
             this.ctx.map.closables.push(barricade);

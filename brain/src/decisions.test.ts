@@ -29,7 +29,12 @@ describe('decision defaults', () => {
     for (const situation of DECISION_DEFAULTS.situations) {
       const odds = DECISION_DEFAULTS.defaults[situation.id];
       expect(odds).toBeDefined();
-      expect(oddsAreValid(odds, situation.options.map((o) => o.key))).toBe(true);
+      expect(
+        oddsAreValid(
+          odds,
+          situation.options.map((o) => o.key),
+        ),
+      ).toBe(true);
     }
   });
 
@@ -103,7 +108,9 @@ describe('DecisionClient with Kev off', () => {
 
   it('rejects odds that do not add up and counts them as fallbacks', async () => {
     const badFetch = vi.fn(async () =>
-      Response.json({ answers: [{ key: ask.key, odds: { hold_place: 0.9, try_other_gate: 0.9, back_off: 0.9 }, source: 'kev' }] }),
+      Response.json({
+        answers: [{ key: ask.key, odds: { hold_place: 0.9, try_other_gate: 0.9, back_off: 0.9 }, source: 'kev' }],
+      }),
     ) as unknown as typeof fetch;
     const client = new DecisionClient('run-A', { serverUrl: '', defaults: DECISION_DEFAULTS, fetchImpl: badFetch });
 
@@ -113,7 +120,16 @@ describe('DecisionClient with Kev off', () => {
 
   it('serves a repeat key from cache without calling out twice', async () => {
     const goodFetch = vi.fn(async () =>
-      Response.json({ answers: [{ key: ask.key, odds: { hold_place: 0.5, try_other_gate: 0.3, back_off: 0.2 }, source: 'kev', model: 'kev-4b' }] }),
+      Response.json({
+        answers: [
+          {
+            key: ask.key,
+            odds: { hold_place: 0.5, try_other_gate: 0.3, back_off: 0.2 },
+            source: 'kev',
+            model: 'kev-4b',
+          },
+        ],
+      }),
     ) as unknown as typeof fetch;
     const client = new DecisionClient('run-A', { serverUrl: '', defaults: DECISION_DEFAULTS, fetchImpl: goodFetch });
 

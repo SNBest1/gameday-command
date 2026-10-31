@@ -80,7 +80,9 @@ describe('live police orders', () => {
     expect(sim.officerStatus()[0]).toMatchObject({ state: 'en_route', targetCell: homeCell });
     await steps(sim, 30);
     expect(sim.officerStatus()[0]).toMatchObject({ state: 'standby', cell: homeCell, place: -1 });
-    expect(emit.mock.calls.some(([out]) => out.type === 'decision' && out.record.situation === 'officer_instruction')).toBe(false);
+    expect(
+      emit.mock.calls.some(([out]) => out.type === 'decision' && out.record.situation === 'officer_instruction'),
+    ).toBe(false);
   });
 
   it('clears a stale post when dispatching to the street and cancels a recall on redispatch', async () => {
@@ -173,7 +175,9 @@ describe('live police orders', () => {
     sim.queueOrder({ type: 'redirect', fromPlaceId: gate.id, toPlaceId: sim.ctx.map.places[to]!.id });
     await sim.step();
     expect(sim.ctx.redirects.get(from)).toBe(to);
-    const dots = emit.mock.calls.flatMap(([out]) => out.type === 'decision' && out.record.situation === 'officer_instruction' ? [out.record.dot] : []);
+    const dots = emit.mock.calls.flatMap(([out]) =>
+      out.type === 'decision' && out.record.situation === 'officer_instruction' ? [out.record.dot] : [],
+    );
     expect(dots.length).toBeGreaterThan(0);
     expect(new Set(dots).size).toBe(dots.length);
   });
@@ -199,7 +203,9 @@ describe('live police orders', () => {
     await steps(sim, 120);
     sim.queueOrder({ type: 'release' });
     await sim.step();
-    const decisions = emit.mock.calls.flatMap(([out]) => out.type === 'decision' && out.record.situation === 'exit_route' ? [out.record] : []);
+    const decisions = emit.mock.calls.flatMap(([out]) =>
+      out.type === 'decision' && out.record.situation === 'exit_route' ? [out.record] : [],
+    );
     expect(decisions.length).toBeGreaterThan(0);
     expect(decisions.every((record) => record.t === sim.ctx.t)).toBe(true);
   });
@@ -284,7 +290,9 @@ describe('live police orders', () => {
     emit.mockClear();
     await sim.step();
     const expected = emit.mock.calls.map(([out]) => out);
-    expect(expected.some((out) => out.type === 'decision' && out.record.situation === 'officer_instruction')).toBe(true);
+    expect(expected.some((out) => out.type === 'decision' && out.record.situation === 'officer_instruction')).toBe(
+      true,
+    );
     sim.queueOrder({ type: 'recall', officerIds: [officer.id] });
     await steps(sim, 30);
     sim.rewind(point);

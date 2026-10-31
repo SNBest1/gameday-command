@@ -113,9 +113,7 @@ describe('searchStadiums address parts', () => {
   });
 
   it('falls back to village when there is no city or town', async () => {
-    stubNominatim([
-      row({ address: { village: 'Oregon', state: 'Ohio', country: 'United States' } }),
-    ]);
+    stubNominatim([row({ address: { village: 'Oregon', state: 'Ohio', country: 'United States' } })]);
 
     const hit = onlyHit(await searchStadiums('Test Stadium', TEST_URL));
 
@@ -142,9 +140,7 @@ describe('searchStadiums address parts', () => {
   });
 
   it('leaves out a missing state without a double comma or dangling separator', async () => {
-    stubNominatim([
-      row({ address: { city: 'Columbus', country: 'United States' } }),
-    ]);
+    stubNominatim([row({ address: { city: 'Columbus', country: 'United States' } })]);
 
     const hit = onlyHit(await searchStadiums('Test Stadium', TEST_URL));
 

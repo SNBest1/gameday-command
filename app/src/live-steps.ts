@@ -1,6 +1,6 @@
 import type { MapBundle, PlanAction } from '../../contracts.ts';
 import { DOT_GROUP_SIZE } from '../../contracts.ts';
-import type { OfficerStatus, SceneInfo } from '../../engine/src/edits.ts';
+import type { OfficerStatus, SceneInfo } from '../../engine/src/index.ts';
 
 const n = (v: number) => v.toLocaleString();
 
@@ -50,9 +50,11 @@ export function stepStatus(
 
 /** One line on what an officer is doing, for the officer panel. */
 export function officerLine(o: OfficerStatus, map: MapBundle): string {
-  if (o.state === 'patrolling') return `On ${o.patrol?.name ?? 'outdoor patrol'}, waypoint ${(o.patrol?.index ?? 0)+1}`;
-  const where = o.place >= 0 ? map.places[o.place]?.name ?? 'their post' : 'their post';
-  if (o.state === 'en_route') return `On the way to ${where}${o.etaS !== null ? `, about ${Math.max(1, Math.round(o.etaS / 60))} min out` : ''}`;
+  if (o.state === 'patrolling')
+    return `On ${o.patrol?.name ?? 'outdoor patrol'}, waypoint ${(o.patrol?.index ?? 0) + 1}`;
+  const where = o.place >= 0 ? (map.places[o.place]?.name ?? 'their post') : 'their post';
+  if (o.state === 'en_route')
+    return `On the way to ${where}${o.etaS !== null ? `, about ${Math.max(1, Math.round(o.etaS / 60))} min out` : ''}`;
   if (o.state === 'on_scene') return `On scene at ${where}, directing the crowd`;
   return 'Standing by at their police post';
 }

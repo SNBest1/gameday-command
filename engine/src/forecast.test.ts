@@ -2,9 +2,27 @@ import { describe, expect, it } from 'vitest';
 import { combine, ess, improvingShare, normalize, resample, reweight, type Variant } from './forecast.ts';
 
 const variants: Variant[] = [
-  { id: 'a', curves: [[4, 3], [2, 1]] },
-  { id: 'b', curves: [[2, 2], [3, 3]] },
-  { id: 'c', curves: [[0, 1], [1, 0]] },
+  {
+    id: 'a',
+    curves: [
+      [4, 3],
+      [2, 1],
+    ],
+  },
+  {
+    id: 'b',
+    curves: [
+      [2, 2],
+      [3, 3],
+    ],
+  },
+  {
+    id: 'c',
+    curves: [
+      [0, 1],
+      [1, 0],
+    ],
+  },
 ];
 
 describe('forecast ensemble', () => {
@@ -20,7 +38,7 @@ describe('forecast ensemble', () => {
   it('resamples without identical clones and stays deterministic for a seed', () => {
     const seq = (seed: number) => {
       let s = seed;
-      return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+      return () => (s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32;
     };
     const one = resample([0.6, 0.3, 0.1], variants, 6, seq(7));
     const two = resample([0.6, 0.3, 0.1], variants, 6, seq(7));

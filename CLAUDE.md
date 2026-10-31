@@ -92,7 +92,7 @@ Read `GOAL.md` for the original brief, `README.md` for the product as it stands,
 - **Dots wait off the map at (-1, -1) until their arrival time.** A fan still in their car is not crowd density and cannot be reached by a PA announcement. `DensityField` and `buildAsks()` both skip out-of-bounds dots, so this needs no special-case state.
 - **A gate's field is built even when its door is shut.** Queued dots still need to know which way the gate is; `passable()` blocks admission and through-traffic instead. Closing a gate therefore makes fans pile up at it rather than teleporting away — which is the tradeoff the tool exists to show.
 - **Never `push(...bigArray)`.** A stadium-sized parking place is ~190,000 cells and spreading that many arguments overflows the call stack. Found by the perf test, not the unit tests.
-- **The speed curve is linear:** `v = v_free · max(0.05, 1 − ρ/5.4)`. One line, and it puts a visible crawl right at the 4 people/m² danger line.
+- **The speed curve is Weidmann's, not a straight line.** `densityFactor()` in `movement-flow.ts` keeps free flow up to 0.5 people/m², then applies `v = v_free · (1 − exp(−1.913 · (1/ρ − 1/ρ_jam)))` with `RHO_JAM = 5.4`, floored at 5% of free speed. The curve is measured, not tuned, and puts a visible crawl at the 4 people/m² danger line.
 - **`Math.fround` before deciding which cell a dot moves into.** Positions live in a `Float32Array` but moves are computed in float64. A position a hair past a cell boundary rounds *back* across it when stored, so the dot released a cell it was still standing in, the cell accepted another dot, and a 2 m square reported 13 people/m². Peak density is now exactly the physical cap. The invariant test in `flow.test.ts` guards this.
 - **Occupancy is rebuilt from dot positions every movement pass**, not carried forward. Hand-maintained counts drift, and one stale decrement is invisible until a density number goes absurd. Rebuilding is O(dots) and makes any slip self-correct within one step.
 - **A cell holds at most `MAX_DOTS_PER_CELL` (4 dots = 5 people/m²).** Slowing dots down is not enough on its own: at 5% speed they still creep into the cell ahead and end up stacked on one square. Refusing entry is what makes a queue back up along the approach, which every scorecard number depends on.
@@ -134,9 +134,17 @@ Measured in headless Chrome against a cache warmed by the real Kev: **222.5x rea
 Drive a headless browser with Chrome's own DevTools Protocol — Node has a built-in `WebSocket`, so this needs no dependencies:
 
 ```bash
+# macOS
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
   --use-angle=swiftshader --enable-unsafe-swiftshader --remote-debugging-port=9222 \
   --user-data-dir=/tmp/gd-chrome about:blank
+```
+
+```powershell
+# Windows (PowerShell)
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new `
+  --use-angle=swiftshader --enable-unsafe-swiftshader --remote-debugging-port=9222 `
+  --user-data-dir="$env:TEMP\gd-chrome" about:blank
 ```
 
 **No `<StrictMode>` in `main.tsx`, deliberately.** StrictMode mounts every effect twice in development. PixiJS owns a WebGL context imperatively, and tearing the throwaway first `Application` down while the real second one is still initialising leaves the second `init()` unresolved: the page stops mid-setup, draws nothing, and reports no error. The production build was always fine, which made it easy to misread as the browser's fault. Found with `document.title` beacons — execution stopped at the `if (disposed)` branch — after `Debugger.pause` showed the main thread wedged. Waiting for the init promise before destroying is not enough; do not reintroduce StrictMode without re-checking `npm run dev` in a browser.
@@ -313,7 +321,11 @@ Takes a few minutes and settles when `/api/health`'s `cachedDecisions` stops mov
 
 ```bash
 npm run typecheck     # tsc over every lane, one pass
-npm test              # vitest (58 files, 380 checks; 3 live-model checks skip without the models)
+npm test              # vitest
+npm run test:perf     # the load-sensitive throughput tests
+npm run lint          # biome lint .
+npm run format        # biome format --write .
+npm run format:check  # biome format . (check only)
 npm run serve         # API on 8787
 npm run dev           # app on 5173, proxies /api to 8787
 npm run fetch-map     # refetch the committed Ohio Stadium OSM extract

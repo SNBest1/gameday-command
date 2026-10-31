@@ -12,7 +12,7 @@ import type {
   WorkerIn,
   WorkerOut,
 } from '../../contracts.ts';
-import type { DotInfo, EditIn, EditOut, SceneInfo } from '../../engine/src/edits.ts';
+import type { DotInfo, EditIn, EditOut, SceneInfo } from '../../engine/src/index.ts';
 
 export interface RunSnapshotView {
   frame: TickFrame;
@@ -140,8 +140,8 @@ export function useRun(init: RunInit | null): RunHandle {
       switch (out.type) {
         case 'responses':
           if (scene.current && out.t >= scene.current.t) {
-            scene.current = {...scene.current, responses: out.responses};
-            setState(s=>({...s,tick:s.tick+1}));
+            scene.current = { ...scene.current, responses: out.responses };
+            setState((s) => ({ ...s, tick: s.tick + 1 }));
           }
           return;
         case 'types':
@@ -251,5 +251,18 @@ export function useRun(init: RunInit | null): RunHandle {
     setState((s) => ({ ...s, scorecard: null, frameCount: frames.current.length }));
   }, []);
 
-  return { ...state, latest, previous, frames, decisionsByDot, recent, typeIndex, scene, alerts, inspected, send, seekTo };
+  return {
+    ...state,
+    latest,
+    previous,
+    frames,
+    decisionsByDot,
+    recent,
+    typeIndex,
+    scene,
+    alerts,
+    inspected,
+    send,
+    seekTo,
+  };
 }

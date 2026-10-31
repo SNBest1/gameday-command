@@ -2,13 +2,19 @@
 
 Gameday Command is moving from a hackathon demo to a tool for live police operations. The full reasoning is in the team's shared doc, "Gameday Command: what to rebuild". This file tracks status.
 
-**How work happens.** Claude writes a plan in `docs/plans/`. DeepSeek v4.1 implements it in opencode:
+**How work happens.**
 
-```
-/implement-plan docs/plans/<plan>.md
-```
+1. Claude writes a plan in `docs/plans/`.
+2. DeepSeek v4.1 implements it in opencode, on the plan's own branch. It first searches for skills that could help, then works through the plan's steps (see "How to work a plan" in `AGENTS.md`). A prompt to start it:
 
-Claude then reviews the branch before it merges. Rules for the implementer are in `AGENTS.md`.
+   ```
+   Read AGENTS.md and docs/plans/<plan>.md. Search for skills that could help with this plan and record them under "Skills used", then implement the plan step by step.
+   ```
+
+3. Claude reviews the branch.
+4. The user merges it into `main`. Nobody else commits to or pushes `main`.
+
+Everything must work on both macOS and Windows; CI checks Ubuntu, Windows and macOS.
 
 ## Decisions so far (2026-10-31)
 
@@ -25,7 +31,7 @@ Claude then reviews the branch before it merges. Rules for the implementer are i
 
 | # | Phase | Status | Plan | Done when |
 | --- | --- | --- | --- | --- |
-| 0 | Foundations | Ready | [phase-0-foundations.md](plans/phase-0-foundations.md) | CI green on every PR; lint and format enforced; `App.tsx` split; app imports engine only through `engine/src/index.ts` |
+| 0 | Foundations | **Ready for review** on branch `phase-0/foundations` | [phase-0-foundations.md](plans/phase-0-foundations.md) | CI green on every PR; lint and format enforced; `App.tsx` split; app imports engine only through `engine/src/index.ts` |
 | 1 | Headless engine and validation | Ready after Phase 0 merges | [phase-1-headless-engine.md](plans/phase-1-headless-engine.md) | Server-side and browser runs give identical scorecards; validation report compares the model with cited published data |
 | 2 | Real data | Needs people, not code | [briefs/real-data.md](plans/briefs/real-data.md) | One past game day replayed against its real gate counts |
 | 3 | Map UI | Brief only | [briefs/map-ui.md](plans/briefs/map-ui.md) | GIS map replaces the gamified view as the default |

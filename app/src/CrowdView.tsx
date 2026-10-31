@@ -46,8 +46,31 @@ export interface CrowdViewProps {
  * this or the side-by-side maps, never both: one WebGL context at a time.
  */
 export function CrowdView(props: CrowdViewProps) {
-  const { map, run, types, scrubIndex, dangerDensity, incidentCells, incidentLabel, selected, onPick, selectedOfficer, onPickOfficer, focusToken } = props;
-  const { showVehicles, vehicleFocus, selectedVehicle, onPickVehicle, selectedBand, focusBox, showFlow, onShowFlow, hotspots } = props;
+  const {
+    map,
+    run,
+    types,
+    scrubIndex,
+    dangerDensity,
+    incidentCells,
+    incidentLabel,
+    selected,
+    onPick,
+    selectedOfficer,
+    onPickOfficer,
+    focusToken,
+  } = props;
+  const {
+    showVehicles,
+    vehicleFocus,
+    selectedVehicle,
+    onPickVehicle,
+    selectedBand,
+    focusBox,
+    showFlow,
+    onShowFlow,
+    hotspots,
+  } = props;
   const hostRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<CrowdScene | null>(null);
@@ -67,11 +90,16 @@ export function CrowdView(props: CrowdViewProps) {
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    const observer = new ResizeObserver(() => setSize({ w: Math.max(1, host.clientWidth), h: Math.max(1, host.clientHeight) }));
+    const observer = new ResizeObserver(() =>
+      setSize({ w: Math.max(1, host.clientWidth), h: Math.max(1, host.clientHeight) }),
+    );
     observer.observe(host);
     return () => observer.disconnect();
   }, []);
-  useEffect(()=>{sceneRef.current?.setCoverage(!!props.showCoverage);sceneRef.current?.setOfficerFocus(props.officerFocus??null);},[props.showCoverage,props.officerFocus]);
+  useEffect(() => {
+    sceneRef.current?.setCoverage(!!props.showCoverage);
+    sceneRef.current?.setOfficerFocus(props.officerFocus ?? null);
+  }, [props.showCoverage, props.officerFocus]);
   const [following, setFollowing] = useState(false);
   const [heat, setHeat] = useState(true);
 
@@ -93,7 +121,7 @@ export function CrowdView(props: CrowdViewProps) {
       onFollowChange: setFollowing,
     });
     scene.setCoverage(!!props.showCoverage);
-    scene.setOfficerFocus(props.officerFocus??null);
+    scene.setOfficerFocus(props.officerFocus ?? null);
     sceneRef.current = scene;
     // For unattended checks, like window.gamedayMap for the side-by-side maps.
     (window as unknown as { gamedayScene?: CrowdScene }).gamedayScene = scene;
@@ -107,7 +135,8 @@ export function CrowdView(props: CrowdViewProps) {
     const scene = sceneRef.current;
     if (!scene) return;
     const kept = run.frames.current ?? [];
-    const view = scrubIndex === null ? run.latest.current : (kept[Math.min(scrubIndex, kept.length - 1)] ?? run.latest.current);
+    const view =
+      scrubIndex === null ? run.latest.current : (kept[Math.min(scrubIndex, kept.length - 1)] ?? run.latest.current);
     scene.setTypes(run.typeIndex.current);
     if (!view) return;
     const { frame, density } = view;
@@ -179,7 +208,8 @@ export function CrowdView(props: CrowdViewProps) {
   }, [focusBox]);
 
   const kept = run.frames.current ?? [];
-  const shown = scrubIndex === null ? run.latest.current : (kept[Math.min(scrubIndex, kept.length - 1)] ?? run.latest.current);
+  const shown =
+    scrubIndex === null ? run.latest.current : (kept[Math.min(scrubIndex, kept.length - 1)] ?? run.latest.current);
   const readout = readoutOf(shown?.frame);
 
   return (
@@ -193,10 +223,18 @@ export function CrowdView(props: CrowdViewProps) {
         <ReadoutChips readout={readout} />
       </div>
       <div className="crowd-tools">
-        <button title="Zoom in" onClick={() => sceneRef.current?.zoomBy(1.6)}>+</button>
-        <button title="Zoom out" onClick={() => sceneRef.current?.zoomBy(1 / 1.6)}>−</button>
-        <button title="Show the whole map" onClick={() => sceneRef.current?.fit()}>Whole map</button>
-        <button title="Back to the incident" onClick={() => sceneRef.current?.showIncident()}>Incident</button>
+        <button title="Zoom in" onClick={() => sceneRef.current?.zoomBy(1.6)}>
+          +
+        </button>
+        <button title="Zoom out" onClick={() => sceneRef.current?.zoomBy(1 / 1.6)}>
+          −
+        </button>
+        <button title="Show the whole map" onClick={() => sceneRef.current?.fit()}>
+          Whole map
+        </button>
+        <button title="Back to the incident" onClick={() => sceneRef.current?.showIncident()}>
+          Incident
+        </button>
       </div>
       <div className="crowd-toggles">
         <label>
