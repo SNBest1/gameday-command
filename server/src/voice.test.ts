@@ -66,6 +66,8 @@ beforeEach(() => {
   process.env.STT_URL = '';
   process.env.INTENT_LLM_URL = '';
   process.env.INTENT_LLM_TIMEOUT_MS = '6000';
+  delete process.env.VOICE_RATE_PER_MIN;
+  delete process.env.TRUST_PROXY;
 });
 
 const post = (app: ReturnType<typeof createApp>, path: string, body: unknown) =>
@@ -141,6 +143,30 @@ describe('voice routes', () => {
 
     llmMode = 'notool';
     expect((await (await post(app, '/api/voice/interpret', { text: 'x', tools, system: '' })).json()).call).toBeNull();
+  });
+
+  it('caps interpret text and its body', async () => {
+    const app = createApp(openDb(':memory:'));
+    const long = await post(app, '/api/voice/interpret', { text: 'x'.repeat(501), tools, system: '' });
+    expect(long.status).toBe(400);
+
+    const huge = await post(app, '/api/voice/interpret', { text: 'x', tools, system: 'y'.repeat(70 * 1024) });
+    expect(huge.status).toBe(413);
+  });
+
+  it('rate-limits transcribe and interpret together', async () => {
+    process.env.VOICE_RATE_PER_MIN = '2';
+    const app = createApp(openDb(':memory:'));
+    expect((await post(app, '/api/voice/interpret', { text: 'one', tools, system: '' })).status).toBe(200);
+    expect((await post(app, '/api/voice/interpret', { text: 'two', tools, system: '' })).status).toBe(200);
+    const third = await post(app, '/api/voice/interpret', { text: 'three', tools, system: '' });
+    expect(third.status).toBe(429);
+    const transcribe = await app.request('/api/speech/transcribe', {
+      method: 'POST',
+      headers: { 'content-type': 'audio/webm' },
+      body: new Uint8Array([1]),
+    });
+    expect(transcribe.status).toBe(429);
   });
 
   it('stores, lists and prunes the voice log', async () => {
