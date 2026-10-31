@@ -78,7 +78,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
   - Create `vitest.perf.config.ts`: the same as `vitest.config.ts`, but with `include: ['engine/src/perf.test.ts']` and `test.env: { PERF: '1' }`. Setting the variable inside the config, not on the command line, is what makes it work the same on Windows and macOS.
 
   Verify: `npm test` shows the two tests skipped. `npx vitest run --config vitest.perf.config.ts` runs and passes them.
-- [ ] **A2.** Create `.github/workflows/ci.yml`:
+- [x] **A2.** Create `.github/workflows/ci.yml`:
   - Triggers: `push` and `pull_request`.
   - One job with `strategy.fail-fast: false` and `matrix.os: [ubuntu-latest, windows-latest, macos-latest]`; `runs-on: ${{ matrix.os }}`, `timeout-minutes: 30`.
   - Steps: `actions/checkout@v4`; `actions/setup-node@v4` with `node-version: 24` and `cache: npm`; `npm ci`; `npm run typecheck`; `npm test`; `npm run build`.
