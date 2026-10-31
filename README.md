@@ -144,7 +144,7 @@ a fraction of both. Again: a tradeoff, not a recommendation.
 
 | Requirement | State |
 | --- | --- |
-| Workspaces, typecheck, tests | **416 checks in 70 files (410 pass, 6 skip)**, `tsc` clean |
+| Workspaces, typecheck, tests | **423 checks in 71 files (417 pass, 6 skip)**, `tsc` clean |
 | Contract | **`gameday.v3`**; v3 added the `game_end` incident |
 | Engine in a worker, no AI in movement | yes; flow fields, seeded RNG, frames every 15 s, snapshot **and** seek-to-rewind exercised through the worker |
 | 20,000 dots at 10x or faster | **222x** in one browser worker, **56.8x** per plan with three running in the app (recorded on the development Mac) |
