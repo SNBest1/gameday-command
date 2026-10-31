@@ -6,11 +6,36 @@ import type { WorkerIn, WorkerOut } from '../../contracts.ts';
 import type { EditIn, EditOut } from '../../engine/src/edits.ts';
 import { decode, encode } from '../../engine/src/wire.ts';
 
+export interface PendingMessage {
+  data: string | Uint8Array<ArrayBuffer>;
+  type: string;
+}
+
+export const PENDING_MAX = 256;
+const PROTECTED = new Set(['ready', 'done', 'error']);
+
+/** Buffer startup messages until the first socket, dropping old frames first. */
+export function addPending(pending: PendingMessage[], message: PendingMessage): void {
+  if (pending.length < PENDING_MAX) {
+    pending.push(message);
+    return;
+  }
+  const oldestFrame = pending.findIndex((item) => item.type === 'frame');
+  if (oldestFrame >= 0) {
+    pending.splice(oldestFrame, 1);
+    pending.push(message);
+    return;
+  }
+  // Only ready/done/error can get here; keep them rather than exceeding the cap.
+  if (PROTECTED.has(message.type)) return;
+}
+
 interface Run {
   id: string;
   worker: Worker;
   sockets: Set<{ send(data: string | Uint8Array<ArrayBuffer>): void; close(code?: number, reason?: string): void }>;
-  pending: (string | Uint8Array<ArrayBuffer>)[];
+  pending: PendingMessage[];
+  everConnected: boolean;
   cleanup: NodeJS.Timeout;
 }
 
@@ -18,12 +43,12 @@ const runs = new Map<string, Run>();
 const RUN_IDLE_MS = 10 * 60 * 1000;
 let inject: ((server: unknown) => void) | null = null;
 
-function broadcast(run: Run, message: string | Uint8Array<ArrayBuffer>): void {
-  if (run.sockets.size === 0) {
-    run.pending.push(message);
+function broadcast(run: Run, message: string | Uint8Array<ArrayBuffer>, type: string): void {
+  if (run.sockets.size > 0) {
+    for (const socket of run.sockets) socket.send(message);
     return;
   }
-  for (const socket of run.sockets) socket.send(message);
+  if (!run.everConnected) addPending(run.pending, { data: message, type });
 }
 
 function bump(run: Run): void {
@@ -57,11 +82,12 @@ export function addRunRoutes(app: Hono, decisionBaseUrl: string): void {
       worker,
       sockets: new Set(),
       pending: [],
+      everConnected: false,
       cleanup: setTimeout(() => {}, 0),
     };
     runs.set(id, run);
     worker.on('message', (message: WorkerOut | EditOut) => {
-      broadcast(run, encode(message) as string | Uint8Array<ArrayBuffer>);
+      broadcast(run, encode(message) as string | Uint8Array<ArrayBuffer>, message.type);
     });
     worker.on('error', (error) => {
       broadcast(
@@ -69,6 +95,7 @@ export function addRunRoutes(app: Hono, decisionBaseUrl: string): void {
         encode({ type: 'error', message: error instanceof Error ? error.message : String(error) }) as
           | string
           | Uint8Array<ArrayBuffer>,
+        'error',
       );
     });
     worker.on('exit', () => {
@@ -94,7 +121,8 @@ export function addRunRoutes(app: Hono, decisionBaseUrl: string): void {
             return;
           }
           ws.send(JSON.stringify({ type: 'hello', protocol: 'gameday-wire.1' }));
-          for (const message of run.pending) ws.send(message);
+          run.everConnected = true;
+          for (const message of run.pending) ws.send(message.data);
           run.pending.length = 0;
           run.sockets.add(ws);
           bump(run);
