@@ -156,7 +156,7 @@ Run the waves in this order:
   - `focusToken` changes centre on the selected fan;
   - **Incident** and **Whole map** buttons, with the same meaning as the close-up's.
   - Publish `window.gamedayMap = { lookAt(xM, yM, zoom) }` while the Map view is mounted, converting metres to lng/lat. Keep the same signature as today.
-- [ ] **C5.** `app/src/ops-symbols.ts`: one place that defines the Map view's symbols and colours (unit, incident, staging, medical, PA marker, barricade, hotspot levels) as plain data. Neutral, legible shapes: a circle or chevron with a short text code. No team colours. A later plan can swap in the department's standard here.
+- [x] **C5.** `app/src/ops-symbols.ts`: one place that defines the Map view's symbols and colours (unit, incident, staging, medical, PA marker, barricade, hotspot levels) as plain data. Neutral, legible shapes: a circle or chevron with a short text code. No team colours. A later plan can swap in the department's standard here.
 
 ### Stream D: Wiring and interactions
 
