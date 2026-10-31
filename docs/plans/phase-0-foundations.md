@@ -160,7 +160,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
 
 Today `App.tsx` is 1,871 lines. `App()` runs from about line 420 to the end, and small components sit above it. Keep the existing flat layout of `app/src/` (no new folders). Move one piece per commit, and run `npm run typecheck && npm test` after each.
 
-- [ ] **E1.** Move the small components and helpers above `App()` into their own files, exported by name:
+- [x] **E1.** Move the small components and helpers above `App()` into their own files, exported by name:
   - `Info` → `app/src/Info.tsx`
   - `PlanScoreboard`, `CopySummary`, `PlanCard` → `app/src/PlanCards.tsx`
   - `AlertBanner` → `app/src/AlertBanner.tsx`
