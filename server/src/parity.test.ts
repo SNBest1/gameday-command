@@ -5,7 +5,6 @@ import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_DANGER_DENSITY,
-  type Incident,
   type MapBundle,
   type Scorecard,
   type SimConfig,
