@@ -292,3 +292,12 @@ export function fromToolCall(call: ToolCall, map: MapBundle): Utterance | null {
       return null;
   }
 }
+
+/** Defensive wrapper: a malformed model response falls back, never rejects the words. */
+export function safeFromToolCall(call: ToolCall, map: MapBundle): Utterance | null {
+  try {
+    return fromToolCall(call, map);
+  } catch {
+    return null;
+  }
+}

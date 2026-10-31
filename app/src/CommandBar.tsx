@@ -8,7 +8,7 @@ import { interpretVoice, logVoice, type VoiceLogEntry } from './api.ts';
 import { answer, type Facts } from './voice-answers.ts';
 import { readBack, toLiveOrder, toPlanStep, type Parsed } from './voice-commands.ts';
 import { parseUtterance, type Control, type Utterance } from './voice-intents.ts';
-import { fromToolCall, voiceSystemPrompt, voiceTools, type ToolCall } from './voice-tools.ts';
+import { safeFromToolCall, voiceSystemPrompt, voiceTools, type ToolCall } from './voice-tools.ts';
 import { VOICE_SESSION_ID } from './voice-session.ts';
 
 /** How long dictation has to pause before the box shows what it understood. */
@@ -108,6 +108,8 @@ export function CommandBar(props: CommandBarProps) {
   const starting = useRef(false);
   const mounted = useRef(true);
   const pendingLog = useRef<VoiceLogEntry | null>(null);
+  const understandingRef = useRef(false);
+  const interpretation = useRef(0);
   const history = useRef<Undoable[]>([]);
   const choices = useMemo(() => stepChoices(map), [map]);
 
@@ -234,6 +236,7 @@ export function CommandBar(props: CommandBarProps) {
           setTranscribing(true);
           return;
         }
+        if (final && words && understandingRef.current) return;
         setTranscribing(false);
         setText(words);
         if (final && words) void handle(words, true);
@@ -258,6 +261,9 @@ export function CommandBar(props: CommandBarProps) {
   async function handle(value: string, spoken: boolean) {
     if (timer.current) window.clearTimeout(timer.current);
     if (!value.trim()) return;
+    // A new mic final while the model is thinking would race the first result.
+    if (spoken && understandingRef.current) return;
+    const token = ++interpretation.current;
     const map = live.current.props.map;
     const local = parseUtterance(value, map);
     if (local.type === 'confirm' || local.type === 'cancel' || local.type === 'undo') {
@@ -269,6 +275,7 @@ export function CommandBar(props: CommandBarProps) {
     let call: ToolCall | null = null;
     await speechConfigReady();
     if (speechConfig().llm) {
+      understandingRef.current = true;
       setUnderstanding(true);
       try {
         const result = await interpretVoice({
@@ -276,15 +283,20 @@ export function CommandBar(props: CommandBarProps) {
           tools: voiceTools(map),
           system: voiceSystemPrompt(map, labels),
         });
-        const from = result.call ? fromToolCall(result.call, map) : null;
+        if (token !== interpretation.current) return;
+        const from = result.call ? safeFromToolCall(result.call, map) : null;
         if (from) {
           utterance = from;
           call = result.call;
         }
       } finally {
-        setUnderstanding(false);
+        if (token === interpretation.current) {
+          understandingRef.current = false;
+          setUnderstanding(false);
+        }
       }
     }
+    if (token !== interpretation.current) return;
     apply(utterance, value, spoken, call);
   }
 
