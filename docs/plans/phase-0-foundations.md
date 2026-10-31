@@ -153,7 +153,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
   - If an app file imports an engine symbol not in D1's list, add it to `index.ts` and note it in the commit message.
 
   Verify: the `git grep` above returns nothing; `npm run typecheck && npm test && npm run build` pass.
-- [ ] **D3.** Add a Biome override in `biome.jsonc` for `app/**` that turns on `style/noRestrictedImports` and forbids engine internals. Allow only `../../engine/src/index.ts`. The worker is referenced by URL, not by import, so the rule does not see it. If the installed Biome version cannot express a path pattern for this rule, **stop and ask** rather than writing a custom script.
+- [x] **D3.** Add a Biome override in `biome.jsonc` for `app/**` that turns on `style/noRestrictedImports` and forbids engine internals. Allow only `../../engine/src/index.ts`. The worker is referenced by URL, not by import, so the rule does not see it. If the installed Biome version cannot express a path pattern for this rule, **stop and ask** rather than writing a custom script.
   Verify: temporarily add `import { FlowFields } from '../../engine/src/flowfield.ts';` to any app file, run `npm run lint` and see it fail, then remove the line.
 
 ### Stream E: Split `app/src/App.tsx`
