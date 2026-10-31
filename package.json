@@ -14,10 +14,10 @@
     "test": "vitest run",
     "build": "npm run build --workspace @gameday/app",
     "dev": "npm run dev --workspace @gameday/app",
-    "serve": "node --watch server/src/index.ts",
-    "fetch-map": "node world/scripts/fetch-map.ts",
-    "warm": "node scripts/warm-cache.ts",
-    "seed:export": "node scripts/seed-export.ts"
+    "serve": "node --env-file-if-exists=.env --watch server/src/index.ts",
+    "fetch-map": "node --env-file-if-exists=.env world/scripts/fetch-map.ts",
+    "warm": "node --env-file-if-exists=.env scripts/warm-cache.ts",
+    "seed:export": "node --env-file-if-exists=.env scripts/seed-export.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
