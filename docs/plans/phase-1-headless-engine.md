@@ -156,7 +156,7 @@ Run the waves in this order:
   - a room that empties through a single opening, for opening widths of 2, 4, 6 and 8 m (multiples of the 2 m cell).
 
   Use the same `MapBundle` shape as the test map in `world/`.
-- [ ] **F3.** `validation/run.ts`:
+- [x] **F3.** `validation/run.ts`:
   - Run each map through `Simulation` with `FlowMovement`, no officers, no incidents and default decisions.
   - Measure:
     - mean walking speed against standing density, binned by density from the density grid, on the corridor;

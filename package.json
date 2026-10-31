@@ -21,7 +21,8 @@
     "serve": "node --env-file-if-exists=.env --watch server/src/index.ts",
     "fetch-map": "node --env-file-if-exists=.env world/scripts/fetch-map.ts",
     "warm": "node --env-file-if-exists=.env scripts/warm-cache.ts",
-    "seed:export": "node --env-file-if-exists=.env scripts/seed-export.ts"
+    "seed:export": "node --env-file-if-exists=.env scripts/seed-export.ts",
+    "validate": "node validation/run.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",
