@@ -1,6 +1,6 @@
 # Gameday Command — notes for the next session
 
-Read `GOAL.md` for what this is and `contracts.ts` for the shared contract. **`contracts.ts` is frozen** — ask Nipun before changing it, then bump `CONTRACT_VERSION`.
+Read `GOAL.md` for the original brief, `README.md` for the product as it stands, and `contracts.ts` for the shared contract (currently `gameday.v3`). **`contracts.ts` is frozen** — ask Nipun before changing it, then bump `CONTRACT_VERSION`. `docs/police-ops.md` is the police-operations record; `docs/forecast.md` is the forecast boundary.
 
 ## Layout
 
@@ -10,8 +10,9 @@ Read `GOAL.md` for what this is and `contracts.ts` for the shared contract. **`c
 | `engine/` | Sim loop, seeded RNG, typed-array dots, density grid, Web Worker entry. No AI. |
 | `world/` | Maps, incidents, playbook plans, officers, scoring. Changes the world only through `WorldActions`. |
 | `brain/` | Fan types, situations, decision defaults, decision client, odds sampling, tape. |
-| `server/` | Hono + built-in `node:sqlite`. Decision cache, plans, comparisons, Kev and briefing clients. |
-| `app/` | Vite + React + PixiJS 8. Three runs side by side. |
+| `server/` | Hono + built-in `node:sqlite`. Decision cache, plans, comparisons, history, stadium import, Kev and briefing clients. |
+| `app/` | Vite + React + PixiJS 8. Three runs side by side, close-up, commander rail and police orders. |
+| `scripts/` | Warm the cache, export the seed, and the manual police/routing diagnostics. |
 
 ## Where the key logic lives
 
@@ -25,6 +26,13 @@ Read `GOAL.md` for what this is and `contracts.ts` for the shared contract. **`c
 - `server/src/kev.ts` — **Kev is not a chat model.** It exposes a TypeSafe-compatible `POST /v1/systemone`: a state plus typed questions in, one prefill pass, typed answers out, and no text generation at all. A `choice` question comes back with `probabilities` keyed by the option names we sent, which is exactly the contract's `Odds` — nothing to parse out of prose. The first version of this client posted OpenAI chat completions and scraped JSON from the reply; against the real server that would have 404'd and turned every decision into a fallback. `GET /v1/models` lists the model names it accepts (`kev-latest` by default). The state carries each fan type's `compliance` trait as `how_readily_they_follow_instructions`; before that Kev only had the type's name to go on.
 - `server/src/fm.ts` — the commander briefing through Apple's on-device model via `fm serve` (a Chat Completions server; model `system`, always `stream: false`). The prompt measures **399 tokens** by `fm count-tokens` against a 4,000 budget. Keep it that small: an overflow comes back as a safety-looking error, not a length error.
 - `server/src/briefing.ts` — `briefingIsSupported()` is the guard on the briefing: any number the model writes must already be on a scorecard (or in a name the request supplied). One invented figure throws the whole briefing away for the template.
+- `engine/src/motion.ts` — sparse per-actor paths between replay frames (`t, x, y, heading, speed`). Rendering only: never simulation state and never an RNG draw. The worker answers a `motion` message and `scripts/police-baseline.ts --motion` measures the packet size.
+- `world/src/officers.ts` — police posts, officer creation, patrol beats (`patrolBeats`) and `OFFICER_REACH_CELLS`. Beats are deterministic from the map; road-free maps fall back to gates.
+- `app/src/suggestions.ts` — pure dispatch suggestions: merge hotspots, rank targets, reserve units once, protect the last unit at a critical hotspot, and use the worker's walking ETA, never straight-line travel time. It issues no order itself.
+- `app/src/coverage.ts` — current reach and the optional "reachable within N minutes" estimate. It is straight-line geometry, labelled as such; do not call it safety or a prediction.
+- `app/src/after-action.ts` — `timeline`, `inverseOrder`, `lastUndoable` and `afterActionHtml`. Undo is an inverse order sent forward in time, never a rewind; alert-heard, release and filed-report effects have no inverse.
+- `app/src/roles.ts` — demo role storage. It saves only role and unit, and must keep working when storage is disabled.
+- `server/src/command.ts` — stadium search/import, history, feedback and the real-conditions proxy, on top of the core routes in `server/src/index.ts`.
 
 ## Vehicles and weather (v2)
 
@@ -156,6 +164,22 @@ The app's replay scrubber draws kept frames while you drag, because that is inst
 - **Recalled officers go back to standby, not on scene**: their post is kept only to route them home and cleared on arrival, and arriving home does not raise `officer_instruction` — they are not instructing anyone there.
 - **A live redirect raises `officer_instruction` around officers on station directly** in `sim.ts`, because the plan's standing order lives privately in `world/src/hooks.ts`.
 
+## Police operations
+
+Merged as PR #6 (`fe1987a`) and finished in `8a12cc0`. `docs/police-ops.md` has the shipped list, the measurements and the remaining gaps.
+
+- **Responses run for a reason.** An officer walks a reachable route, repeats an instruction to the people around them, works for three simulated minutes and returns. `PoliceMission` in `engine/src/edits.ts` carries kind (`crowd`, `incident`, `traffic`), target, `startedAt`, `arrivedAt` and `returnAfterS`; arrival and progress survive a checkpoint. Crowd instructions rank open gates by queue clearance plus walking cost.
+- **Traffic control changes vehicles.** Officers on `traffic` assignments alternate junction entry directions with a clearance interval (`engine/src/traffic.ts`, `traffic-control.test.ts`); emergency vehicles are exempt. The panel's traffic-control-point pick sends the same `respond` order with `kind: 'traffic'`.
+- **Suggestions are pure and guarded.** `app/src/suggestions.ts` merges hotspots, prefers standby or patrolling units, never spends the last unit at a critical hotspot, and uses worker ETAs. Dismissals last 300 sim seconds unless severity rises 25%. The panel can send all, modify, or dismiss with a reason.
+- **Patrol beats are deterministic.** `patrolBeats(map)` in `world/src/officers.ts`; road-free maps use a gate fallback. `patrol`, `resume_patrol` and interruption are replayed like any order.
+- **Coverage is geometry, not safety.** `coverage()` reports the share of outdoor walkable area within reach, uncovered hotspot centres, and an optional straight-line N-minute estimate. Do not describe it as a prediction.
+- **Barriers have kinds.** A barricade's `blocks` is `vehicles`, `pedestrians` or `all`; `police-response.test.ts` holds the movement semantics down and `barricade.test.ts` covers placement. The panel counts stopped vehicles within 50 m as an observation, not proof the barrier held them.
+- **Markers.** Staging, medical and PA markers are `SceneInfo.markers`; a PA marker's `radiusCells` becomes the alert's `zoneCells`. Removal is an inverse order.
+- **After-action and undo.** `app/src/after-action.ts` builds the log and its inverse. Undo is forward-in-time: never rewind a run to undo an order. After-action HTML is downloaded from the panel.
+- **Demo roles.** `app/src/roles.ts` stores role and unit only and tolerates disabled storage. The officer console (`OfficerConsole.tsx`) hides and guards supervisor controls; officer mode uses a same-tab fallback, not `BroadcastChannel`.
+- **Recorded motion** is a rendering extension (`engine/src/motion.ts`); it must never change a frame's crowd, scorecard or RNG.
+- **Imported stadiums** use wider walking-route preferences near buildings and explicit parking connectors, but Ohio keeps its calibrated driveway behaviour (`engine/src/traffic-access.ts`, `imported-routing.test.ts`). Do not generalise the stricter connector model over Ohio without re-running its traffic benchmark.
+
 ## Spoken and typed orders
 
 `app/src/voice-commands.ts` is the pure core and `CommandBar.tsx` the box above the map. The mic button listens through the browser's own recogniser (`app/src/speech.ts`, the Web Speech API: in Chrome the audio goes to Google's speech service and needs a connection, Safari uses Apple's; Playwright's Chromium and the Claude app's pane have the API but no working service, so test it in real Chrome). Words show in the box as they come and the final words are understood at once; read-back is cancelled before listening so the mic does not hear it. `speech.ts` is the only file a local recogniser (Whisper in the browser) would replace. Outside dictation (Handy, macOS dictation) also works: it types into the focused box, and after a 0.9 s pause or Enter the box shows what it understood. Matching is plain code against the map's own names, never a model: a gate by its number ("gate to" and "gate for" are dictation slips for 2 and 4), anything else by its distinctive words (all of them, or two of three, so "northeast lot" finds Stadium Lot Northeast). A command that names nothing is refused with a "did you mean". Every command is confirmed: **Order now on plan X** sends a live `PoliceOrder` through `sendOrder` (the plan on the map only, like the Orders panel); **Add to plan X** appends a step built by the same `buildStep` the dropdowns use and marks the plans dirty. Officers sent live are the nearest standby or patrolling ones. Sending officers to a street is a live order only, since a plan step's target is a place. **Read back** speaks a radio-style confirmation through the browser's speech synthesis. "Shift to plan B" (also "show plan C", "plan bee") on its own switches the plan on the map at once, since it changes only the view; "on plan B" or "for plan C" inside an order aims it at that plan, and its live order switches the map to that plan as it goes, like the Orders panel.
@@ -164,7 +188,7 @@ The app's replay scrubber draws kept frames while you drag, because that is inst
 
 ## App screens
 
-`app/src/App.tsx` holds the whole commander view: incident panel, playbook with a per-step plan editor, three runs side by side, scorecards, replay scrubber, briefing, and dot detail. Two things worth knowing:
+`app/src/App.tsx` holds the whole commander view: incident panel, playbook with a per-step plan editor, three runs side by side, scorecards, replay scrubber, briefing, dot detail, and the Orders tab with `PolicePanel`. Three things worth knowing:
 
 - `useRun` keeps frames and decision records in **refs**, not state. A frame carries five typed arrays and a lightning delay emits ~58,000 decision records in one step; re-rendering the tree per record would cost far more than drawing it. Counters are surfaced on the next frame instead.
 - `useRun` is called three times unconditionally in `App`, one per comparison slot, so the scorecards live in one place and the briefing can be built from all three.
@@ -172,7 +196,7 @@ The app's replay scrubber draws kept frames while you drag, because that is inst
 
 ## The commander screen
 
-`app/src/App.tsx` is built for someone seeing it for the first time, such as a judge. The header names the stadium (team-colour stripe) and holds the situation tabs and clock; a transport bar above the map holds play, speed, weather, vehicles and restart. The map well is the one dark element; the right rail has tabs: **Brief** (situation, commander's brief, most congested), **Plans** (verdict and plan cards), **Gates**, **Map key** and **About**. The chosen tab is remembered in localStorage. Before the first play, a card over the map states the situation in a sentence and holds the play button.
+`app/src/App.tsx` is built for someone seeing it for the first time, such as a judge. The header names the stadium (team-colour stripe) and holds the situation tabs and clock; a transport bar above the map holds play, speed, weather, vehicles and restart. The map well is the one dark element; the right rail has tabs: **Brief** (situation, commander's brief, most congested), **Orders** (dispatch suggestions, responses, patrols, coverage, roadblocks, markers, after-action), **Plans** (verdict and plan cards), **Gates**, **Map key** and **About**. The chosen tab is remembered in localStorage. On first visit, a skippable `DemoAccess` dialog picks supervisor or one officer unit; officer mode replaces the rail with `OfficerConsole`. `?autorun=1` skips the dialog. Before the first play, a card over the map states the situation in a sentence and holds the play button.
 
 **Visual language** (`styles.css` header comment): US road signage and incident-command boards. Overpass (open Highway Gothic) for headings and numbers, Public Sans for text, loaded from Google Fonts in `app/index.html`. Guide green is the primary action, warning yellow medium, stop red high; team colours appear only in the header stripe, plan letters and gate badges. Sentence case, no emoji or middle-dot strings in copy.
 
@@ -224,7 +248,7 @@ The plans now differ, but only by 1-4%. The danger is counted map-wide, and the 
 - **One depth scale for everything in the sorted layer** (`app/src/depth.ts`): diagonal `d` geometry sits at `diagonalZ(d) = ((d + 1) * C) / 2 - 0.001`; on top of that the seated tint is `+0.0005`, barricades `+0.0006` (lights `+0.0007`), vehicles `+0.0008`, and a figure `+0.001` plus a tie-break under `0.0001`. So anything standing in cell `(u, v)` is drawn after everything on its own diagonal and before everything on `u + v + 1`.
 - **The bowl is split per diagonal** like the buildings (`buildBowl` returns `shell: { d, g }[]`, faces before tops within a diagonal). It used to be one Graphics sorted at its centre line, so every fan on the far half of the bowl was buried under it. The seated tint (`paintStands`) is per diagonal too, through a `DiagonalPool` that keeps its Graphics attached and only clears and hides them.
 - **Figures are lifted by the tier height but sorted by the ground cell** (`personZ`, `heightAt`). Sorting by the lifted screen y put a fan on a 10 m tier ten meters *further back*, and even at ground depth a fan in the back half of a tier cell sorted before that cell's own seat tile and stood inside it. Officers, the marker, the name tag and picking all use the same lift.
-- **Vehicles are in the sorted layer**, bucketed by the diagonal of their footprint's front-most corner (`vehicleDiagonal`) into a `DiagonalPool` of Graphics: at most one sortable object per occupied diagonal (about 1,300 for 4,500 vehicles spread over the map; bucketing costs 0.5 ms), never one per vehicle. Parked vehicles have their own pool, rebuilt only under the old `parkedKey` / window rules. As a layer above everything, a car was painted over the pedestrian beside it. A fan on the same diagonal as a car's front corner still draws over the car, which is the right call for someone on the pavement beside it.
+- **Vehicles are in the sorted layer**, bucketed by the diagonal of their footprint's front-most corner (`vehicleDiagonal`) into a `DiagonalPool` of Graphics: at most one sortable object per occupied diagonal (bucketing costs about 0.5 ms), never one per vehicle. Parked vehicles have their own pool, rebuilt only under the old `parkedKey` / window rules. As a layer above everything, a car was painted over the pedestrian beside it. A fan on the same diagonal as a car's front corner still draws over the car, which is the right call for someone on the pavement beside it.
 - **Closures are drawn as barricades** (`app/src/barricadeArt.ts`): striped jersey barriers across the road at both ends of a closed stretch and sawhorses every ~8 m along it, a row of sawhorses across a closed gate's doorway, at most 96 pieces each, grouped per diagonal in the sorted layer. Placement is pure (`barricadePlacements`) and tested. Amber lights are separate Graphics whose alpha the ticker flips every 500 ms, so flashing never rebuilds geometry. Map closables and live `SceneInfo.barricades` both draw (deduplicated by id); `closureKey` includes live cells and names so a moved barricade redraws. The ground keeps a 0.3-alpha red tint and the "⛔ … closed" tags. The 2D plan view draws the tint plus an orange/white bar across the stretch and a no-entry disc, cached per run by `closureKey`.
 - **A click that hits no officer, vehicle or fan on a road cell, or a walk cell next to one, calls `onPickStreet(cell)`** (after `onPick(null)` clears the fan selection). The police controls in `App.tsx` decide what to do with it; `streetCellAt` is the test.
 - **Shirt colour is the fan type, ring colour is the state.** Names come from `groupName(dot)`, so the person you clicked is someone you can find again.
@@ -257,7 +281,7 @@ The first request pays MLX warm-up and will exceed the timeout; it falls back on
 
 ## The cache ships warm
 
-`server/data/decision-seed.json` holds 1,582 answers the real Kev-4B already gave (239 KB): 605 in clear weather, 527 in lightning and 450 in rain. Weather is part of the key, so the earlier 737-answer seed (all clear) left a rainy or stormy demo on defaults; `WARM_WEATHER=rain-at-kickoff` / `thunderstorm npm run warm` fill those, and `WARM_FANS=60000` reaches other crowd and wait buckets. On a 16 GB Mac under memory pressure Kev took ~18 s per answer, so the script's quiet spell is `WARM_SETTLE_S` (default 15 s); the server's background warmer keeps filling after the script exits, so export the seed once `/api/health`'s `cachedDecisions` stops growing. `openDb()` loads them into an empty `decision_cache`, so a fresh clone is model-driven from the first click rather than guessing its way through the first run of every scenario. Measured on a brand-new database with the earlier 544-answer seed: a lightning delay runs **54,253 decisions, all from the model, zero fallbacks**, with the pause down to 0.4 s.
+`server/data/decision-seed.json` holds 1,582 answers the real Kev-4B already gave (237 KB): 605 in clear weather, 527 in lightning and 450 in rain. Weather is part of the key, so the earlier 737-answer seed (all clear) left a rainy or stormy demo on defaults; `WARM_WEATHER=rain-at-kickoff` / `thunderstorm npm run warm` fill those, and `WARM_FANS=60000` reaches other crowd and wait buckets. On a 16 GB Mac under memory pressure Kev took ~18 s per answer, so the script's quiet spell is `WARM_SETTLE_S` (default 15 s); the server's background warmer keeps filling after the script exits, so export the seed once `/api/health`'s `cachedDecisions` stops growing. `openDb()` loads them into an empty `decision_cache`, so a fresh clone starts with the common decisions already model-backed instead of guessing through the first run. Measured on a brand-new database with the earlier 544-answer seed: a lightning delay runs **54,253 decisions, all from the model, zero fallbacks**, with the pause down to 0.4 s.
 
 Regenerate after changing fan types, situations or the `decisionKey` context — those change the keys and the old ones stop matching.
 
@@ -272,12 +296,12 @@ DB_PATH=./data/gameday.db npm run seed:export
 
 ```bash
 npm run serve     # with Kev on :8009
-npm run warm      # runs all three incidents x three plans, then waits for the warmer
+npm run warm      # runs all four incidents x three plans, then waits for the warmer
 ```
 
-Only needed if you have changed the decision vocabulary; otherwise the shipped seed covers it.
+Only needed if you have changed the decision vocabulary, added a weather case, or are demoing an imported stadium the seed has never seen; otherwise the shipped seed covers it.
 
-Takes a few minutes and settles around 737 keys on the stadium map. After it, every fan decision in the demo comes from the model: the last run measured **zero fallbacks on all three plans**. Skip it and the first run of each scenario is mostly defaults, which is correct behaviour but not a good look on stage. The cache lives in SQLite at `DB_PATH`, so it survives restarts.
+Takes a few minutes and settles when `/api/health`'s `cachedDecisions` stops moving. After it, every fan decision in the demo comes from the model: the last run measured **zero fallbacks on all three plans**. Skip it and the first run of each scenario is mostly defaults, which is correct behaviour but not a good look on stage. The cache lives in SQLite at `DB_PATH`, so it survives restarts. `WARM_WEATHER` chooses the weather to warm and `WARM_SETTLE_S` the quiet period.
 
 `?autorun=1` starts the three runs without a click, and the app saves each finished comparison through `POST /api/comparisons` — which is how a run in an ordinary browser window can be checked from the server side, with no debugger attached.
 
@@ -289,10 +313,19 @@ Takes a few minutes and settles around 737 keys on the stadium map. After it, ev
 
 ```bash
 npm run typecheck     # tsc over every lane, one pass
-npm test              # vitest
+npm test              # vitest (58 files, 380 checks; 3 live-model checks skip without the models)
 npm run serve         # API on 8787
 npm run dev           # app on 5173, proxies /api to 8787
+npm run fetch-map     # refetch the committed Ohio Stadium OSM extract
+npm run warm          # fill the decision cache against a live Kev
+npm run build         # production bundle for the app
 ```
+
+The server and the three scripts load `.env` automatically through Node's
+`--env-file-if-exists=.env`, so the variables in `.env.example` can be set in
+one place. `.env` is git-ignored and optional. `docs/police-ops.md` lists the
+manual diagnostic scripts (`police-baseline.ts`, `diagnose-stadium.ts`,
+`diagnose-imported-crowd.ts`) that are deliberately outside `npm test`.
 
 Kev (optional — without it every decision is a fallback, by design):
 
@@ -302,13 +335,13 @@ uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
 
 ## Current state
 
-Everything in `GOAL.md` is built and running. The repo is five npm workspaces around the frozen `contracts.ts`, 120 tests and `tsc` pass, and the demo runs end to end on the real Ohio Stadium map with the real models.
+Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **380 checks in 58 files (377 pass, 3 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
 
-Measured on the stadium map (800x800 cells at 2 m, 100,000 fans as 20,000 dots):
+Measured on the stadium map (800x800 cells at 2 m, 100,000 fans as 20,000 dots). These are development-Mac numbers, not a controlled benchmark; `engine/src/perf.test.ts` asserts only the 10x bar, and a Windows run of this suite measured ~310x.
 
 | | |
 | --- | --- |
-| one browser Web Worker, warm cache | **222x** real time, zero fallbacks |
+| one browser Web Worker, warm cache | **222x** real time, zero fallbacks (254x after the pacing fix) |
 | three plans at once in the app | **56.8x** real time each |
 | lightning delay, ice-cold cache | **43.2 s** wall (the bar is 60 s) |
 | decision grouping | 57,974 dot decisions to ~144 model calls |
@@ -321,12 +354,13 @@ Gate surge now (Gate 2, 5,000-fan late rush, default decisions, headless): plan 
 1. **A cold cache is mostly fallbacks until it warms.** The model answers in ~250 ms, so of the ~144 keys a lightning delay raises at once only a handful land inside the engine's 2 s pause; the rest take the defaults and are counted as fallbacks, which is what the contract asks for. `makeWarmer` then fetches them in the background without a deadline, so the cache completes by itself (144 of 144 keys about 80 seconds later) and the same scenario then runs with zero fallbacks. Run `npm run warm` before a demo. Raising `KEV_CONCURRENCY` makes the cold case *worse* (16 answered one key where 4 answered five) because Kev serialises on one GPU — leave it at 4.
 2. **Safari: the likely cause was fixed, and the fix is unverified on Safari itself.** Safari loaded the app and its workers really did call `/decide`, but ninety sim minutes had not completed after six wall minutes. The worker used to sleep once per *sim second* (`1000 / speed` ms), and Safari clamps `setTimeout` to about a second in a tab whose app is not frontmost, workers included — so at the app's default speed of 20 every 50 ms sleep became 1,000 ms and the run paced itself at real time, needing the full 90 minutes. The arithmetic matches the symptom exactly. `loop()` now makes up every step the wall clock owes before sleeping at all, so a coarse timer costs fewer, bigger batches instead of a slower run.
 
-   What is proven: the change is not a regression, and is a gain — the headless Chrome bench went 222.5x → **254.4x**, snapshot and seek still exact, 105 tests pass. What is **not** proven: that Safari now finishes. The run was started under the right conditions (demo tab selected, Safari not frontmost) and killed at 160 s, which proves nothing either way — at speed 20 a 90 minute scenario cannot finish in under ~270 s however fast the engine is, so the test needs about 6 minutes of patience. **Re-run it before claiming Safari works.** Demo in Chrome meanwhile.
+   What is proven: the change is not a regression, and is a gain — the headless Chrome bench went 222.5x → **254.4x**, snapshot and seek still exact, and the suite passes. What is **not** proven: that Safari now finishes. The run was started under the right conditions (demo tab selected, Safari not frontmost) and killed at 160 s, which proves nothing either way — at speed 20 a 90 minute scenario cannot finish in under ~270 s however fast the engine is, so the test needs about 6 minutes of patience. **Re-run it before claiming Safari works.** Demo in Chrome meanwhile.
 
    Note the speed cap when testing: wall time for a full run has a floor of `5400 / speed` seconds. Six minutes at speed 20 is barely past that floor, which is part of why the original failure looked ambiguous.
 3. **`pick_gate` is assigned by walking distance rather than asked of Kev.** It should become a live decision; it is the one situation in the contract the engine still decides by itself.
-4. **The in-app browser pane now renders the PixiJS canvas** (seen on 2026-10-24 with the v2 maps), so the map can be checked from inside Claude Code at a desktop-sized viewport.
-5. **The perf assertions are load-sensitive.** They pass with roughly a 5x margin (47-50x measured against a bar of 10x) while Chrome and Kev are both busy, but a much heavier machine could close that. A `npm test` failure here is worth re-running before believing.
+4. **Police-ops gaps remain.** Vehicle physics (collisions, aisles, reversing, turning radii), incident resolution on officer arrival, imported-stadium routing validation, coverage hatching, suggestion auditing, multi-window officer mode, and browser QA are all open; `docs/police-ops.md` has the list and the conditions for closing each.
+5. **The in-app browser pane now renders the PixiJS canvas** (seen on 2026-10-24 with the v2 maps), so the map can be checked from inside Claude Code at a desktop-sized viewport.
+6. **The perf assertions are load-sensitive.** They pass with a wide margin while Chrome and Kev are both busy, but a much heavier machine could close it. A `npm test` failure here is worth re-running before believing.
 
 ## Forecast layer (2026-10-24)
 

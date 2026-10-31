@@ -1,5 +1,12 @@
 # Goal
 
+> **Historical note (2026-10-31).** This is the original HackOHI/O brief and is
+> kept for context. The product has moved past it: read `README.md` for what
+> ships now and `CLAUDE.md` for the current technical decisions. Where this file
+> conflicts with the code, the code wins — in particular the project now needs
+> Node 23.6 or newer (not 22) and uses the built-in `node:sqlite` rather than
+> better-sqlite3, and it ships four incidents including `game_end`.
+
 Build **Gameday Command**, a practice tool for police commanders who run game day at Ohio Stadium. It simulates the crowd around the stadium. The commander triggers an incident, then runs the same moment under up to three response plans side by side and sees a scorecard for each. The commander always makes the call. The tool shows tradeoffs and never tells police what to do.
 
 This is for HackOHI/O (24 hours, Saturday 10 AM to Sunday 10 AM). A working demo beats extra features every time.

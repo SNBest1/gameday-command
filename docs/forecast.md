@@ -1,7 +1,8 @@
 # Forecast note
 
-Written 2026-10-24. This is the honest scope of the forecast layer as built on
-`feat/command-v3`; the contract (`contracts.ts`) is unchanged.
+Written 2026-10-24, checked against `main` on 2026-10-31. This is the honest
+scope of the forecast layer. The contract (`contracts.ts`) still has no forecast
+fields; it is now `gameday.v3` (v3 added the `game_end` incident).
 
 ## What is implemented
 
