@@ -120,7 +120,7 @@ Run the waves in this order:
   - `STT_URL`, `STT_MODEL`, `STT_KEY`, `STT_TIMEOUT_MS`;
   - `INTENT_LLM_URL`, `INTENT_LLM_MODEL`, `INTENT_LLM_KEY`, `INTENT_LLM_TIMEOUT_MS`;
   - `VOICE_LOG_DAYS`.
-- [ ] **A4.** `server/src/voice.test.ts`: start fake STT and LLM servers (small Hono apps on random ports, the way other server tests start a server) and check:
+- [x] **A4.** `server/src/voice.test.ts`: start fake STT and LLM servers (small Hono apps on random ports, the way other server tests start a server) and check:
   - `config` reflects the environment;
   - `transcribe` forwards a multipart body and returns its text;
   - an oversized body gets 413;
