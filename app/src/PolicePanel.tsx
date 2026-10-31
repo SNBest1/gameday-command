@@ -12,6 +12,8 @@ import { patrolBeats } from '../../world/src/officers.ts';
 import { coverage } from './coverage.ts';
 import { classifyGates, type GateSample } from './gate-health.ts';
 import { afterActionHtml, lastUndoable, timeline } from './after-action.ts';
+import { getVoiceLog } from './api.ts';
+import { VOICE_SESSION_ID } from './voice-session.ts';
 
 function download(name: string, type: string, text: string): void {
   const url = URL.createObjectURL(new Blob([text], { type }));
@@ -747,13 +749,25 @@ export function PolicePanel({
           <button
             className="small ghost"
             disabled={!entries.length}
-            onClick={() =>
-              download(
-                `plan-${label}-timeline.json`,
-                'application/json',
-                JSON.stringify({ plan: label, map: map.name, scorecard: run.scorecard, timeline: entries }, null, 2),
-              )
-            }
+            onClick={() => {
+              void getVoiceLog().then((rows) =>
+                download(
+                  `plan-${label}-timeline.json`,
+                  'application/json',
+                  JSON.stringify(
+                    {
+                      plan: label,
+                      map: map.name,
+                      scorecard: run.scorecard,
+                      timeline: entries,
+                      voice: rows.filter((row) => row.session === VOICE_SESSION_ID),
+                    },
+                    null,
+                    2,
+                  ),
+                ),
+              );
+            }}
           >
             Export timeline (JSON)
           </button>
@@ -763,11 +777,18 @@ export function PolicePanel({
             onClick={() => {
               const page = window.open('', '_blank');
               if (!page) return;
-              page.document.write(
-                afterActionHtml(`After-action report: ${map.name}, plan ${label}`, entries, run.scorecard),
-              );
-              page.document.close();
-              page.print();
+              void getVoiceLog().then((rows) => {
+                page.document.write(
+                  afterActionHtml(
+                    `After-action report: ${map.name}, plan ${label}`,
+                    entries,
+                    run.scorecard,
+                    rows.filter((row) => row.session === VOICE_SESSION_ID),
+                  ),
+                );
+                page.document.close();
+                page.print();
+              });
             }}
           >
             Print after-action report

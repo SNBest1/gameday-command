@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SceneInfo } from '../../engine/src/index.ts';
+import type { VoiceLogRow } from './api.ts';
 import { afterActionHtml, inverseOrder, lastUndoable, timeline } from './after-action.ts';
 
 const scene = (orders: SceneInfo['orders']): SceneInfo =>
@@ -71,5 +72,25 @@ describe('timeline', () => {
     const html = afterActionHtml('Run <A>', [{ t: 0, clock: '0:00', kind: 'order', text: '<script>' }], null);
     expect(html).toContain('&lt;script&gt;');
     expect(html).not.toContain('<script>');
+  });
+
+  it('includes the session voice log', () => {
+    const voice: VoiceLogRow[] = [
+      {
+        id: 1,
+        at: '2026-10-31T12:00:00.000Z',
+        session: 's1',
+        source: 'typed',
+        transcript: 'close gate 2',
+        toolCall: 'fallback',
+        summary: 'Close Gate 2, now',
+        outcome: 'confirmed',
+      },
+    ];
+    const html = afterActionHtml('Run', [], null, voice);
+    expect(html).toContain('<h2>Voice</h2>');
+    expect(html).toContain('close gate 2');
+    expect(html).toContain('Close Gate 2, now');
+    expect(html).toContain('confirmed');
   });
 });
