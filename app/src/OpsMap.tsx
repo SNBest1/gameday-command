@@ -1,13 +1,33 @@
 import { useEffect, useRef } from 'react';
 import { addProtocol, Map as MapLibreMap, removeProtocol, type StyleSpecification } from 'maplibre-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { BitmapLayer, type BitmapLayerProps } from '@deck.gl/layers';
+import {
+  BitmapLayer,
+  PathLayer,
+  PolygonLayer,
+  ScatterplotLayer,
+  TextLayer,
+  type BitmapLayerProps,
+  type PathLayerProps,
+  type PolygonLayerProps,
+  type ScatterplotLayerProps,
+  type TextLayerProps,
+} from '@deck.gl/layers';
+import type { Layer } from '@deck.gl/core';
 import { Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { getMapGeo } from './api.ts';
 import type { CrowdViewProps } from './CrowdView.tsx';
 import { basemapImage } from './ops-basemap.ts';
 import { flatGeoref, mapBounds } from './ops-geo.ts';
+import {
+  opsLayerProps,
+  type OpsLayerProps,
+  type PathDatum,
+  type PointDatum,
+  type PolygonDatum,
+  type TextDatum,
+} from './ops-layers.ts';
 import type { MapGeoref } from '../../world/src/osm/georef.ts';
 
 const DEFAULT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
@@ -36,6 +56,27 @@ function blankStyle(theme: 'light' | 'dark'): StyleSpecification {
   };
 }
 
+/** Turn the plain props from ops-layers into deck.gl layer instances. */
+function makeLayers(specs: OpsLayerProps): Layer[] {
+  return [
+    new BitmapLayer(specs.density as unknown as BitmapLayerProps),
+    new ScatterplotLayer(specs.fans as unknown as ScatterplotLayerProps<PointDatum>),
+    new ScatterplotLayer(specs.vehicles as unknown as ScatterplotLayerProps<PointDatum>),
+    new ScatterplotLayer(specs.hotspots as unknown as ScatterplotLayerProps<PointDatum>),
+    new PathLayer(specs.routes as unknown as PathLayerProps<PathDatum>),
+    new PolygonLayer(specs.coverage as unknown as PolygonLayerProps<PolygonDatum>),
+    new PolygonLayer(specs.closures as unknown as PolygonLayerProps<PolygonDatum>),
+    new PolygonLayer(specs.incident as unknown as PolygonLayerProps<PolygonDatum>),
+    new ScatterplotLayer(specs.officers as unknown as ScatterplotLayerProps<PointDatum>),
+    new TextLayer({
+      ...specs.gates,
+      fontFamily: 'system-ui, sans-serif',
+      getTextAnchor: 'middle',
+      getAlignmentBaseline: 'center',
+    } as unknown as TextLayerProps<TextDatum>),
+  ];
+}
+
 /**
  * The operations map. MapLibre owns the WebGL context; deck.gl shares it
  * through an interleaved MapboxOverlay, and the offline grid basemap is
@@ -44,6 +85,72 @@ function blankStyle(theme: 'light' | 'dark'): StyleSpecification {
 export function OpsMap(props: CrowdViewProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const bundle = props.map;
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const overlayRef = useRef<MapboxOverlay | null>(null);
+  const georefRef = useRef<MapGeoref>(flatGeoref(bundle.width));
+  const basemapRef = useRef<BitmapLayer | null>(null);
+  const zoomRef = useRef(10);
+  const drawRef = useRef<() => void>(() => {});
+
+  const draw = () => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    const kept = props.run.frames.current ?? [];
+    const view =
+      props.scrubIndex === null
+        ? props.run.latest.current
+        : (kept[Math.min(props.scrubIndex, kept.length - 1)] ?? props.run.latest.current);
+    const live = props.scrubIndex === null;
+    const layers: Layer[] = [];
+    if (basemapRef.current) layers.push(basemapRef.current);
+    if (view) {
+      const specs = opsLayerProps({
+        map: bundle,
+        geo: georefRef.current,
+        frame: view.frame,
+        density: view.density,
+        scene: live ? props.run.scene.current : null,
+        zoom: zoomRef.current,
+        dangerDensity: props.dangerDensity,
+        selectedBand: props.selectedBand,
+        showVehicles: props.showVehicles,
+        showFlow: props.showFlow,
+        vehicleFocus: props.vehicleFocus,
+        selectedVehicle: props.selectedVehicle,
+        selectedOfficer: props.selectedOfficer,
+        showCoverage: !!props.showCoverage,
+        hotspots: props.hotspots,
+        incidentCells: props.incidentCells,
+        incidentLabel: props.incidentLabel,
+      });
+      for (const layer of makeLayers(specs)) layers.push(layer);
+    }
+    overlay.setProps({ layers });
+  };
+  drawRef.current = draw;
+
+  useEffect(() => {
+    drawRef.current();
+    // The frame and selection live in refs, so run.tick stands in for a new frame.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    props.run,
+    props.run.tick,
+    props.scrubIndex,
+    props.selected,
+    props.selectedOfficer,
+    props.selectedVehicle,
+    props.selectedBand,
+    props.showVehicles,
+    props.showFlow,
+    props.vehicleFocus,
+    props.showCoverage,
+    props.dangerDensity,
+    props.incidentCells,
+    props.incidentLabel,
+    props.hotspots,
+    bundle,
+  ]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -54,20 +161,19 @@ export function OpsMap(props: CrowdViewProps) {
     let timer: number | undefined;
     let theme = currentTheme();
     let fallback = false;
-    let georef: MapGeoref = flatGeoref(bundle.width);
     let disconnectTheme: (() => void) | undefined;
 
     const setBasemap = () => {
-      if (!map || !overlay) return;
+      if (!map) return;
       const firstSymbol = map.getStyle()?.layers?.find((layer) => layer.type === 'symbol')?.id;
-      const layer = new BitmapLayer({
+      basemapRef.current = new BitmapLayer({
         id: 'ops-basemap',
         image: basemapImage(bundle, theme),
-        bounds: mapBounds(georef, bundle.width, bundle.height),
+        bounds: mapBounds(georefRef.current, bundle.width, bundle.height),
         pickable: false,
         ...(firstSymbol ? { beforeId: firstSymbol } : {}),
       } as unknown as BitmapLayerProps);
-      overlay.setProps({ layers: [layer] });
+      drawRef.current();
     };
 
     const useFallback = () => {
@@ -81,8 +187,8 @@ export function OpsMap(props: CrowdViewProps) {
     const start = async () => {
       const fetched = await getMapGeo(bundle.id);
       if (disposed) return;
-      georef = fetched ?? flatGeoref(bundle.width);
-      const bounds = mapBounds(georef, bundle.width, bundle.height);
+      georefRef.current = fetched ?? flatGeoref(bundle.width);
+      const bounds = mapBounds(georefRef.current, bundle.width, bundle.height);
       const style = configuredStyle();
       const gridOnly = fetched === null || style === '' || navigator.onLine === false;
       fallback = gridOnly;
@@ -93,7 +199,7 @@ export function OpsMap(props: CrowdViewProps) {
       const [east, north] = bounds[1];
       const padX = (east - west) * 0.2;
       const padY = (north - south) * 0.2;
-      const { lon, lat } = georef.center;
+      const { lon, lat } = georefRef.current.center;
 
       map = new MapLibreMap({
         container: host,
@@ -106,11 +212,19 @@ export function OpsMap(props: CrowdViewProps) {
           [east + padX, north + padY],
         ],
       });
+      mapRef.current = map;
       overlay = new MapboxOverlay({ interleaved: true, layers: [] });
+      overlayRef.current = overlay;
       map.addControl(overlay);
+      zoomRef.current = map.getZoom();
+      map.on('zoomend', () => {
+        zoomRef.current = map?.getZoom() ?? zoomRef.current;
+        drawRef.current();
+      });
 
       map.once('load', () => {
         if (timer !== undefined) window.clearTimeout(timer);
+        zoomRef.current = map?.getZoom() ?? zoomRef.current;
         setBasemap();
       });
 
@@ -148,6 +262,9 @@ export function OpsMap(props: CrowdViewProps) {
       disconnectTheme?.();
       if (overlay) overlay.finalize();
       map?.remove();
+      mapRef.current = null;
+      overlayRef.current = null;
+      basemapRef.current = null;
       removeProtocol('pmtiles');
     };
   }, [bundle]);
