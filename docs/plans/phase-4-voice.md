@@ -116,7 +116,7 @@ Run the waves in this order:
   - prune rows older than `VOICE_LOG_DAYS` (default 30) when the server starts.
 
   Do **not** bump `DECISION_CACHE_VERSION` (that empties the decision cache). Create the table with `CREATE TABLE IF NOT EXISTS`.
-- [ ] **A3.** Document every new variable in `.env.example` with a comment:
+- [x] **A3.** Document every new variable in `.env.example` with a comment:
   - `STT_URL`, `STT_MODEL`, `STT_KEY`, `STT_TIMEOUT_MS`;
   - `INTENT_LLM_URL`, `INTENT_LLM_MODEL`, `INTENT_LLM_KEY`, `INTENT_LLM_TIMEOUT_MS`;
   - `VOICE_LOG_DAYS`.
