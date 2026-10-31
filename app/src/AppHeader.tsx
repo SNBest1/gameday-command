@@ -89,7 +89,9 @@ export function AppHeader({
           {incident && (
             <b
               className="incident-mark"
-              style={{ left: `${((incident.at - timeWindow.startAt) / (timeWindow.endAt - timeWindow.startAt)) * 100}%` }}
+              style={{
+                left: `${((incident.at - timeWindow.startAt) / (timeWindow.endAt - timeWindow.startAt)) * 100}%`,
+              }}
               title={`${INCIDENT_LABELS[incident.kind]} ${minutes(incident.at)} from kickoff`}
             />
           )}
