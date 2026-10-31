@@ -10,7 +10,10 @@ import { clientKey, takeRate, type RateBucket } from './rate-limit.ts';
 
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
 const MAX_INTERPRET_BYTES = 64 * 1024;
+const MAX_LOG_BYTES = 16 * 1024;
 const MAX_TEXT_CHARS = 500;
+const MAX_LOG_TEXT = 2000;
+const MAX_TOOL_JSON = 8 * 1024;
 const MAX_SYSTEM_CHARS = 8000;
 /** The schema has 22 tools (6 orders, 8 controls, 6 questions, show_plan, none). */
 const MAX_TOOLS = 24;
@@ -186,28 +189,41 @@ export function voiceRoutes(app: Hono, db: Db): void {
     }
   });
 
-  app.post('/api/voice/log', async (c) => {
-    let body: VoiceLogBody;
-    try {
-      body = await c.req.json();
-    } catch {
-      return c.json({ error: 'invalid JSON' }, 400);
-    }
-    const outcome = body.outcome === 'confirmed' || body.outcome === 'cancelled' ? body.outcome : 'none';
-    const toolCall = body.toolCall === 'fallback' ? 'fallback' : JSON.stringify(body.toolCall ?? 'fallback');
-    db.prepare(
-      'insert into voice_log (at, session, source, transcript, tool_call, summary, outcome) values (?, ?, ?, ?, ?, ?, ?)',
-    ).run(
-      new Date().toISOString(),
-      String(body.session ?? ''),
-      String(body.source ?? 'typed'),
-      String(body.transcript ?? ''),
-      toolCall,
-      String(body.summary ?? ''),
-      outcome,
-    );
-    return c.json({ ok: true });
-  });
+  app.post(
+    '/api/voice/log',
+    bodyLimit({ maxSize: MAX_LOG_BYTES, onError: (c) => c.json({ error: 'log entry is too large' }, 413) }),
+    async (c) => {
+      let body: VoiceLogBody;
+      try {
+        body = await c.req.json();
+      } catch {
+        return c.json({ error: 'invalid JSON' }, 400);
+      }
+      if (body.source !== 'browser' && body.source !== 'stt' && body.source !== 'typed') {
+        return c.json({ error: 'source must be browser, stt or typed' }, 400);
+      }
+      const transcript = String(body.transcript ?? '');
+      const summary = String(body.summary ?? '');
+      if (transcript.length > MAX_LOG_TEXT || summary.length > MAX_LOG_TEXT) {
+        return c.json({ error: 'transcript or summary is too long' }, 400);
+      }
+      const toolCall = body.toolCall === 'fallback' ? 'fallback' : JSON.stringify(body.toolCall ?? 'fallback');
+      if (toolCall.length > MAX_TOOL_JSON) return c.json({ error: 'tool call is too large' }, 400);
+      const outcome = body.outcome === 'confirmed' || body.outcome === 'cancelled' ? body.outcome : 'none';
+      db.prepare(
+        'insert into voice_log (at, session, source, transcript, tool_call, summary, outcome) values (?, ?, ?, ?, ?, ?, ?)',
+      ).run(
+        new Date().toISOString(),
+        String(body.session ?? ''),
+        body.source,
+        transcript,
+        toolCall,
+        summary,
+        outcome,
+      );
+      return c.json({ ok: true });
+    },
+  );
 
   app.get('/api/voice/log', (c) => {
     const since = c.req.query('since') ?? '';
