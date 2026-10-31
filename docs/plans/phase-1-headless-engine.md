@@ -139,7 +139,7 @@ Run the waves in this order:
 
 ### Stream E: Parity
 
-- [ ] **E1.** `server/src/parity.test.ts`:
+- [x] **E1.** `server/src/parity.test.ts`:
   1. Run the gate-surge incident on `test-3gate` with a fixed seed and **default decisions only**, so there is no Kev and no cache: (a) in-process through `worker-core.ts` with an in-memory `WorkerHost`, and (b) through the server and WebSocket path from Stream C.
   2. Assert that the final scorecards are `toEqual`, and that the final frame's typed arrays are byte-identical.
   3. Then run the stadium map (`ohio-stadium`) for 10 sim minutes past the incident and assert the same. If this case takes over 60 s, mark it with `describe.skipIf(!process.env.PERF)` and add its file to `include` in `vitest.perf.config.ts` (from Phase 0), so it runs under `npm run test:perf`.
