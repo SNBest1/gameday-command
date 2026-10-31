@@ -22,3 +22,4 @@ export const SPEEDS = [5, 20, 60] as const;
 // only fires at the 5 p/m2 cap in this model, so plans separated by noise.
 export const DANGER = 3.5;
 export const n = (value: number) => Math.round(value).toLocaleString();
+export const minutes = (seconds: number) => `${seconds < 0 ? '−' : '+'}${Math.abs(Math.round(seconds / 60))} min`;

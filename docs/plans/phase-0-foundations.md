@@ -174,7 +174,7 @@ Today `App.tsx` is 1,871 lines. `App()` runs from about line 420 to the end, and
   - the autorun effect ("Start without a click when asked") and the "Published for an unattended run" effect → `app/src/useAutorun.ts`
   - the briefing effect ("The briefing is only worth asking for") → `app/src/useBriefing.ts`
   - the keyboard shortcuts effect (the `window.addEventListener('keydown', onKey)` block, around line 966) → `app/src/useShortcuts.ts`
-- [ ] **E3.** Move the top header (the `<header className="top">` block, around line 1002, with the situation tabs and clock) into `app/src/AppHeader.tsx`. Pass what it reads as props.
+- [x] **E3.** Move the top header (the `<header className="top">` block, around line 1002, with the situation tabs and clock) into `app/src/AppHeader.tsx`. Pass what it reads as props.
 - [ ] **E4.** Move the right rail (the `<aside className="side">` block with `rail-tabs` and `rail-body`, around line 1549) into `app/src/Rail.tsx`. Leave the `officerRole ? <OfficerConsole .../> : ...` choice in `App.tsx`. If the rail needs more than about 25 props, move each tab's body into its own component in the same file rather than passing everything through.
 - [ ] **E5.** Check by hand in a browser (`npm run serve` and `npm run dev` in two terminals, then open http://localhost:5173/?autorun=1):
   - all three runs start;
