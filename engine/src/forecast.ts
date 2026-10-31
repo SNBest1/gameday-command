@@ -96,9 +96,7 @@ export function combine(
   const w = normalize(weights);
   const bands: ZoneBand[] = [];
   for (let zone = 0; zone < zones; zone++) {
-    const pairs = variants
-      .map((v, i) => ({ v: v.curves[zone]?.[step] ?? 0, w: w[i] ?? 0 }))
-      .sort((a, b) => a.v - b.v);
+    const pairs = variants.map((v, i) => ({ v: v.curves[zone]?.[step] ?? 0, w: w[i] ?? 0 })).sort((a, b) => a.v - b.v);
     const total = pairs.reduce((a, b) => a + b.w, 0) || 1;
     const quantile = (q: number) => {
       let acc = 0;

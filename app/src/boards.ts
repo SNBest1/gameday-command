@@ -48,8 +48,7 @@ export function zoneRows(
     const before = previous?.[place.id];
     const trend = before ? (people - before.people) / minutes : 0;
     const peakRate = before ? (peak - before.peak) / minutes : 0;
-    const eta =
-      peak >= threshold ? 0 : peakRate > 1e-6 ? Math.max(0, (threshold - peak) / peakRate) : null;
+    const eta = peak >= threshold ? 0 : peakRate > 1e-6 ? Math.max(0, (threshold - peak) / peakRate) : null;
     rows.push({ id: place.id, name: place.name, people: Math.round(people), peak, trendPerMin: trend, etaMin: eta });
   }
   return rows.sort((a, b) => b.people - a.people);

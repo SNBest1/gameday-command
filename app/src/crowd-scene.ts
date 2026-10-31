@@ -104,7 +104,10 @@ const VEHICLE_HEIGHT: Record<VehicleKind, { h: number; belt: number }> = {
   police: { h: 1.6, belt: 0.55 },
   ambulance: { h: 2.7, belt: 0.6 },
 };
-const VSTATE = Object.fromEntries(VEHICLE_STATES.map((s, i) => [s, i])) as Record<(typeof VEHICLE_STATES)[number], number>;
+const VSTATE = Object.fromEntries(VEHICLE_STATES.map((s, i) => [s, i])) as Record<
+  (typeof VEHICLE_STATES)[number],
+  number
+>;
 const GLASS = 0x1a2633;
 const hex = (css: string) => parseInt(css.slice(1), 16);
 const mix = (a: number, b: number, t: number) => {
@@ -112,7 +115,6 @@ const mix = (a: number, b: number, t: number) => {
   return (ch(16) << 16) | (ch(8) << 8) | ch(0);
 };
 /** Frames further apart than this are a vehicle spawning or leaving, not driving. */
-
 
 export interface CrowdSceneInit {
   host: HTMLElement;
@@ -262,13 +264,61 @@ function buildStation(cell: number, width: number): Graphics {
       return [p.sx, p.sy];
     });
   const g = new Graphics();
-  g.poly(quad([[x0 - 2, y1 + 2, 0], [x1 + 2, y1 + 2, 0], [x1 + 2, y0 - 2, 0], [x0 - 2, y0 - 2, 0]]), true).fill({ color: OFFICER, alpha: 0.28 });
-  g.poly(quad([[x0, y1, 0], [x1, y1, 0], [x1, y1, h], [x0, y1, h]]), true).fill(0x1f4f9a);
-  g.poly(quad([[x1, y0, 0], [x1, y1, 0], [x1, y1, h], [x1, y0, h]]), true).fill(0x2c66c2);
-  g.poly(quad([[x0, y0, h], [x1, y0, h], [x1, y1, h], [x0, y1, h]]), true).fill(0xe6edf3);
+  g.poly(
+    quad([
+      [x0 - 2, y1 + 2, 0],
+      [x1 + 2, y1 + 2, 0],
+      [x1 + 2, y0 - 2, 0],
+      [x0 - 2, y0 - 2, 0],
+    ]),
+    true,
+  ).fill({ color: OFFICER, alpha: 0.28 });
+  g.poly(
+    quad([
+      [x0, y1, 0],
+      [x1, y1, 0],
+      [x1, y1, h],
+      [x0, y1, h],
+    ]),
+    true,
+  ).fill(0x1f4f9a);
+  g.poly(
+    quad([
+      [x1, y0, 0],
+      [x1, y1, 0],
+      [x1, y1, h],
+      [x1, y0, h],
+    ]),
+    true,
+  ).fill(0x2c66c2);
+  g.poly(
+    quad([
+      [x0, y0, h],
+      [x1, y0, h],
+      [x1, y1, h],
+      [x0, y1, h],
+    ]),
+    true,
+  ).fill(0xe6edf3);
   const mid = (x0 + x1) / 2;
-  g.poly(quad([[mid - 1.2, y0 + 1, h], [mid, y0 + 1, h], [mid, y1 - 1, h], [mid - 1.2, y1 - 1, h]]), true).fill(0xe5484d);
-  g.poly(quad([[mid, y0 + 1, h], [mid + 1.2, y0 + 1, h], [mid + 1.2, y1 - 1, h], [mid, y1 - 1, h]]), true).fill(OFFICER);
+  g.poly(
+    quad([
+      [mid - 1.2, y0 + 1, h],
+      [mid, y0 + 1, h],
+      [mid, y1 - 1, h],
+      [mid - 1.2, y1 - 1, h],
+    ]),
+    true,
+  ).fill(0xe5484d);
+  g.poly(
+    quad([
+      [mid, y0 + 1, h],
+      [mid + 1.2, y0 + 1, h],
+      [mid + 1.2, y1 - 1, h],
+      [mid, y1 - 1, h],
+    ]),
+    true,
+  ).fill(OFFICER);
   g.zIndex = diagonalZ(u + v);
   return g;
 }
@@ -319,7 +369,8 @@ const SHELL_COLOR = 0xb9b2a4;
  */
 function buildBuildings(map: MapBundle, snow = 0): Graphics[] {
   const { width, height, cells } = map;
-  const blocked = (u: number, v: number) => u >= 0 && v >= 0 && u < width && v < height && cells[v * width + u] === 'blocked';
+  const blocked = (u: number, v: number) =>
+    u >= 0 && v >= 0 && u < width && v < height && cells[v * width + u] === 'blocked';
 
   const label = new Int32Array(width * height).fill(-1);
   const sizes: number[] = [];
@@ -336,7 +387,12 @@ function buildBuildings(map: MapBundle, snow = 0): Graphics[] {
       size++;
       const u = cell % width;
       const v = (cell / width) | 0;
-      for (const [du, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      for (const [du, dv] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const) {
         const nu = u + du;
         const nv = v + dv;
         if (nu >= 0 && nv >= 0 && nu < width && nv < height && cells[nv * width + nu] === 'concourse') shells.add(id);
@@ -352,7 +408,8 @@ function buildBuildings(map: MapBundle, snow = 0): Graphics[] {
   const heightOf = (id: number) => (shells.has(id) ? SHELL_H : sizes[id]! < 40 ? 2.5 : 7 + (hash(id) % 5) * 3);
   // Snow settles on the roofs: the rebuild is one-off per weather change, and
   // tinting a finished Graphics can only darken, never whiten.
-  const roofOf = (id: number) => mix(shells.has(id) ? SHELL_COLOR : ROOFS[hash(id + 101) % ROOFS.length]!, 0xf2f6fa, snow);
+  const roofOf = (id: number) =>
+    mix(shells.has(id) ? SHELL_COLOR : ROOFS[hash(id + 101) % ROOFS.length]!, 0xf2f6fa, snow);
 
   const C = CELL_SIZE_M;
   const quad = (pts: [number, number, number][]) =>
@@ -378,9 +435,32 @@ function buildBuildings(map: MapBundle, snow = 0): Graphics[] {
       const x1 = (u + 1) * C;
       const y0 = v * C;
       const y1 = (v + 1) * C;
-      if (!blocked(u, v + 1)) g.poly(quad([[x0, y1, 0], [x1, y1, 0], [x1, y1, h], [x0, y1, h]]), true).fill(shade(roof, 0.58));
-      if (!blocked(u + 1, v)) g.poly(quad([[x1, y0, 0], [x1, y1, 0], [x1, y1, h], [x1, y0, h]]), true).fill(shade(roof, 0.76));
-      roofs.push([[x0, y0, h], [x1, y0, h], [x1, y1, h], [x0, y1, h]]);
+      if (!blocked(u, v + 1))
+        g.poly(
+          quad([
+            [x0, y1, 0],
+            [x1, y1, 0],
+            [x1, y1, h],
+            [x0, y1, h],
+          ]),
+          true,
+        ).fill(shade(roof, 0.58));
+      if (!blocked(u + 1, v))
+        g.poly(
+          quad([
+            [x1, y0, 0],
+            [x1, y1, 0],
+            [x1, y1, h],
+            [x1, y0, h],
+          ]),
+          true,
+        ).fill(shade(roof, 0.76));
+      roofs.push([
+        [x0, y0, h],
+        [x1, y0, h],
+        [x1, y1, h],
+        [x0, y1, h],
+      ]);
       colors.push(roof);
     }
     if (!g) continue;
@@ -414,8 +494,12 @@ export class CrowdScene {
   private selectedOfficer: string | null = null;
   private coverageVisible = false;
   private officerFocus: string | null = null;
-  setCoverage(on: boolean): void {this.coverageVisible = on;}
-  setOfficerFocus(id: string | null): void {this.officerFocus = id;}
+  setCoverage(on: boolean): void {
+    this.coverageVisible = on;
+  }
+  setOfficerFocus(id: string | null): void {
+    this.officerFocus = id;
+  }
   /** Who the last alert reached, and when it went out (wall clock). */
   private alert: { mask: Uint8Array; start: number; mx: number; my: number; radius: number } | null = null;
   private cover = new Graphics();
@@ -519,8 +603,12 @@ export class CrowdScene {
     const left = isoProject(0, H);
     const bottom = isoProject(W, H);
     const right = isoProject(W, 0);
-    slab.poly([left.sx, left.sy, bottom.sx, bottom.sy, bottom.sx, bottom.sy + depth, left.sx, left.sy + depth]).fill(0x2a2620);
-    slab.poly([bottom.sx, bottom.sy, right.sx, right.sy, right.sx, right.sy + depth, bottom.sx, bottom.sy + depth]).fill(0x3a342b);
+    slab
+      .poly([left.sx, left.sy, bottom.sx, bottom.sy, bottom.sx, bottom.sy + depth, left.sx, left.sy + depth])
+      .fill(0x2a2620);
+    slab
+      .poly([bottom.sx, bottom.sy, right.sx, right.sy, right.sx, right.sy + depth, bottom.sx, bottom.sy + depth])
+      .fill(0x3a342b);
 
     // Cell space -> isometric meters, as one matrix: cell (u, v) is meters
     // (2u, 2v), and isoProject is linear.
@@ -542,7 +630,17 @@ export class CrowdScene {
     this.cover.rect(0, 0, map.width, map.height).fill(0xffffff);
     this.cover.alpha = 0;
     // The retiring layer of each pair sits under the current one: the ticker fades them.
-    this.ground.addChild(new Sprite(baseTexture), this.cover, this.heatPrev.sprite, this.heatCur.sprite, this.flowPrev.sprite, this.flowCur.sprite, this.zone, this.closedCells, this.dots.sprite);
+    this.ground.addChild(
+      new Sprite(baseTexture),
+      this.cover,
+      this.heatPrev.sprite,
+      this.heatCur.sprite,
+      this.flowPrev.sprite,
+      this.flowCur.sprite,
+      this.zone,
+      this.closedCells,
+      this.dots.sprite,
+    );
     this.bowl = buildBowl(map);
 
     this.people.sortableChildren = true;
@@ -587,13 +685,21 @@ export class CrowdScene {
       const p = isoProject((sx / n) * CELL_SIZE_M, (sy / n) * CELL_SIZE_M, gate ? 6 : 20);
       const el = document.createElement('div');
       el.className = `crowd-label${gate ? ' gate' : ''}`;
-      el.textContent = gate ? place.name.replace(/\s*\(.*\)/, '') : place.kind === 'seating' ? map.name.replace(/ \+ 0\.5 mi$/, '') : place.name;
+      el.textContent = gate
+        ? place.name.replace(/\s*\(.*\)/, '')
+        : place.kind === 'seating'
+          ? map.name.replace(/ \+ 0\.5 mi$/, '')
+          : place.name;
       if (gate) this.fillGateLabel(el, place.name, null);
       overlay.appendChild(el);
       this.labels.push({ el, sx: p.sx, sy: p.sy, gate, place: index });
     }
     for (const station of policeStations(map)) {
-      const p = isoProject(((station.cell % map.width) + 0.5) * CELL_SIZE_M, (Math.floor(station.cell / map.width) + 0.5) * CELL_SIZE_M, 5);
+      const p = isoProject(
+        ((station.cell % map.width) + 0.5) * CELL_SIZE_M,
+        (Math.floor(station.cell / map.width) + 0.5) * CELL_SIZE_M,
+        5,
+      );
       const el = document.createElement('div');
       el.className = 'crowd-label station';
       el.textContent = `🚓 ${station.name}`;
@@ -631,7 +737,11 @@ export class CrowdScene {
     const stat = this.scene?.gates.find((g) => g.place === label.place);
     const name = (this.init.map.places[label.place]?.name ?? '').replace(/\s*\(.*\)/, '');
     // Whichever way the gate is busier: in before kickoff, out after the whistle.
-    const flow = !stat ? '' : stat.outPerMin > stat.inPerMin ? `${Math.round(stat.outPerMin)}/min out` : `${Math.round(stat.inPerMin)}/min`;
+    const flow = !stat
+      ? ''
+      : stat.outPerMin > stat.inPerMin
+        ? `${Math.round(stat.outPerMin)}/min out`
+        : `${Math.round(stat.inPerMin)}/min`;
     const text = !stat ? name : stat.open ? flow : 'closed';
     if (this.gateText.get(label.place) === text) return;
     this.gateText.set(label.place, text);
@@ -698,8 +808,19 @@ export class CrowdScene {
     for (const tag of this.closedTags) tag.el.remove();
     this.closedTags = [];
     const areas = closedAreas(map, info);
-    this.barricades = buildBarricades(areas.flatMap((area) =>
-      barricadePlacements(area.cells, width, (c) => map.cells[c], area.isGate).map(p=>({...p,kind:area.blocks==='pedestrians'?'fence' as const:area.blocks==='vehicles'?'jersey' as const:p.kind}))));
+    this.barricades = buildBarricades(
+      areas.flatMap((area) =>
+        barricadePlacements(area.cells, width, (c) => map.cells[c], area.isGate).map((p) => ({
+          ...p,
+          kind:
+            area.blocks === 'pedestrians'
+              ? ('fence' as const)
+              : area.blocks === 'vehicles'
+                ? ('jersey' as const)
+                : p.kind,
+        })),
+      ),
+    );
     for (const { body, lights } of this.barricades) this.people.addChild(body, lights);
     for (const area of areas) {
       for (const cell of area.cells) this.closedCells.rect(cell % width, Math.floor(cell / width), 1, 1);
@@ -709,13 +830,21 @@ export class CrowdScene {
       const p = isoProject(area.x, area.y, 4);
       const el = document.createElement('div');
       el.className = 'crowd-label closed';
-      el.textContent = `${fromMap ? area.name.replace(/ door$/, '') : area.name}: ${area.blocks??'all'} blocked`;
+      el.textContent = `${fromMap ? area.name.replace(/ door$/, '') : area.name}: ${area.blocks ?? 'all'} blocked`;
       overlay.appendChild(el);
       this.closedTags.push({ el, sx: p.sx, sy: p.sy });
     }
-    for(const marker of info?.markers??[]) {
-      const p=isoProject((marker.cell%width+.5)*CELL_SIZE_M,(Math.floor(marker.cell/width)+.5)*CELL_SIZE_M,4);
-      const el=document.createElement('div');el.className='crowd-label';el.textContent=marker.name+' marker';overlay.appendChild(el);this.closedTags.push({el,sx:p.sx,sy:p.sy});
+    for (const marker of info?.markers ?? []) {
+      const p = isoProject(
+        ((marker.cell % width) + 0.5) * CELL_SIZE_M,
+        (Math.floor(marker.cell / width) + 0.5) * CELL_SIZE_M,
+        4,
+      );
+      const el = document.createElement('div');
+      el.className = 'crowd-label';
+      el.textContent = marker.name + ' marker';
+      overlay.appendChild(el);
+      this.closedTags.push({ el, sx: p.sx, sy: p.sy });
     }
     this.closedCells.fill({ color: CLOSED, alpha: 0.3 });
   }
@@ -753,7 +882,8 @@ export class CrowdScene {
         if (this.init.onPickStreet && this.init.picking?.()) {
           const { mx, my } = this.groundAt(p.x, p.y);
           const { map } = this.init;
-          const u = Math.floor(mx / CELL_SIZE_M), v = Math.floor(my / CELL_SIZE_M);
+          const u = Math.floor(mx / CELL_SIZE_M),
+            v = Math.floor(my / CELL_SIZE_M);
           // Check coordinates before flattening, so off-map clicks cannot wrap rows.
           if (u >= 0 && u < map.width && v >= 0 && v < map.height && map.cells[v * map.width + u] !== 'blocked') {
             this.init.onPickStreet(v * map.width + u);
@@ -839,7 +969,12 @@ export class CrowdScene {
   /** Frame a box of cells, for the hotspot list's zoom buttons. */
   lookAtCells(x0: number, y0: number, x1: number, y1: number): void {
     const C = CELL_SIZE_M;
-    const corners = [isoProject(x0 * C, y0 * C), isoProject((x1 + 1) * C, y0 * C), isoProject(x0 * C, (y1 + 1) * C), isoProject((x1 + 1) * C, (y1 + 1) * C)];
+    const corners = [
+      isoProject(x0 * C, y0 * C),
+      isoProject((x1 + 1) * C, y0 * C),
+      isoProject(x0 * C, (y1 + 1) * C),
+      isoProject((x1 + 1) * C, (y1 + 1) * C),
+    ];
     const sx = corners.map((p) => p.sx);
     const sy = corners.map((p) => p.sy);
     const spanX = Math.max(...sx) - Math.min(...sx) + 30;
@@ -1011,7 +1146,10 @@ export class CrowdScene {
       [this.heatPrev, this.heatCur] = [this.heatCur, this.heatPrev];
       [this.flowPrev, this.flowCur] = [this.flowCur, this.flowPrev];
       // Each pair stays in order whatever the swap did: retiring under current.
-      for (const [prev, cur] of [[this.heatPrev, this.heatCur], [this.flowPrev, this.flowCur]] as const) {
+      for (const [prev, cur] of [
+        [this.heatPrev, this.heatCur],
+        [this.flowPrev, this.flowCur],
+      ] as const) {
         const bottom = Math.min(this.ground.getChildIndex(prev.sprite), this.ground.getChildIndex(cur.sprite));
         this.ground.setChildIndex(prev.sprite, bottom);
         this.ground.setChildIndex(cur.sprite, bottom + 1);
@@ -1051,7 +1189,9 @@ export class CrowdScene {
       const cy = (frame.y[i]! * scale) | 0;
       if (cx < 0 || cy < 0 || cx >= map.width || cy >= map.height) continue;
       const lit = this.alert?.mask[i] === 1;
-      const [r, g, b] = lit ? [(ALERTED >> 16) & 255, (ALERTED >> 8) & 255, ALERTED & 255] : (STATE_RGB[s] ?? STATE_RGB[3]!);
+      const [r, g, b] = lit
+        ? [(ALERTED >> 16) & 255, (ALERTED >> 8) & 255, ALERTED & 255]
+        : (STATE_RGB[s] ?? STATE_RGB[3]!);
       const o = (cy * map.width + cx) * 4;
       data[o] = r;
       data[o + 1] = g;
@@ -1150,10 +1290,17 @@ export class CrowdScene {
       }
       const h = bowl.height[c]! + 0.05;
       const pts = [
-        isoProject(u * C + 0.2, w * C + 0.2, h), isoProject((u + 1) * C - 0.2, w * C + 0.2, h),
-        isoProject((u + 1) * C - 0.2, (w + 1) * C - 0.2, h), isoProject(u * C + 0.2, (w + 1) * C - 0.2, h),
+        isoProject(u * C + 0.2, w * C + 0.2, h),
+        isoProject((u + 1) * C - 0.2, w * C + 0.2, h),
+        isoProject((u + 1) * C - 0.2, (w + 1) * C - 0.2, h),
+        isoProject(u * C + 0.2, (w + 1) * C - 0.2, h),
       ];
-      g!.poly(pts.flatMap((p) => [p.sx, p.sy]), true).fill({ color: colour, alpha });
+      g!
+        .poly(
+          pts.flatMap((p) => [p.sx, p.sy]),
+          true,
+        )
+        .fill({ color: colour, alpha });
     }
   }
 
@@ -1217,7 +1364,6 @@ export class CrowdScene {
     const at = this.tween && this.prev ? poseOnPath(path, i, t, 40) : null;
     if (at && at.x < 0) return null;
     return at ?? { x: x1, y: v.y[i]!, h: v.heading[i]!, speed: v.speed[i]! };
-
   }
 
   /**
@@ -1225,7 +1371,15 @@ export class CrowdScene {
    * window bands on buses and RVs, and roof gear. Only the faces this viewpoint
    * can see (normals pointing east or south) are drawn, then the roof.
    */
-  private drawVehicle(g: Graphics, i: number, kind: VehicleKind, x: number, y: number, heading: number, opts: { detail: boolean; state: number; dim: boolean; flash: boolean; selected: boolean; braking?: boolean }): void {
+  private drawVehicle(
+    g: Graphics,
+    i: number,
+    kind: VehicleKind,
+    x: number,
+    y: number,
+    heading: number,
+    opts: { detail: boolean; state: number; dim: boolean; flash: boolean; selected: boolean; braking?: boolean },
+  ): void {
     const type = VEHICLE_TYPES[kind];
     const { h: H, belt } = VEHICLE_HEIGHT[kind];
     const L = type.lengthM;
@@ -1235,7 +1389,17 @@ export class CrowdScene {
     const rx = -fy;
     const ry = fx;
     const paint =
-      kind === 'police' ? 0x1d222a : kind === 'ambulance' ? 0xf4f5f2 : kind === 'bus' ? (i % 3 ? 0xe8e8e6 : 0xc9ccd1) : kind === 'rv' ? 0xece4d3 : hex(paintFor(i));
+      kind === 'police'
+        ? 0x1d222a
+        : kind === 'ambulance'
+          ? 0xf4f5f2
+          : kind === 'bus'
+            ? i % 3
+              ? 0xe8e8e6
+              : 0xc9ccd1
+            : kind === 'rv'
+              ? 0xece4d3
+              : hex(paintFor(i));
     const alpha = opts.dim ? 0.18 : 1;
     const P = (a: number, b: number, z: number) => {
       const p = isoProject(x + fx * a + rx * b, y + fy * a + ry * b, z);
@@ -1256,19 +1420,33 @@ export class CrowdScene {
         // East-facing faces catch more light than south-facing ones.
         g.poly(pts, true).fill({ color: shade(side, 0.62 + 0.22 * Math.max(0, nx)), alpha });
       }
-      g.poly([...P(a0, b0, z1), ...P(a1, b0, z1), ...P(a1, b1, z1), ...P(a0, b1, z1)], true).fill({ color: top, alpha });
+      g.poly([...P(a0, b0, z1), ...P(a1, b0, z1), ...P(a1, b1, z1), ...P(a0, b1, z1)], true).fill({
+        color: top,
+        alpha,
+      });
     };
 
     const hl = L / 2;
     const hw = W / 2;
     if (!opts.detail) {
       // Far out a vehicle is a few pixels: its roof is all that reads.
-      g.poly([...P(-hl, -hw, H * 0.8), ...P(hl, -hw, H * 0.8), ...P(hl, hw, H * 0.8), ...P(-hl, hw, H * 0.8)], true).fill({ color: paint, alpha });
+      g.poly(
+        [...P(-hl, -hw, H * 0.8), ...P(hl, -hw, H * 0.8), ...P(hl, hw, H * 0.8), ...P(-hl, hw, H * 0.8)],
+        true,
+      ).fill({ color: paint, alpha });
       return;
     }
 
     // A shadow on the ground, offset away from the light.
-    g.poly([...P(-hl + 0.2, -hw + 0.3, 0), ...P(hl + 0.2, -hw + 0.3, 0), ...P(hl + 0.2, hw + 0.4, 0), ...P(-hl + 0.2, hw + 0.4, 0)], true).fill({ color: 0x000000, alpha: 0.28 * alpha });
+    g.poly(
+      [
+        ...P(-hl + 0.2, -hw + 0.3, 0),
+        ...P(hl + 0.2, -hw + 0.3, 0),
+        ...P(hl + 0.2, hw + 0.4, 0),
+        ...P(-hl + 0.2, hw + 0.4, 0),
+      ],
+      true,
+    ).fill({ color: 0x000000, alpha: 0.28 * alpha });
 
     const bodyTop = H * belt;
     switch (kind) {
@@ -1280,7 +1458,15 @@ export class CrowdScene {
         box(-hl + 0.6, hl - 0.25, -hw + 0.02, hw - 0.02, H * 0.82, H, paint, shade(paint, 1.04));
         if (kind === 'bus') {
           const stripe = i % 3 ? 0xbb0000 : 0x4b5563;
-          g.poly([...P(-hl + 0.8, -0.25, H + 0.01), ...P(hl - 0.8, -0.25, H + 0.01), ...P(hl - 0.8, 0.25, H + 0.01), ...P(-hl + 0.8, 0.25, H + 0.01)], true).fill({ color: stripe, alpha });
+          g.poly(
+            [
+              ...P(-hl + 0.8, -0.25, H + 0.01),
+              ...P(hl - 0.8, -0.25, H + 0.01),
+              ...P(hl - 0.8, 0.25, H + 0.01),
+              ...P(-hl + 0.8, 0.25, H + 0.01),
+            ],
+            true,
+          ).fill({ color: stripe, alpha });
           box(-1.6, 0.2, -0.75, 0.75, H, H + 0.35, 0x8c939c, 0xa7adb5);
         } else {
           box(-L * 0.3, -L * 0.3 + 0.8, -0.4, 0.4, H, H + 0.18, 0xb9b2a2, 0xcfc8b8);
@@ -1293,8 +1479,24 @@ export class CrowdScene {
         box(hl - 1.9, hl - 0.5, -hw + 0.15, hw - 0.15, H * 0.62, H * 0.78, GLASS, shade(paint, 0.95));
         box(-hl, hl - 1.9, -hw, hw, 0.35, H, paint, paint);
         box(-hl, hl - 1.9, -hw - 0.01, hw + 0.01, H * 0.45, H * 0.55, 0xd4252f, paint);
-        g.poly([...P(-1.4, -0.2, H + 0.01), ...P(-0.6, -0.2, H + 0.01), ...P(-0.6, 0.2, H + 0.01), ...P(-1.4, 0.2, H + 0.01)], true).fill({ color: 0xd4252f, alpha });
-        g.poly([...P(-1.2, -0.6, H + 0.01), ...P(-0.8, -0.6, H + 0.01), ...P(-0.8, 0.6, H + 0.01), ...P(-1.2, 0.6, H + 0.01)], true).fill({ color: 0xd4252f, alpha });
+        g.poly(
+          [
+            ...P(-1.4, -0.2, H + 0.01),
+            ...P(-0.6, -0.2, H + 0.01),
+            ...P(-0.6, 0.2, H + 0.01),
+            ...P(-1.4, 0.2, H + 0.01),
+          ],
+          true,
+        ).fill({ color: 0xd4252f, alpha });
+        g.poly(
+          [
+            ...P(-1.2, -0.6, H + 0.01),
+            ...P(-0.8, -0.6, H + 0.01),
+            ...P(-0.8, 0.6, H + 0.01),
+            ...P(-1.2, 0.6, H + 0.01),
+          ],
+          true,
+        ).fill({ color: 0xd4252f, alpha });
         this.lightBar(g, P, hl - 2.1, W, H, opts.flash, [0xff2a2a, 0xffffff], alpha);
         break;
       }
@@ -1307,18 +1509,51 @@ export class CrowdScene {
       case 'pickup': {
         box(-hl, hl, -hw, hw, 0.3, bodyTop, paint, paint);
         // The open bed: a dark well in the body's top, and the cab ahead of it.
-        g.poly([...P(-hl + 0.15, -hw + 0.18, bodyTop + 0.005), ...P(-L * 0.08, -hw + 0.18, bodyTop + 0.005), ...P(-L * 0.08, hw - 0.18, bodyTop + 0.005), ...P(-hl + 0.15, hw - 0.18, bodyTop + 0.005)], true).fill({ color: 0x23282f, alpha });
+        g.poly(
+          [
+            ...P(-hl + 0.15, -hw + 0.18, bodyTop + 0.005),
+            ...P(-L * 0.08, -hw + 0.18, bodyTop + 0.005),
+            ...P(-L * 0.08, hw - 0.18, bodyTop + 0.005),
+            ...P(-hl + 0.15, hw - 0.18, bodyTop + 0.005),
+          ],
+          true,
+        ).fill({ color: 0x23282f, alpha });
         box(-L * 0.05, L * 0.2, -hw + 0.1, hw - 0.1, bodyTop, H, GLASS, shade(paint, 0.94));
         break;
       }
       default: {
         // Car-shaped: body, then a glass cabin with a painted roof.
         const cabin =
-          kind === 'suv' ? [-0.42, 0.14] : kind === 'minivan' ? [-0.44, 0.18] : kind === 'compact' ? [-0.3, 0.12] : [-0.32, 0.12];
-        box(-hl, hl, -hw, hw, 0.28, bodyTop, kind === 'police' ? 0x1d222a : paint, kind === 'police' ? 0x1d222a : paint);
+          kind === 'suv'
+            ? [-0.42, 0.14]
+            : kind === 'minivan'
+              ? [-0.44, 0.18]
+              : kind === 'compact'
+                ? [-0.3, 0.12]
+                : [-0.32, 0.12];
+        box(
+          -hl,
+          hl,
+          -hw,
+          hw,
+          0.28,
+          bodyTop,
+          kind === 'police' ? 0x1d222a : paint,
+          kind === 'police' ? 0x1d222a : paint,
+        );
         if (kind === 'police') box(-L * 0.18, L * 0.16, -hw - 0.01, hw + 0.01, 0.3, bodyTop - 0.02, 0xe9edf2, 0x1d222a);
-        box(L * cabin[0]!, L * cabin[1]!, -hw + 0.12, hw - 0.12, bodyTop, H, GLASS, kind === 'police' ? 0x2a3039 : shade(paint, 0.94));
-        if (kind === 'police') this.lightBar(g, P, L * (cabin[0]! + cabin[1]!) / 2, W, H, opts.flash, [0xff2a2a, 0x2a6bff], alpha);
+        box(
+          L * cabin[0]!,
+          L * cabin[1]!,
+          -hw + 0.12,
+          hw - 0.12,
+          bodyTop,
+          H,
+          GLASS,
+          kind === 'police' ? 0x2a3039 : shade(paint, 0.94),
+        );
+        if (kind === 'police')
+          this.lightBar(g, P, (L * (cabin[0]! + cabin[1]!)) / 2, W, H, opts.flash, [0xff2a2a, 0x2a6bff], alpha);
         if (kind === 'rideshare') box(-0.15, 0.15, -0.3, 0.3, H, H + 0.16, 0xff4fd8, 0xff7fe4);
         break;
       }
@@ -1335,20 +1570,61 @@ export class CrowdScene {
       g.circle(front.sx, front.sy, 0.12).fill({ color: 0xfff4c8, alpha });
     }
     if (opts.selected) {
-      g.poly([...P(-hl - 0.8, -hw - 0.8, 0), ...P(hl + 0.8, -hw - 0.8, 0), ...P(hl + 0.8, hw + 0.8, 0), ...P(-hl - 0.8, hw + 0.8, 0)], true).stroke({ color: 0xffd166, width: 0.18 });
+      g.poly(
+        [
+          ...P(-hl - 0.8, -hw - 0.8, 0),
+          ...P(hl + 0.8, -hw - 0.8, 0),
+          ...P(hl + 0.8, hw + 0.8, 0),
+          ...P(-hl - 0.8, hw + 0.8, 0),
+        ],
+        true,
+      ).stroke({ color: 0xffd166, width: 0.18 });
     }
   }
 
-  private lightBar(g: Graphics, P: (a: number, b: number, z: number) => number[], a: number, W: number, H: number, flash: boolean, colours: [number, number], alpha: number): void {
+  private lightBar(
+    g: Graphics,
+    P: (a: number, b: number, z: number) => number[],
+    a: number,
+    W: number,
+    H: number,
+    flash: boolean,
+    colours: [number, number],
+    alpha: number,
+  ): void {
     const on = flash && ((performance.now() / 250) | 0) % 2 === 0;
     const left = flash ? (on ? colours[0] : 0x3a1010) : shade(colours[0], 0.5);
     const right = flash ? (on ? 0x10103a : colours[1]) : shade(colours[1], 0.5);
-    g.poly([...P(a - 0.18, -W * 0.38, H + 0.12), ...P(a + 0.18, -W * 0.38, H + 0.12), ...P(a + 0.18, 0, H + 0.12), ...P(a - 0.18, 0, H + 0.12)], true).fill({ color: left, alpha });
-    g.poly([...P(a - 0.18, 0, H + 0.12), ...P(a + 0.18, 0, H + 0.12), ...P(a + 0.18, W * 0.38, H + 0.12), ...P(a - 0.18, W * 0.38, H + 0.12)], true).fill({ color: right, alpha });
+    g.poly(
+      [
+        ...P(a - 0.18, -W * 0.38, H + 0.12),
+        ...P(a + 0.18, -W * 0.38, H + 0.12),
+        ...P(a + 0.18, 0, H + 0.12),
+        ...P(a - 0.18, 0, H + 0.12),
+      ],
+      true,
+    ).fill({ color: left, alpha });
+    g.poly(
+      [
+        ...P(a - 0.18, 0, H + 0.12),
+        ...P(a + 0.18, 0, H + 0.12),
+        ...P(a + 0.18, W * 0.38, H + 0.12),
+        ...P(a - 0.18, W * 0.38, H + 0.12),
+      ],
+      true,
+    ).fill({ color: right, alpha });
   }
 
   /** Light on the ground: headlight beams in bad weather, brake glow, emergency strobes. */
-  private drawGlow(x: number, y: number, heading: number, L: number, beam: boolean, brake: boolean, strobe: number | null): void {
+  private drawGlow(
+    x: number,
+    y: number,
+    heading: number,
+    L: number,
+    beam: boolean,
+    brake: boolean,
+    strobe: number | null,
+  ): void {
     const fx = Math.cos(heading);
     const fy = Math.sin(heading);
     const rx = -fy;
@@ -1357,8 +1633,14 @@ export class CrowdScene {
       const p = isoProject(x + fx * a + rx * b, y + fy * a + ry * b, 0);
       return [p.sx, p.sy];
     };
-    if (beam) this.beams.poly([...at(L / 2, -0.7), ...at(L / 2 + 11, -3), ...at(L / 2 + 11, 3), ...at(L / 2, 0.7)], true).fill({ color: 0xfff0be, alpha: 0.16 });
-    if (brake) this.beams.poly([...at(-L / 2, -1), ...at(-L / 2 - 1.6, -1.2), ...at(-L / 2 - 1.6, 1.2), ...at(-L / 2, 1)], true).fill({ color: 0xff2a2a, alpha: 0.25 });
+    if (beam)
+      this.beams
+        .poly([...at(L / 2, -0.7), ...at(L / 2 + 11, -3), ...at(L / 2 + 11, 3), ...at(L / 2, 0.7)], true)
+        .fill({ color: 0xfff0be, alpha: 0.16 });
+    if (brake)
+      this.beams
+        .poly([...at(-L / 2, -1), ...at(-L / 2 - 1.6, -1.2), ...at(-L / 2 - 1.6, 1.2), ...at(-L / 2, 1)], true)
+        .fill({ color: 0xff2a2a, alpha: 0.25 });
     if (strobe !== null) {
       const p = isoProject(x, y, 0);
       this.beams.ellipse(p.sx, p.sy, 9, 4.5).fill({ color: strobe, alpha: 0.22 });
@@ -1377,7 +1659,14 @@ export class CrowdScene {
     const s = this.cam.scale;
     const detail = s >= 2.2;
     const sky = this.cur?.weather;
-    const dark = !!sky && (sky.kind === 'rain' || sky.kind === 'heavy_rain' || sky.kind === 'thunderstorm' || sky.kind === 'fog' || sky.kind === 'snow' || sky.kind === 'overcast');
+    const dark =
+      !!sky &&
+      (sky.kind === 'rain' ||
+        sky.kind === 'heavy_rain' ||
+        sky.kind === 'thunderstorm' ||
+        sky.kind === 'fog' ||
+        sky.kind === 'snow' ||
+        sky.kind === 'overcast');
     const strobePhase = ((now / 250) | 0) % 2 === 0;
 
     // Parked vehicles do not move, so their layer is rebuilt only when the set
@@ -1388,7 +1677,8 @@ export class CrowdScene {
     const settling = this.tween && this.prev !== null && this.tweenA(now) < 1;
     const movingPath = (i: number) => settling && path && path.offsets[i] !== path.offsets[i + 1];
     let sig = 0;
-    for (let i = 0; i < v.x.length; i++) if (v.state[i] === VSTATE.parked && !movingPath(i)) sig = (sig + Math.imul(i + 1, 2654435761)) >>> 0;
+    for (let i = 0; i < v.x.length; i++)
+      if (v.state[i] === VSTATE.parked && !movingPath(i)) sig = (sig + Math.imul(i + 1, 2654435761)) >>> 0;
     const win = this.parkedWindow;
     const inside = x0 >= win.x0 && x1 <= win.x1 && y0 >= win.y0 && y1 <= win.y1;
     const key = `${sig}|${detail}|${this.vehicleFocus}|${this.selectedVehicle}`;
@@ -1400,7 +1690,9 @@ export class CrowdScene {
       // zoomed out, everything is on screen anyway and drawn as flat roofs.
       const padX = (x1 - x0) * 0.5;
       const padY = (y1 - y0) * 0.5;
-      this.parkedWindow = detail ? { x0: x0 - padX, x1: x1 + padX, y0: y0 - padY, y1: y1 + padY } : { x0: -Infinity, x1: Infinity, y0: -Infinity, y1: Infinity };
+      this.parkedWindow = detail
+        ? { x0: x0 - padX, x1: x1 + padX, y0: y0 - padY, y1: y1 + padY }
+        : { x0: -Infinity, x1: Infinity, y0: -Infinity, y1: Infinity };
       const pw = this.parkedWindow;
       const parked: number[] = [];
       for (let i = 0; i < v.x.length; i++) {
@@ -1435,7 +1727,8 @@ export class CrowdScene {
       const at = this.vehicleAt(i, now);
       if (!at) continue;
       const p = isoProject(at.x, at.y);
-      if (i !== this.selectedVehicle && (p.sx < x0 - 20 || p.sx > x1 + 20 || p.sy < y0 - 20 || p.sy > y1 + 20)) continue;
+      if (i !== this.selectedVehicle && (p.sx < x0 - 20 || p.sx > x1 + 20 || p.sy < y0 - 20 || p.sy > y1 + 20))
+        continue;
       placed.push({ i, ...at });
     }
     placed.sort((a, b) => a.x + a.y - (b.x + b.y));
@@ -1451,7 +1744,14 @@ export class CrowdScene {
       }
       const type = VEHICLE_TYPES[kind];
       const d = vehicleDiagonal(x, y, h, type.lengthM, type.widthM);
-      this.drawVehicle(this.moving.get(d), i, kind, x, y, h, { detail, state: st, dim, flash, selected: i === this.selectedVehicle, braking: speed < 0.5 });
+      this.drawVehicle(this.moving.get(d), i, kind, x, y, h, {
+        detail,
+        state: st,
+        dim,
+        flash,
+        selected: i === this.selectedVehicle,
+        braking: speed < 0.5,
+      });
     }
   }
 
@@ -1490,8 +1790,7 @@ export class CrowdScene {
     const t = path ? path.from + (path.to - path.from) * this.tweenA(now) : cur.t;
     const at = this.tween && this.prev ? poseOnPath(path, dot, t, 3) : null;
     if (at && at.x < 0) return null;
-    return at ? { ...at, moving: at.speed > 0.1 && this.tweenA(now) < 1 } : {x: x1, y: y1, moving: false};
-
+    return at ? { ...at, moving: at.speed > 0.1 && this.tweenA(now) < 1 } : { x: x1, y: y1, moving: false };
   }
 
   /** The officer under a screen point, if any. */
@@ -1520,10 +1819,10 @@ export class CrowdScene {
     if (!scene) return [];
     const path = scene.motion?.officers;
     const t = path ? path.from + (path.to - path.from) * this.tweenA(now) : scene.t;
-    return scene.officers.map(o => {
+    return scene.officers.map((o) => {
       const i = scene.motion?.officerIds.indexOf(o.id) ?? -1;
       const at = this.tween && this.prev ? poseOnPath(path, i, t, 3) : null;
-      return at ? {...o, x: at.x, y: at.y} : o;
+      return at ? { ...o, x: at.x, y: at.y } : o;
     });
   }
 
@@ -1724,7 +2023,8 @@ export class CrowdScene {
     const { width } = this.init.map;
     // Kept a readable size on screen however far out you are.
     const baseK = Math.max(1, PEOPLE_MIN_SCALE / s) * 1.1;
-    const centre = (cell: number) => isoProject(((cell % width) + 0.5) * CELL_SIZE_M, (Math.floor(cell / width) + 0.5) * CELL_SIZE_M);
+    const centre = (cell: number) =>
+      isoProject(((cell % width) + 0.5) * CELL_SIZE_M, (Math.floor(cell / width) + 0.5) * CELL_SIZE_M);
     const officers = this.scene
       ? this.officerPositions(performance.now())
       : Array.from(cur.officerCells, (cell, i) => ({
@@ -1741,9 +2041,12 @@ export class CrowdScene {
       if (this.coverageVisible) {
         const key = Math.floor(o.y / CELL_SIZE_M) * width + Math.floor(o.x / CELL_SIZE_M);
         if (!covered.has(key)) {
-          covered.add(key);const ground = isoProject(o.x,o.y);
+          covered.add(key);
+          const ground = isoProject(o.x, o.y);
           const radius = ((o as Partial<OfficerStatus>).radiusCells ?? 10) * CELL_SIZE_M;
-          this.routes.ellipse(ground.sx,ground.sy,radius*Math.SQRT2,radius/Math.SQRT2).fill({color:OFFICER,alpha:0.09});
+          this.routes
+            .ellipse(ground.sx, ground.sy, radius * Math.SQRT2, radius / Math.SQRT2)
+            .fill({ color: OFFICER, alpha: 0.09 });
         }
       }
       const p = isoProject(o.x, o.y, this.liftAt(o.x, o.y));
@@ -1752,22 +2055,31 @@ export class CrowdScene {
         const ground = isoProject(o.x, o.y);
         const t = centre(o.targetCell);
         const cells = (o as Partial<OfficerStatus>).route;
-        const points = cells?.length ? [ground,...cells.slice(1).map(centre)] : [];
+        const points = cells?.length ? [ground, ...cells.slice(1).map(centre)] : [];
         const dash = Math.max(1.5, 6 / s);
         for (let j = 1; j < points.length; j++) {
-          const from = points[j-1]!,to = points[j]!,len = Math.hypot(to.sx-from.sx,to.sy-from.sy);
+          const from = points[j - 1]!,
+            to = points[j]!,
+            len = Math.hypot(to.sx - from.sx, to.sy - from.sy);
           for (let d = 0; d < len; d += dash * 2) {
-            const a = d / len,b = Math.min(1,(d+dash)/len);
-            this.routes.moveTo(from.sx+(to.sx-from.sx)*a,from.sy+(to.sy-from.sy)*a).lineTo(from.sx+(to.sx-from.sx)*b,from.sy+(to.sy-from.sy)*b);
+            const a = d / len,
+              b = Math.min(1, (d + dash) / len);
+            this.routes
+              .moveTo(from.sx + (to.sx - from.sx) * a, from.sy + (to.sy - from.sy) * a)
+              .lineTo(from.sx + (to.sx - from.sx) * b, from.sy + (to.sy - from.sy) * b);
           }
         }
         this.routes.stroke({ color: OFFICER, width: Math.max(0.25, 2 / s), alpha: 0.85 });
         this.routes.circle(t.sx, t.sy, 1.4 * k).stroke({ color: OFFICER, width: Math.max(0.2, 1.5 / s) });
       }
       if (o.id === this.selectedOfficer) {
-        this.officers.ellipse(p.sx, p.sy, 2.1 * k, 1.05 * k).stroke({ color: 0xffd166, width: Math.max(0.15, 2.5 / s) });
+        this.officers
+          .ellipse(p.sx, p.sy, 2.1 * k, 1.05 * k)
+          .stroke({ color: 0xffd166, width: Math.max(0.15, 2.5 / s) });
       }
-      this.officers.ellipse(p.sx, p.sy, 1.1 * k, 0.55 * k).fill({ color: OFFICER, alpha: o.state === 'on_scene' ? 0.55 : 0.35 });
+      this.officers
+        .ellipse(p.sx, p.sy, 1.1 * k, 0.55 * k)
+        .fill({ color: OFFICER, alpha: o.state === 'on_scene' ? 0.55 : 0.35 });
       this.officers.roundRect(p.sx - 0.42 * k, p.sy - 1.9 * k, 0.84 * k, 1.9 * k, 0.2 * k).fill(0x1f4f9a);
       this.officers.circle(p.sx, p.sy - 2.25 * k, 0.36 * k).fill(skinOf(Number(o.id.replace(/\D/g, '')) * 7919));
       this.officers.rect(p.sx - 0.42 * k, p.sy - 2.62 * k, 0.84 * k, 0.22 * k).fill(0x0d2650);
@@ -1788,7 +2100,9 @@ export class CrowdScene {
       if (f <= 0 || f > 1) continue;
       const r = alert.radius * f;
       // A circle on the ground is an ellipse twice as wide as it is tall here.
-      this.ripple.ellipse(p.sx, p.sy, r * Math.SQRT2, r / Math.SQRT2).stroke({ color: ALERTED, width: Math.max(0.6, 3 / s), alpha: 1 - f });
+      this.ripple
+        .ellipse(p.sx, p.sy, r * Math.SQRT2, r / Math.SQRT2)
+        .stroke({ color: ALERTED, width: Math.max(0.6, 3 / s), alpha: 1 - f });
     }
   }
 
@@ -1807,9 +2121,7 @@ export class CrowdScene {
       .ellipse(p.sx, p.sy, 1.5 * k * pulse, 0.75 * k * pulse)
       .stroke({ color: 0xffd166, width: Math.max(0.12, 2 / s) });
     const top = p.sy - (asPeople ? FIG_H : 0) - 0.6 * k - Math.abs(Math.sin(now / 300)) * 0.35 * k;
-    this.marker
-      .poly([p.sx - 0.45 * k, top - 0.7 * k, p.sx + 0.45 * k, top - 0.7 * k, p.sx, top])
-      .fill(0xffd166);
+    this.marker.poly([p.sx - 0.45 * k, top - 0.7 * k, p.sx + 0.45 * k, top - 0.7 * k, p.sx, top]).fill(0xffd166);
     const x = p.sx * s + this.cam.x;
     const y = (top - 0.9 * k) * s + this.cam.y;
     this.nameTag.style.display = '';

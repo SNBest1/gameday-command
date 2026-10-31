@@ -16,7 +16,16 @@ export interface OfficerPanelProps {
 }
 
 /** The inspector for an officer: who they are, where they are going, and how much they have helped. */
-export function OfficerPanel({ map, run, label, officerId, onClose, onSendTo, onRecall, disabled = false }: OfficerPanelProps) {
+export function OfficerPanel({
+  map,
+  run,
+  label,
+  officerId,
+  onClose,
+  onSendTo,
+  onRecall,
+  disabled = false,
+}: OfficerPanelProps) {
   const officer = run.scene.current?.officers.find((o) => o.id === officerId);
   const station = policeStations(map).find((s) => s.cell === officer?.homeCell);
   const fromHome = officer
@@ -59,18 +68,26 @@ export function OfficerPanel({ map, run, label, officerId, onClose, onSendTo, on
             </dl>
             {(onSendTo || onRecall) && (
               <div className="police-actions">
-                {onSendTo && <button className="small" disabled={disabled} onClick={onSendTo}>Send to…</button>}
-                {onRecall && <button className="small ghost" disabled={disabled} onClick={onRecall}>Back to post</button>}
+                {onSendTo && (
+                  <button className="small" disabled={disabled} onClick={onSendTo}>
+                    Send to…
+                  </button>
+                )}
+                {onRecall && (
+                  <button className="small ghost" disabled={disabled} onClick={onRecall}>
+                    Back to post
+                  </button>
+                )}
               </div>
             )}
           </section>
           <section>
             <h4>What they do</h4>
             <p className="muted">
-              Officers walk to where the plan sends them along the streets. On scene they keep directing the people around them: at a
-              jammed gate they send its queue to the next open gate. These are model assumptions, not observations: this simulation
-              adds 10% to a gate's throughput for each officer standing on it, up to 40%, and counts a fan as spoken to when the
-              model has an officer address them.
+              Officers walk to where the plan sends them along the streets. On scene they keep directing the people
+              around them: at a jammed gate they send its queue to the next open gate. These are model assumptions, not
+              observations: this simulation adds 10% to a gate's throughput for each officer standing on it, up to 40%,
+              and counts a fan as spoken to when the model has an officer address them.
             </p>
           </section>
         </>

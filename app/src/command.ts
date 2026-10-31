@@ -1,4 +1,12 @@
-import type { Id, IncidentKind, MapBundle, PlanAction, ResponsePlan, Scorecard, VehicleFrame } from '../../contracts.ts';
+import type {
+  Id,
+  IncidentKind,
+  MapBundle,
+  PlanAction,
+  ResponsePlan,
+  Scorecard,
+  VehicleFrame,
+} from '../../contracts.ts';
 import { CELL_SIZE_M, VEHICLE_STATES } from '../../contracts.ts';
 import type { GateStat } from '../../engine/src/edits.ts';
 
@@ -56,7 +64,12 @@ export interface HistorySample {
 }
 
 /** The usual value for a subject at this minute: the nearest minute within five, if any. */
-export function usualAt(history: HistorySample[], kind: HistorySample['kind'], subject: Id, minute: number): number | null {
+export function usualAt(
+  history: HistorySample[],
+  kind: HistorySample['kind'],
+  subject: Id,
+  minute: number,
+): number | null {
   let best: HistorySample | null = null;
   for (const h of history) {
     if (h.kind !== kind || h.subject !== subject || Math.abs(h.minute - minute) > 5) continue;
@@ -77,7 +90,11 @@ export function streetIndex(map: MapBundle): { cells: Int16Array; streets: { id:
   return { cells, streets };
 }
 
-export function stoppedPerStreet(map: MapBundle, index: ReturnType<typeof streetIndex>, v: VehicleFrame | undefined): number[] {
+export function stoppedPerStreet(
+  map: MapBundle,
+  index: ReturnType<typeof streetIndex>,
+  v: VehicleFrame | undefined,
+): number[] {
   const out = index.streets.map(() => 0);
   if (!v) return out;
   for (let i = 0; i < v.x.length; i++) {
@@ -103,7 +120,15 @@ export function readings(
     const place = map.places[g.place];
     if (!place) continue;
     const usual = usualAt(history, 'gate_waiting', place.id, minute);
-    out.push({ id: place.id, name: place.name, kind: 'gate', value: g.waiting, usual, level: levelOf(g.waiting, usual, GATE_LEVELS), open: g.open });
+    out.push({
+      id: place.id,
+      name: place.name,
+      kind: 'gate',
+      value: g.waiting,
+      usual,
+      level: levelOf(g.waiting, usual, GATE_LEVELS),
+      open: g.open,
+    });
   }
   index.streets.forEach((s, i) => {
     const value = stopped[i] ?? 0;
@@ -170,7 +195,11 @@ function reliefGate(map: MapBundle, from: Id, all: Reading[]): Reading | null {
  */
 export function suggestPlans(map: MapBundle, kind: IncidentKind, now: Reading[], fallbackGate?: Id): ResponsePlan[] {
   const gates = now.filter((r) => r.kind === 'gate');
-  const hot = gates.find((r) => r.level === 'high') ?? gates.find((r) => r.level === 'medium') ?? gates.find((r) => r.id === fallbackGate) ?? gates[0];
+  const hot =
+    gates.find((r) => r.level === 'high') ??
+    gates.find((r) => r.level === 'medium') ??
+    gates.find((r) => r.id === fallbackGate) ??
+    gates[0];
   const jammed = now.find((r) => r.kind === 'street' && r.level !== 'low');
   const door = (id: Id) => map.closables.find((c) => c.id === `${id}-door`)?.id;
   if (!hot) return [];
@@ -186,7 +215,13 @@ export function suggestPlans(map: MapBundle, kind: IncidentKind, now: Reading[],
     forIncident: kind,
     officersAvailable: OFFICERS,
     actions: with_([
-      { at: 0, type: 'alert', channel: 'pa', message: relief ? `${hot.name} is full. Use ${relief.name}.` : 'Follow officers’ directions.', reachShare: 0.7 },
+      {
+        at: 0,
+        type: 'alert',
+        channel: 'pa',
+        message: relief ? `${hot.name} is full. Use ${relief.name}.` : 'Follow officers’ directions.',
+        reachShare: 0.7,
+      },
       relief ? { at: 30, type: 'redirect', fromPlaceId: hot.id, toPlaceId: relief.id } : null,
       relief ? { at: 0, type: 'send_officers', count: 2, toPlaceId: relief.id } : null,
       kind === 'lightning_delay' ? { at: 0, type: 'shelter_order', shelterPlaceIds: shelter } : null,
@@ -202,7 +237,13 @@ export function suggestPlans(map: MapBundle, kind: IncidentKind, now: Reading[],
     actions: with_([
       hotDoor ? { at: 0, type: 'close', closableId: hotDoor } : null,
       relief ? { at: 0, type: 'redirect', fromPlaceId: hot.id, toPlaceId: relief.id } : null,
-      { at: 0, type: 'alert', channel: 'phone', message: relief ? `${hot.name} is closed. Use ${relief.name}.` : `${hot.name} is closed.`, reachShare: 0.5 },
+      {
+        at: 0,
+        type: 'alert',
+        channel: 'phone',
+        message: relief ? `${hot.name} is closed. Use ${relief.name}.` : `${hot.name} is closed.`,
+        reachShare: 0.5,
+      },
       { at: 0, type: 'send_officers', count: 4, toPlaceId: hot.id },
     ]),
   });
@@ -226,10 +267,29 @@ export function suggestPlans(map: MapBundle, kind: IncidentKind, now: Reading[],
 export type Priority = 'clear' | 'danger' | 'officers' | 'ambulance';
 
 export const PRIORITIES: { id: Priority; label: string; why: (c: Scorecard) => string }[] = [
-  { id: 'clear', label: 'Clear the zone fastest', why: (c) => (c.timeToClearMin === null ? 'never cleared' : `cleared in ${c.timeToClearMin.toFixed(1)} min`) },
-  { id: 'danger', label: 'Least crush risk', why: (c) => `${Math.round(c.dangerMinutes).toLocaleString()} danger minutes` },
-  { id: 'officers', label: 'Fewest officers', why: (c) => `${Math.round(c.officerMinutesUsed).toLocaleString()} officer minutes` },
-  { id: 'ambulance', label: 'Keep the ambulance route open', why: (c) => (c.emergencyResponseMin == null ? 'ambulance never got there' : `ambulance on scene in ${c.emergencyResponseMin.toFixed(1)} min`) },
+  {
+    id: 'clear',
+    label: 'Clear the zone fastest',
+    why: (c) => (c.timeToClearMin === null ? 'never cleared' : `cleared in ${c.timeToClearMin.toFixed(1)} min`),
+  },
+  {
+    id: 'danger',
+    label: 'Least crush risk',
+    why: (c) => `${Math.round(c.dangerMinutes).toLocaleString()} danger minutes`,
+  },
+  {
+    id: 'officers',
+    label: 'Fewest officers',
+    why: (c) => `${Math.round(c.officerMinutesUsed).toLocaleString()} officer minutes`,
+  },
+  {
+    id: 'ambulance',
+    label: 'Keep the ambulance route open',
+    why: (c) =>
+      c.emergencyResponseMin == null
+        ? 'ambulance never got there'
+        : `ambulance on scene in ${c.emergencyResponseMin.toFixed(1)} min`,
+  },
 ];
 
 const metric: Record<Priority, (c: Scorecard) => number> = {

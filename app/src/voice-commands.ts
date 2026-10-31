@@ -24,9 +24,44 @@ export type Intent =
 export type Parsed = { ok: true; intent: Intent; summary: string; plan?: number } | { ok: false; error: string };
 
 const NUMBER_WORDS: Record<string, number> = {
-  zero: 0, one: 1, a: 1, an: 1, single: 1, two: 2, couple: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
-  nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60,
-  first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8, ninth: 9, tenth: 10, eleventh: 11, twelfth: 12,
+  zero: 0,
+  one: 1,
+  a: 1,
+  an: 1,
+  single: 1,
+  two: 2,
+  couple: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+  thirteen: 13,
+  fourteen: 14,
+  fifteen: 15,
+  sixteen: 16,
+  twenty: 20,
+  thirty: 30,
+  forty: 40,
+  fifty: 50,
+  sixty: 60,
+  first: 1,
+  second: 2,
+  third: 3,
+  fourth: 4,
+  fifth: 5,
+  sixth: 6,
+  seventh: 7,
+  eighth: 8,
+  ninth: 9,
+  tenth: 10,
+  eleventh: 11,
+  twelfth: 12,
 };
 // Dictation spells numbers its own way: "gate to", "gate for", "gate won".
 const DICTATION_SLIPS: [RegExp, string][] = [
@@ -38,16 +73,44 @@ const DICTATION_SLIPS: [RegExp, string][] = [
 
 /** Lower case, numbers as digits, punctuation gone (except a colon, which starts an alert's words). */
 export function normalise(text: string): string {
-  let s = ` ${text.toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9:\s-]/g, ' ').replace(/-/g, ' ')} `;
+  let s = ` ${text
+    .toLowerCase()
+    .replace(/[’']/g, '')
+    .replace(/[^a-z0-9:\s-]/g, ' ')
+    .replace(/-/g, ' ')} `;
   for (const [re, to] of DICTATION_SLIPS) s = s.replace(re, to);
   s = s.replace(/\b(gate|number) number\b/g, '$1');
-  s = s.replace(/\b[a-z]+\b/g, (w) => (w in NUMBER_WORDS && !['a', 'an', 'second'].includes(w) ? String(NUMBER_WORDS[w]) : w));
+  s = s.replace(/\b[a-z]+\b/g, (w) =>
+    w in NUMBER_WORDS && !['a', 'an', 'second'].includes(w) ? String(NUMBER_WORDS[w]) : w,
+  );
   return s.replace(/\s+/g, ' ').trim();
 }
 
-const STREET_SUFFIX: Record<string, string> = { st: 'street', ave: 'avenue', av: 'avenue', rd: 'road', dr: 'drive', blvd: 'boulevard', ln: 'lane', pkwy: 'parkway', hwy: 'highway' };
+const STREET_SUFFIX: Record<string, string> = {
+  st: 'street',
+  ave: 'avenue',
+  av: 'avenue',
+  rd: 'road',
+  dr: 'drive',
+  blvd: 'boulevard',
+  ln: 'lane',
+  pkwy: 'parkway',
+  hwy: 'highway',
+};
 const COMPASS = new Set(['the', 'of', 'north', 'south', 'east', 'west', 'n', 's', 'e', 'w']);
-const FILLER = new Set([...COMPASS, 'and', 'street', 'avenue', 'road', 'drive', 'boulevard', 'lane', 'way', 'parkway', 'highway']);
+const FILLER = new Set([
+  ...COMPASS,
+  'and',
+  'street',
+  'avenue',
+  'road',
+  'drive',
+  'boulevard',
+  'lane',
+  'way',
+  'parkway',
+  'highway',
+]);
 const words = (s: string) =>
   normalise(s)
     .replace(/:/g, ' ')
@@ -92,23 +155,37 @@ export function findChoice(text: string, choices: Choice[]): Choice | null {
 
 /** Up to three names that share a distinctive word with what was said, for "did you mean". */
 export function suggest(text: string, choices: Choice[]): string[] {
-  const said = new Set(words(text).filter((w) => !FILLER.has(w) && !/^\d+$/.test(w) && !['lot', 'gate', 'to', 'send', 'officers', 'officer', 'close', 'open'].includes(w)));
+  const said = new Set(
+    words(text).filter(
+      (w) =>
+        !FILLER.has(w) &&
+        !/^\d+$/.test(w) &&
+        !['lot', 'gate', 'to', 'send', 'officers', 'officer', 'close', 'open'].includes(w),
+    ),
+  );
   const lot = /\blot\b/.test(normalise(text));
   const near = choices.filter((c) => {
     const name = words(c.label);
-    return name.some((w) => said.has(w)) || (lot && name.includes('lot') && words(text).some((w) => COMPASS.has(w) && c.label.toLowerCase().includes(w)));
+    return (
+      name.some((w) => said.has(w)) ||
+      (lot && name.includes('lot') && words(text).some((w) => COMPASS.has(w) && c.label.toLowerCase().includes(w)))
+    );
   });
   return near.slice(0, 3).map((c) => c.label);
 }
 const didYouMean = (text: string, choices: Choice[]) => {
   const s = suggest(text, choices);
-  return s.length ? ` Did you mean ${s.length === 1 ? s[0] : `${s.slice(0, -1).join(', ')} or ${s[s.length - 1]}`}?` : '';
+  return s.length
+    ? ` Did you mean ${s.length === 1 ? s[0] : `${s.slice(0, -1).join(', ')} or ${s[s.length - 1]}`}?`
+    : '';
 };
 
 /** "in 2 minutes", "after 5 min", "at 10 minutes"; "now" or nothing is 0. */
 export function minutesIn(text: string): number {
   const s = normalise(text);
-  const m = /\b(?:in|after|at|plus|\+)\s*(\d+(?:\.\d+)?)\s*(?:min|mins|minute|minutes)\b/.exec(s) ?? /\b(\d+(?:\.\d+)?)\s*(?:min|mins|minute|minutes)\s*(?:from now|later|after)\b/.exec(s);
+  const m =
+    /\b(?:in|after|at|plus|\+)\s*(\d+(?:\.\d+)?)\s*(?:min|mins|minute|minutes)\b/.exec(s) ??
+    /\b(\d+(?:\.\d+)?)\s*(?:min|mins|minute|minutes)\s*(?:from now|later|after)\b/.exec(s);
   return m ? Math.min(240, Number(m[1])) : 0;
 }
 
@@ -136,7 +213,19 @@ export function describe(intent: Intent): string {
 
 // Plans by letter or number, and the ways dictation spells the letters.
 const PLAN_WORD = '(a|b|c|1|2|3|ay|be|bee|see|sea)';
-const PLAN_INDEX: Record<string, number> = { a: 0, ay: 0, '1': 0, b: 1, be: 1, bee: 1, '2': 1, c: 2, see: 2, sea: 2, '3': 2 };
+const PLAN_INDEX: Record<string, number> = {
+  a: 0,
+  ay: 0,
+  '1': 0,
+  b: 1,
+  be: 1,
+  bee: 1,
+  '2': 1,
+  c: 2,
+  see: 2,
+  sea: 2,
+  '3': 2,
+};
 
 /**
  * The plan a command asks to put on the map ("shift to plan B", "show plan C",
@@ -146,8 +235,9 @@ export function planSwitch(text: string): number | null {
   const s = normalise(text);
   const verbs = '(?:switch|shift|change|go|move|jump|flip|show|view|open|display|look at|bring up|put up|take me)';
   const m =
-    new RegExp(`^(?:(?:please|ok|okay|now) )?(?:${verbs}(?: me| us)?(?: (?:over|back))?(?: to)? )+(?:the )?plan ${PLAN_WORD}(?: on the map| please| now)?$`).exec(s) ??
-    new RegExp(`^plan ${PLAN_WORD}$`).exec(s);
+    new RegExp(
+      `^(?:(?:please|ok|okay|now) )?(?:${verbs}(?: me| us)?(?: (?:over|back))?(?: to)? )+(?:the )?plan ${PLAN_WORD}(?: on the map| please| now)?$`,
+    ).exec(s) ?? new RegExp(`^plan ${PLAN_WORD}$`).exec(s);
   return m ? PLAN_INDEX[m[1]!]! : null;
 }
 
@@ -160,7 +250,8 @@ export function planTarget(text: string): { plan: number | null; rest: string } 
   return { plan: PLAN_INDEX[word] ?? null, rest: text.replace(re, ' ').replace(/\s+/g, ' ').trim() };
 }
 
-const HINT = 'Try “close gate 3”, “send 4 officers to gate 2”, “redirect gate 1 to gate 5” or “PA: use the west gates”.';
+const HINT =
+  'Try “close gate 3”, “send 4 officers to gate 2”, “redirect gate 1 to gate 5” or “PA: use the west gates”.';
 
 export function parseCommand(said: string, map: MapBundle): Parsed {
   const { plan, rest: text } = planTarget(said);
@@ -168,14 +259,26 @@ export function parseCommand(said: string, map: MapBundle): Parsed {
   if (!s) return { ok: false, error: HINT };
   const choices = stepChoices(map);
   const atMin = minutesIn(s);
-  const done = (intent: Intent): Parsed => ({ ok: true, intent, summary: describe(intent), ...(plan === null ? {} : { plan }) });
+  const done = (intent: Intent): Parsed => ({
+    ok: true,
+    intent,
+    summary: describe(intent),
+    ...(plan === null ? {} : { plan }),
+  });
 
   // Alerts first: their own words may say "close" or "gate" without being an order to.
-  const alert = /^(?:make an? |send an? |do an? )?(pa|announce(?:ment)?|tell (?:everyone|the crowd|fans)|phone|text|sms|push)\b(?: (?:alert|announcement|message))?(?: (?:saying|that|to say))?:?\s*(.*)$/.exec(s);
+  const alert =
+    /^(?:make an? |send an? |do an? )?(pa|announce(?:ment)?|tell (?:everyone|the crowd|fans)|phone|text|sms|push)\b(?: (?:alert|announcement|message))?(?: (?:saying|that|to say))?:?\s*(.*)$/.exec(
+      s,
+    );
   if (alert) {
     const channel = /^(phone|text|sms|push)/.test(alert[1]!) ? 'phone' : 'pa';
     // After a colon, keep the commander's own wording and case.
-    const message = (text.includes(':') ? text.slice(text.indexOf(':') + 1) : alert[2]!.replace(/\b(?:in|after|at) \d+(?:\.\d+)? (?:min|mins|minute|minutes)\b/, ''))
+    const message = (
+      text.includes(':')
+        ? text.slice(text.indexOf(':') + 1)
+        : alert[2]!.replace(/\b(?:in|after|at) \d+(?:\.\d+)? (?:min|mins|minute|minutes)\b/, '')
+    )
       .trim()
       .replace(/^["“]|["”]$/g, '')
       .trim();
@@ -197,9 +300,15 @@ export function parseCommand(said: string, map: MapBundle): Parsed {
     return done({ kind: 'redirect', from, to, atMin });
   }
 
-  const send = /\b(send|dispatch|deploy|move|get)\b(?: (?:me|us))?(?: (?:an?|some|the))? (?:(\d+) )?(?:more )?(officers?|cops?|police|units?|patrols?)\b/.exec(s);
+  const send =
+    /\b(send|dispatch|deploy|move|get)\b(?: (?:me|us))?(?: (?:an?|some|the))? (?:(\d+) )?(?:more )?(officers?|cops?|police|units?|patrols?)\b/.exec(
+      s,
+    );
   if (send) {
-    const count = Math.max(1, Math.min(40, Number(send[2] ?? (send[3]!.endsWith('s') || send[3] === 'police' ? 2 : 1))));
+    const count = Math.max(
+      1,
+      Math.min(40, Number(send[2] ?? (send[3]!.endsWith('s') || send[3] === 'police' ? 2 : 1))),
+    );
     const rest = without(s, new RegExp(`^.*?\\b${send[3]}\\b`));
     const where = rest.replace(/\b(?:in|after|at) \d+.*$/, '');
     const place = findChoice(where, choices.places);
@@ -207,15 +316,30 @@ export function parseCommand(said: string, map: MapBundle): Parsed {
     const streets = choices.closables.filter((c) => !c.id.endsWith('-door'));
     const street = findChoice(where, streets);
     if (street) return done({ kind: 'send_officers', count, place: street, street: true, atMin });
-    return { ok: false, error: `Send them where? Name a gate, a street or a place on the map, like “gate 2”.${didYouMean(where, [...choices.places, ...streets])}` };
+    return {
+      ok: false,
+      error: `Send them where? Name a gate, a street or a place on the map, like “gate 2”.${didYouMean(where, [...choices.places, ...streets])}`,
+    };
   }
 
   const shut = /\b(close|shut|lock|block|barricade|seal|stop traffic on)\b/.test(s);
   const open = /\b(open|reopen|unblock|unlock|clear the barricade on)\b/.test(s);
   if (shut || open) {
-    const target = findChoice(s.replace(/\b(?:in|after|at) \d+(?:\.\d+)? (?:min|mins|minute|minutes)\b/, ''), choices.closables);
-    if (!target) return { ok: false, error: `No gate or street by that name on this map.${didYouMean(s, choices.closables) || ` ${HINT}`}` };
-    return done({ kind: shut && !open ? 'close' : open && !shut ? 'open' : /\bre?open\b/.test(s) ? 'open' : 'close', target, isGate: target.id.endsWith('-door'), atMin });
+    const target = findChoice(
+      s.replace(/\b(?:in|after|at) \d+(?:\.\d+)? (?:min|mins|minute|minutes)\b/, ''),
+      choices.closables,
+    );
+    if (!target)
+      return {
+        ok: false,
+        error: `No gate or street by that name on this map.${didYouMean(s, choices.closables) || ` ${HINT}`}`,
+      };
+    return done({
+      kind: shut && !open ? 'close' : open && !shut ? 'open' : /\bre?open\b/.test(s) ? 'open' : 'close',
+      target,
+      isGate: target.id.endsWith('-door'),
+      atMin,
+    });
   }
 
   return { ok: false, error: `I didn't recognise that as an order. ${HINT}` };
@@ -230,11 +354,16 @@ export function toPlanStep(intent: Intent, choices: StepChoices): PlanAction | n
       return buildStep({ kind, atMin: intent.atMin, target: intent.target.id }, choices);
     case 'send_officers':
       // A plan sends officers to places; a street is a live order only.
-      return intent.street ? null : buildStep({ kind, atMin: intent.atMin, target: intent.place.id, count: intent.count }, choices);
+      return intent.street
+        ? null
+        : buildStep({ kind, atMin: intent.atMin, target: intent.place.id, count: intent.count }, choices);
     case 'redirect':
       return buildStep({ kind, atMin: intent.atMin, from: intent.from.id, to: intent.to.id }, choices);
     case 'alert':
-      return buildStep({ kind, atMin: intent.atMin, channel: intent.channel, message: intent.message, reachPct: 70 }, choices);
+      return buildStep(
+        { kind, atMin: intent.atMin, channel: intent.channel, message: intent.message, reachPct: 70 },
+        choices,
+      );
     case 'shelter_order':
       return buildStep({ kind, atMin: intent.atMin }, choices);
   }
@@ -245,11 +374,19 @@ export function toPlanStep(intent: Intent, choices: StepChoices): PlanAction | n
  * reason it cannot be given live. Officers sent are the nearest ones not
  * already on a job, and the middle cell of the place is where they go.
  */
-export function toLiveOrder(intent: Intent, map: MapBundle, officers: OfficerStatus[]): { order: PoliceOrder } | { error: string } {
+export function toLiveOrder(
+  intent: Intent,
+  map: MapBundle,
+  officers: OfficerStatus[],
+): { order: PoliceOrder } | { error: string } {
   switch (intent.kind) {
     case 'close':
     case 'open':
-      return { order: intent.isGate ? { type: 'gate', closableId: intent.target.id, closed: intent.kind === 'close' } : { type: 'barricade', closableId: intent.target.id, closed: intent.kind === 'close' } };
+      return {
+        order: intent.isGate
+          ? { type: 'gate', closableId: intent.target.id, closed: intent.kind === 'close' }
+          : { type: 'barricade', closableId: intent.target.id, closed: intent.kind === 'close' },
+      };
     case 'redirect':
       return { order: { type: 'redirect', fromPlaceId: intent.from.id, toPlaceId: intent.to.id } };
     case 'alert':

@@ -7,7 +7,11 @@ function roadMap(): MapBundle {
   for (let x = 0; x < 60; x++) cells[300 + x] = 'road';
   return {
     version: CONTRACT_VERSION,
-    id: 'roads', name: 'Road test', width: 60, height: 10, cells,
+    id: 'roads',
+    name: 'Road test',
+    width: 60,
+    height: 10,
+    cells,
     places: [{ id: 'gate', name: 'Gate 1', kind: 'gate', cells: [125, 126], capacity: 100 }],
     closables: [
       { id: 'main', name: 'Main Street', cells: [303, 304, 305] },
@@ -32,7 +36,10 @@ describe('fenceAt', () => {
 describe('barricadeAt', () => {
   it('returns a named street closure without changing its cells', () => {
     expect(barricadeAt(roadMap(), 304)).toEqual({
-      closableId: 'main', name: 'Main Street', cells: [303, 304, 305], existing: true,
+      closableId: 'main',
+      name: 'Main Street',
+      cells: [303, 304, 305],
+      existing: true,
     });
   });
 

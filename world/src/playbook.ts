@@ -10,7 +10,11 @@ function doorFor(map: MapBundle, place: Place): Id | undefined {
 
 /** A closable that is not a door of any place, i.e. a street segment. Woody Hayes when mapped. */
 function streetFor(map: MapBundle): Id | undefined {
-  const doors = new Set(map.places.flatMap((p) => map.closables.filter((c) => c.cells.some((cell) => p.cells.includes(cell))).map((c) => c.id)));
+  const doors = new Set(
+    map.places.flatMap((p) =>
+      map.closables.filter((c) => c.cells.some((cell) => p.cells.includes(cell))).map((c) => c.id),
+    ),
+  );
   const streets = map.closables.filter((c) => !doors.has(c.id));
   return streets.find((c) => /Woody Hayes/i.test(c.name))?.id ?? streets[0]?.id;
 }
@@ -46,7 +50,14 @@ function gateSurgePlans(map: MapBundle): ResponsePlan[] {
       actions: compact([
         // The zone is the crowd on the approach: a PA aimed at the three cells
         // of the doorway itself reaches almost nobody.
-        { at: 0, type: 'alert', channel: 'pa', message: `${hot.name} is backed up. Use ${relief.name}.`, reachShare: 0.7, zoneCells: expandCells(map, hot.cells, 8) },
+        {
+          at: 0,
+          type: 'alert',
+          channel: 'pa',
+          message: `${hot.name} is backed up. Use ${relief.name}.`,
+          reachShare: 0.7,
+          zoneCells: expandCells(map, hot.cells, 8),
+        },
         reliefDoor ? { at: 30, type: 'open', closableId: reliefDoor } : null,
         { at: 60, type: 'redirect', fromPlaceId: hot.id, toPlaceId: relief.id },
         { at: 0, type: 'send_officers', count: 2, toPlaceId: relief.id },
@@ -59,7 +70,13 @@ function gateSurgePlans(map: MapBundle): ResponsePlan[] {
       officersAvailable: OFFICERS_AVAILABLE,
       actions: compact([
         hotDoor ? { at: 0, type: 'close', closableId: hotDoor } : null,
-        { at: 0, type: 'alert', channel: 'phone', message: `${hot.name} closed. Walk to ${relief.name}.`, reachShare: 0.5 },
+        {
+          at: 0,
+          type: 'alert',
+          channel: 'phone',
+          message: `${hot.name} closed. Walk to ${relief.name}.`,
+          reachShare: 0.5,
+        },
         { at: 30, type: 'redirect', fromPlaceId: hot.id, toPlaceId: relief.id },
         { at: 0, type: 'send_officers', count: 4, toPlaceId: hot.id },
       ]),
@@ -80,7 +97,13 @@ function lightningPlans(map: MapBundle): ResponsePlan[] {
       forIncident: 'lightning_delay',
       officersAvailable: OFFICERS_AVAILABLE,
       actions: compact([
-        { at: 0, type: 'alert', channel: 'pa', message: 'Lightning in the area. Move to shelter now.', reachShare: 0.9 },
+        {
+          at: 0,
+          type: 'alert',
+          channel: 'pa',
+          message: 'Lightning in the area. Move to shelter now.',
+          reachShare: 0.9,
+        },
         shelters.length ? { at: 0, type: 'shelter_order', shelterPlaceIds: shelters } : null,
       ]),
     },
@@ -94,7 +117,13 @@ function lightningPlans(map: MapBundle): ResponsePlan[] {
       forIncident: 'lightning_delay',
       officersAvailable: OFFICERS_AVAILABLE,
       actions: compact([
-        { at: 0, type: 'alert', channel: 'pa', message: 'Lightning delay. Every gate is open, get inside now.', reachShare: 0.9 },
+        {
+          at: 0,
+          type: 'alert',
+          channel: 'pa',
+          message: 'Lightning delay. Every gate is open, get inside now.',
+          reachShare: 0.9,
+        },
         ...gateDoors.map((id): PlanAction => ({ at: 0, type: 'open', closableId: id })),
         shelters.length ? { at: 0, type: 'shelter_order', shelterPlaceIds: shelters } : null,
         ...gates.slice(0, 4).map((g): PlanAction => ({ at: 0, type: 'send_officers', count: 2, toPlaceId: g.id })),
@@ -106,7 +135,13 @@ function lightningPlans(map: MapBundle): ResponsePlan[] {
       forIncident: 'lightning_delay',
       officersAvailable: OFFICERS_AVAILABLE,
       actions: compact([
-        { at: 0, type: 'alert', channel: 'phone', message: 'Lightning possible. Stand by for instructions.', reachShare: 0.6 },
+        {
+          at: 0,
+          type: 'alert',
+          channel: 'phone',
+          message: 'Lightning possible. Stand by for instructions.',
+          reachShare: 0.6,
+        },
         shelters.length ? { at: 120, type: 'shelter_order', shelterPlaceIds: shelters } : null,
         firstIndoor ? { at: 120, type: 'send_officers', count: 4, toPlaceId: firstIndoor } : null,
       ]),
@@ -139,7 +174,13 @@ function packagePlans(map: MapBundle): ResponsePlan[] {
       officersAvailable: OFFICERS_AVAILABLE,
       actions: compact([
         street ? { at: 0, type: 'close', closableId: street } : null,
-        { at: 30, type: 'alert', channel: 'pa', message: 'Police activity ahead. Follow the marked route out.', reachShare: 0.8 },
+        {
+          at: 30,
+          type: 'alert',
+          channel: 'pa',
+          message: 'Police activity ahead. Follow the marked route out.',
+          reachShare: 0.8,
+        },
       ]),
     },
     {
@@ -149,7 +190,13 @@ function packagePlans(map: MapBundle): ResponsePlan[] {
       officersAvailable: OFFICERS_AVAILABLE,
       actions: compact([
         street ? { at: 0, type: 'close', closableId: street } : null,
-        { at: 0, type: 'alert', channel: 'phone', message: 'Avoid the closed street. Use the far exit.', reachShare: 0.55 },
+        {
+          at: 0,
+          type: 'alert',
+          channel: 'phone',
+          message: 'Avoid the closed street. Use the far exit.',
+          reachShare: 0.55,
+        },
         from && to ? { at: 60, type: 'redirect', fromPlaceId: from.id, toPlaceId: to.id } : null,
         from ? { at: 0, type: 'send_officers', count: 4, toPlaceId: from.id } : null,
       ]),
@@ -163,7 +210,10 @@ function gameEndPlans(map: MapBundle): ResponsePlan[] {
   const centre = (place: { cells: number[] }) => {
     let x = 0;
     let y = 0;
-    for (const cell of place.cells) { x += cell % map.width; y += Math.floor(cell / map.width); }
+    for (const cell of place.cells) {
+      x += cell % map.width;
+      y += Math.floor(cell / map.width);
+    }
     return { x: x / place.cells.length, y: y / place.cells.length };
   };
   const centres = gates.map(centre);
@@ -174,18 +224,26 @@ function gameEndPlans(map: MapBundle): ResponsePlan[] {
     let nearest = 0;
     let distance = Infinity;
     centres.forEach((c, i) => {
-      const d = Math.hypot(cell % map.width - c.x, Math.floor(cell / map.width) - c.y);
-      if (d < distance) { nearest = i; distance = d; }
+      const d = Math.hypot((cell % map.width) - c.x, Math.floor(cell / map.width) - c.y);
+      if (d < distance) {
+        nearest = i;
+        distance = d;
+      }
     });
     load[nearest]!++;
   }
-  const ranked = gates.map((gate, i) => ({ gate, load: load[i]! })).sort((a, b) => b.load - a.load).map(({ gate }) => gate);
+  const ranked = gates
+    .map((gate, i) => ({ gate, load: load[i]! }))
+    .sort((a, b) => b.load - a.load)
+    .map(({ gate }) => gate);
   const hot = ranked.slice(0, Math.min(4, Math.ceil(gates.length / 2)));
   const quiet = ranked.slice(hot.length).reverse();
-  const open: PlanAction[] = compact(gates.map((gate) => {
-    const door = doorFor(map, gate);
-    return door ? { at: 0, type: 'open', closableId: door } : null;
-  }));
+  const open: PlanAction[] = compact(
+    gates.map((gate) => {
+      const door = doorFor(map, gate);
+      return door ? { at: 0, type: 'open', closableId: door } : null;
+    }),
+  );
   const waves: PlanAction[] = [];
   hot.forEach((gate, i) => {
     const relief = quiet[i % quiet.length];
@@ -193,37 +251,79 @@ function gameEndPlans(map: MapBundle): ResponsePlan[] {
     const at = 30 + i * 120;
     waves.push({ at, type: 'redirect', fromPlaceId: gate.id, toPlaceId: relief.id });
     // Alerts only apply existing redirects. They cannot order a timed seat hold.
-    waves.push({ at, type: 'alert', channel: 'pa', message: `Use ${relief.name} instead of ${gate.name}.`, reachShare: 0.85,
-      zoneCells: expandCells(map, gate.cells, 35) });
+    waves.push({
+      at,
+      type: 'alert',
+      channel: 'pa',
+      message: `Use ${relief.name} instead of ${gate.name}.`,
+      reachShare: 0.85,
+      zoneCells: expandCells(map, gate.cells, 35),
+    });
   });
   // The longest street is a reproducible proxy for the main traffic corridor.
   // Closing its nearest gates diverts walkers without making a false cars-only closure.
   const street = biggestStreet(map);
-  const besideStreet = [...gates].sort((a, b) => {
-    if (!street) return 0;
-    const distance = (gate: Place) => {
-      const c = centre(gate);
-      return street.cells.reduce((best, cell) => Math.min(best, Math.hypot(cell % map.width - c.x, Math.floor(cell / map.width) - c.y)), Infinity);
-    };
-    return distance(a) - distance(b);
-  }).slice(0, Math.max(1, Math.floor(gates.length / 4)));
+  const besideStreet = [...gates]
+    .sort((a, b) => {
+      if (!street) return 0;
+      const distance = (gate: Place) => {
+        const c = centre(gate);
+        return street.cells.reduce(
+          (best, cell) => Math.min(best, Math.hypot((cell % map.width) - c.x, Math.floor(cell / map.width) - c.y)),
+          Infinity,
+        );
+      };
+      return distance(a) - distance(b);
+    })
+    .slice(0, Math.max(1, Math.floor(gates.length / 4)));
   const relief = ranked.filter((g) => !besideStreet.includes(g));
   return [
-    { id: 'plan-end-open', name: 'Open every gate, officers on the main exits', forIncident: 'game_end', officersAvailable: OFFICERS_AVAILABLE,
-      actions: [...open, ...hot.map((gate): PlanAction => ({ at: 0, type: 'send_officers', count: 2, toPlaceId: gate.id }))] },
-    { id: 'plan-end-spread', name: 'Spread the exits with PA redirects in waves', forIncident: 'game_end', officersAvailable: OFFICERS_AVAILABLE,
-      actions: [...open, ...waves] },
-    { id: 'plan-end-divert', name: `Close gates beside ${street?.name ?? 'the main approach'}, divert to other exits`, forIncident: 'game_end', officersAvailable: OFFICERS_AVAILABLE,
-      actions: [...open, ...compact(besideStreet.flatMap((gate, i): (PlanAction | null)[] => {
-        const door = doorFor(map, gate);
-        const to = relief[i % relief.length];
-        if (!to) return [];
-        return [door ? { at: 0, type: 'close', closableId: door } : null,
-          { at: 0, type: 'redirect', fromPlaceId: gate.id, toPlaceId: to.id },
-          { at: 0, type: 'send_officers', count: 3, toPlaceId: to.id },
-          { at: 0, type: 'alert', channel: 'pa', message: `${gate.name} is closed. Use ${to.name}.`, reachShare: 0.9,
-            zoneCells: expandCells(map, gate.cells, 35) }];
-      }))] },
+    {
+      id: 'plan-end-open',
+      name: 'Open every gate, officers on the main exits',
+      forIncident: 'game_end',
+      officersAvailable: OFFICERS_AVAILABLE,
+      actions: [
+        ...open,
+        ...hot.map((gate): PlanAction => ({ at: 0, type: 'send_officers', count: 2, toPlaceId: gate.id })),
+      ],
+    },
+    {
+      id: 'plan-end-spread',
+      name: 'Spread the exits with PA redirects in waves',
+      forIncident: 'game_end',
+      officersAvailable: OFFICERS_AVAILABLE,
+      actions: [...open, ...waves],
+    },
+    {
+      id: 'plan-end-divert',
+      name: `Close gates beside ${street?.name ?? 'the main approach'}, divert to other exits`,
+      forIncident: 'game_end',
+      officersAvailable: OFFICERS_AVAILABLE,
+      actions: [
+        ...open,
+        ...compact(
+          besideStreet.flatMap((gate, i): (PlanAction | null)[] => {
+            const door = doorFor(map, gate);
+            const to = relief[i % relief.length];
+            if (!to) return [];
+            return [
+              door ? { at: 0, type: 'close', closableId: door } : null,
+              { at: 0, type: 'redirect', fromPlaceId: gate.id, toPlaceId: to.id },
+              { at: 0, type: 'send_officers', count: 3, toPlaceId: to.id },
+              {
+                at: 0,
+                type: 'alert',
+                channel: 'pa',
+                message: `${gate.name} is closed. Use ${to.name}.`,
+                reachShare: 0.9,
+                zoneCells: expandCells(map, gate.cells, 35),
+              },
+            ];
+          }),
+        ),
+      ],
+    },
   ];
 }
 

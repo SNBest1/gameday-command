@@ -28,7 +28,14 @@ export function readoutOf(frame: TickFrame | undefined): Readout {
       else if (s === VS.stopped) stopped++;
       else if (s === VS.parked) parked++;
       if (v.kind[i] === AMBULANCE) {
-        ems = s === VS.responding ? 'Ambulance en route' : s === VS.on_scene ? 'Ambulance on scene' : s === VS.stopped ? 'Ambulance blocked' : '';
+        ems =
+          s === VS.responding
+            ? 'Ambulance en route'
+            : s === VS.on_scene
+              ? 'Ambulance on scene'
+              : s === VS.stopped
+                ? 'Ambulance blocked'
+                : '';
       }
     }
   }
@@ -37,7 +44,8 @@ export function readoutOf(frame: TickFrame | undefined): Readout {
 
 const COMPASS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
-const visibility = (m: number) => (m >= 5000 ? '5+ km' : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`);
+const visibility = (m: number) =>
+  m >= 5000 ? '5+ km' : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
 
 export function ReadoutChips({ readout }: { readout: Readout }) {
   const { weather: w } = readout;
@@ -49,8 +57,8 @@ export function ReadoutChips({ readout }: { readout: Readout }) {
             <strong>{WEATHER_LABELS[w.kind]}</strong>
             {w.lightning && <span className="strike">, lightning</span>}
             <em>
-              {Math.round(w.tempC)}°C, wind {Math.round(w.windMps * 2.237)} mph {COMPASS[Math.round(w.windFromDeg / 45) % 8]}, visibility{' '}
-              {visibility(w.visibilityM)}
+              {Math.round(w.tempC)}°C, wind {Math.round(w.windMps * 2.237)} mph{' '}
+              {COMPASS[Math.round(w.windFromDeg / 45) % 8]}, visibility {visibility(w.visibilityM)}
             </em>
           </span>
         </div>

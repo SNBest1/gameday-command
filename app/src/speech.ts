@@ -69,7 +69,10 @@ export interface Listening {
  * Listen for one order. `onWords` gets the words so far (`final` once the
  * speaker stops); `onEnd` runs once, with an error sentence if it failed.
  */
-export function listen(onWords: (text: string, final: boolean) => void, onEnd: (error: string | null) => void): Listening | null {
+export function listen(
+  onWords: (text: string, final: boolean) => void,
+  onEnd: (error: string | null) => void,
+): Listening | null {
   const Ctor = recognitionCtor();
   if (!Ctor) return null;
   const rec = new Ctor();

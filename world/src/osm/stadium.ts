@@ -28,10 +28,20 @@ const EXTRACT_PATH = resolve(import.meta.dirname, '../../data/ohio-stadium.osm.j
 
 /** Brush radius in cells per highway class; 0 means a single 2 m cell. */
 const ROAD_RADIUS: Record<string, number> = {
-  motorway: 2, motorway_link: 1, trunk: 2, trunk_link: 1,
-  primary: 2, primary_link: 1, secondary: 1, secondary_link: 1,
-  tertiary: 1, tertiary_link: 1, residential: 1, unclassified: 1,
-  service: 1, living_street: 1,
+  motorway: 2,
+  motorway_link: 1,
+  trunk: 2,
+  trunk_link: 1,
+  primary: 2,
+  primary_link: 1,
+  secondary: 1,
+  secondary_link: 1,
+  tertiary: 1,
+  tertiary_link: 1,
+  residential: 1,
+  unclassified: 1,
+  service: 1,
+  living_street: 1,
 };
 const FOOT_WAYS = new Set(['footway', 'path', 'pedestrian', 'steps', 'cycleway', 'corridor', 'track']);
 const BLOCKING_BARRIERS = new Set(['wall', 'fence', 'hedge', 'retaining_wall', 'guard_rail']);
@@ -67,7 +77,10 @@ export function extractExists(path = EXTRACT_PATH): boolean {
 /** Rough bounding-box area in square meters, for picking the biggest ring. */
 function ringExtent(ring: OsmGeometryPoint[]): number {
   if (ring.length === 0) return 0;
-  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+  let minLat = Infinity,
+    maxLat = -Infinity,
+    minLon = Infinity,
+    maxLon = -Infinity;
   for (const p of ring) {
     if (p.lat < minLat) minLat = p.lat;
     if (p.lat > maxLat) maxLat = p.lat;
@@ -202,16 +215,20 @@ export function buildStadiumMap(extract: OsmExtract, options: StadiumOptions = {
   // An imported stadium names its own OSM id.
   const stadium =
     (options.stadiumOsmId !== undefined ? stadiumCandidates.find((e) => e.id === options.stadiumOsmId) : undefined) ??
-    stadiumCandidates.find((e) => (e.tags?.name ?? '').toLowerCase().includes((options.name ?? 'Ohio Stadium').toLowerCase())) ??
+    stadiumCandidates.find((e) =>
+      (e.tags?.name ?? '').toLowerCase().includes((options.name ?? 'Ohio Stadium').toLowerCase()),
+    ) ??
     stadiumCandidates.sort((a, b) => ringExtent(outerRing(b)) - ringExtent(outerRing(a)))[0];
   // Capacity: what the import was told, else OSM's tag, else (for an imported
   // stadium) an estimate from the outline at Ohio Stadium's ~2.7 people/m².
   const outline = stadium ? project(outerRing(stadium)) : [];
   let outlineCells = 0;
   fillPolygon(outline, width, height, () => outlineCells++);
-  const estimated = options.id === undefined ? OHIO_CAPACITY : Math.round(outlineCells * CELL_SIZE_M * CELL_SIZE_M * 2.7);
+  const estimated =
+    options.id === undefined ? OHIO_CAPACITY : Math.round(outlineCells * CELL_SIZE_M * CELL_SIZE_M * 2.7);
   // Ohio Stadium uses the cited figure its source line states, not the OSM tag (104,944).
-  const capacity = options.capacity ?? (options.id === undefined ? 102_000 : Number(stadium?.tags?.capacity) || estimated);
+  const capacity =
+    options.capacity ?? (options.id === undefined ? 102_000 : Number(stadium?.tags?.capacity) || estimated);
   const gateCount = Math.max(2, Math.min(16, Math.round(capacity / SEATS_PER_GATE)));
   // A small ground gets narrow gate openings, or the openings are the stadium.
   const gateHalfWidth = outlineCells > 4000 ? GATE_HALF_WIDTH_CELLS : 1;
@@ -403,8 +420,12 @@ export function buildStadiumMap(extract: OsmExtract, options: StadiumOptions = {
   const sin = Math.sin(axis);
   // An oval ground's outfield fills most of the bowl: an ellipse with the
   // bowl's own proportions, holding about half its cells.
-  const spreadU = Math.sqrt(Math.max(1, (sxx + syy - Math.hypot(sxx - syy, 2 * sxy)) / 2 / Math.max(1, bowlCells.length)));
-  const spreadV = Math.sqrt(Math.max(1, (sxx + syy + Math.hypot(sxx - syy, 2 * sxy)) / 2 / Math.max(1, bowlCells.length)));
+  const spreadU = Math.sqrt(
+    Math.max(1, (sxx + syy - Math.hypot(sxx - syy, 2 * sxy)) / 2 / Math.max(1, bowlCells.length)),
+  );
+  const spreadV = Math.sqrt(
+    Math.max(1, (sxx + syy + Math.hypot(sxx - syy, 2 * sxy)) / 2 / Math.max(1, bowlCells.length)),
+  );
   const oval = sport === 'cricket' || sport === 'baseball';
   const field: number[] = [];
   const standsCells: number[] = [];
@@ -414,7 +435,9 @@ export function buildStadiumMap(extract: OsmExtract, options: StadiumOptions = {
     // Into the field's own frame: u across it, v along it.
     const u = dx * cos - dy * sin;
     const v = dx * sin + dy * cos;
-    const inside = oval ? (u / (spreadU * 1.35)) ** 2 + (v / (spreadV * 1.35)) ** 2 <= 1 : Math.abs(u) <= halfW && Math.abs(v) <= halfL;
+    const inside = oval
+      ? (u / (spreadU * 1.35)) ** 2 + (v / (spreadV * 1.35)) ** 2 <= 1
+      : Math.abs(u) <= halfW && Math.abs(v) <= halfL;
     if (inside) field.push(c);
     else standsCells.push(c);
   }
@@ -594,19 +617,34 @@ export function buildStadiumMap(extract: OsmExtract, options: StadiumOptions = {
     field,
     fieldAxis: axis,
     sport,
-    theme: options.theme ?? (options.id === undefined ? OHIO_THEME : themeFor(options.name ?? stadium?.tags?.name ?? '')),
+    theme:
+      options.theme ?? (options.id === undefined ? OHIO_THEME : themeFor(options.name ?? stadium?.tags?.name ?? '')),
     sources: [
-      { label: 'Map geometry: OpenStreetMap contributors (ODbL)', url: `https://www.openstreetmap.org/${stadium.type}/${stadium.id}` },
+      {
+        label: 'Map geometry: OpenStreetMap contributors (ODbL)',
+        url: `https://www.openstreetmap.org/${stadium.type}/${stadium.id}`,
+      },
       { label: `Fetched ${extract.fetchedAt.slice(0, 10)} via Overpass API`, url: 'https://overpass-api.de/' },
-      { label: `Assumption, not mapped data: ${gates.length} gates placed at even bearings, ${GATE_THROUGHPUT_PER_MIN} people/min each`, url: 'local' },
+      {
+        label: `Assumption, not mapped data: ${gates.length} gates placed at even bearings, ${GATE_THROUGHPUT_PER_MIN} people/min each`,
+        url: 'local',
+      },
       options.id === undefined
-        ? { label: 'Capacity: about 102,000 (Ohio Stadium, cited; rounded from 102,780)', url: 'https://en.wikipedia.org/wiki/Ohio_Stadium' }
-        : { label: `Capacity: ${capacity.toLocaleString('en-US')} (OSM tag, or estimated from the outline)`, url: 'local' },
-      ...(droppedGates.length > 0
-        ? [{
-            label: `Omitted from the model: ${droppedGates.map((g) => g.name).join(', ')} - no parking-lot cell can walk there without crossing the bowl`,
+        ? {
+            label: 'Capacity: about 102,000 (Ohio Stadium, cited; rounded from 102,780)',
+            url: 'https://en.wikipedia.org/wiki/Ohio_Stadium',
+          }
+        : {
+            label: `Capacity: ${capacity.toLocaleString('en-US')} (OSM tag, or estimated from the outline)`,
             url: 'local',
-          }]
+          },
+      ...(droppedGates.length > 0
+        ? [
+            {
+              label: `Omitted from the model: ${droppedGates.map((g) => g.name).join(', ')} - no parking-lot cell can walk there without crossing the bowl`,
+              url: 'local',
+            },
+          ]
         : []),
     ],
   };

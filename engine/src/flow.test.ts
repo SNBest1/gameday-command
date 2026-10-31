@@ -82,7 +82,9 @@ describe('routes prefer sidewalks', () => {
   const H = 14;
   const ROAD_ROW = 8;
   const START_ROW = ROAD_ROW - SIDEWALK_REACH - 1;
-  const cells = Array.from({ length: W * H }, (_, i) => (Math.floor(i / W) === ROAD_ROW ? 'road' : 'walk')) as MapBundle['cells'];
+  const cells = Array.from({ length: W * H }, (_, i) =>
+    Math.floor(i / W) === ROAD_ROW ? 'road' : 'walk',
+  ) as MapBundle['cells'];
   const streetMap: MapBundle = {
     ...map,
     id: 'street',
@@ -126,15 +128,28 @@ describe('routes prefer sidewalks', () => {
     expect(onRoad).toBeLessThanOrEqual(2);
   });
 
-  it.each(['walk', 'stands', 'concourse', 'parking', 'shelter'] as const)('keeps %s away from roads at the open-ground step cost', (kind) => {
-    const bundle = { ...streetMap, width: 3, height: 1, cells: [kind, kind, kind],
-      places: [{ ...streetMap.places[0]!, cells: [2] }] };
-    expect(new FlowFields(bundle).field(0).dist[0]).toBe(2 * WALK_STEP);
-  });
+  it.each(['walk', 'stands', 'concourse', 'parking', 'shelter'] as const)(
+    'keeps %s away from roads at the open-ground step cost',
+    (kind) => {
+      const bundle = {
+        ...streetMap,
+        width: 3,
+        height: 1,
+        cells: [kind, kind, kind],
+        places: [{ ...streetMap.places[0]!, cells: [2] }],
+      };
+      expect(new FlowFields(bundle).field(0).dist[0]).toBe(2 * WALK_STEP);
+    },
+  );
 
   it.each(['stands', 'concourse', 'parking', 'shelter'] as const)('does not discount %s beside a road', (kind) => {
-    const bundle = { ...streetMap, width: 2, height: 2, cells: [kind, kind, 'road', 'road'] as MapBundle['cells'],
-      places: [{ ...streetMap.places[0]!, cells: [1] }] };
+    const bundle = {
+      ...streetMap,
+      width: 2,
+      height: 2,
+      cells: [kind, kind, 'road', 'road'] as MapBundle['cells'],
+      places: [{ ...streetMap.places[0]!, cells: [1] }],
+    };
     expect(new FlowFields(bundle).field(0).dist[0]).toBe(WALK_STEP);
   });
 });
@@ -159,16 +174,18 @@ describe('density slows walking', () => {
   });
 });
 
-function makeSim(opts: {
-  fans?: number;
-  seed?: number;
-  planIndex?: number;
-  startAt?: number;
-  endAt?: number;
-  bundle?: MapBundle;
-  incidentAt?: number;
-  movement?: FlowMovement;
-} = {}) {
+function makeSim(
+  opts: {
+    fans?: number;
+    seed?: number;
+    planIndex?: number;
+    startAt?: number;
+    endAt?: number;
+    bundle?: MapBundle;
+    incidentAt?: number;
+    movement?: FlowMovement;
+  } = {},
+) {
   const bundle = opts.bundle ?? map;
   const seed = opts.seed ?? 20251023;
   const population = makePopulation(opts.fans ?? 1200, seed);
@@ -423,7 +440,14 @@ describe('FlowMovement on the test map', () => {
     let openFlow = 0;
     while (!sim.done) {
       await sim.step();
-      if (sim.ctx.t > -1800) openFlow = Math.max(openFlow, sim.gateStats().filter((g) => g.open).reduce((n, g) => n + g.inPerMin, 0));
+      if (sim.ctx.t > -1800)
+        openFlow = Math.max(
+          openFlow,
+          sim
+            .gateStats()
+            .filter((g) => g.open)
+            .reduce((n, g) => n + g.inPerMin, 0),
+        );
       for (let i = 0; i < dots.count; i++) {
         if (dots.x[i]! < 0 || dots.stateOf(i) === 'gone') continue;
         const cell = Math.floor(dots.y[i]! / CELL_SIZE_M) * map.width + Math.floor(dots.x[i]! / CELL_SIZE_M);
@@ -465,7 +489,10 @@ describe('FlowMovement on the test map', () => {
     const gate = map.places.findIndex((p) => p.kind === 'gate');
     movement.lateRush(sim.ctx, gate, 50, -120, 60);
     const rushing = Array.from({ length: sim.ctx.dots.count }, (_, i) => i).filter(
-      (i) => movement.describe(i).homeGate === gate && movement.describe(i).arriveAt >= -120 && movement.describe(i).arriveAt <= 60,
+      (i) =>
+        movement.describe(i).homeGate === gate &&
+        movement.describe(i).arriveAt >= -120 &&
+        movement.describe(i).arriveAt <= 60,
     );
     expect(rushing.length).toBeGreaterThanOrEqual(50);
     expect(rushing.every((i) => sim.ctx.dots.targetPlace[i] === gate)).toBe(true);

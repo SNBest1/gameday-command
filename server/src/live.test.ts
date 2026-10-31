@@ -76,7 +76,12 @@ describe.skipIf(!kevUp)('Kev-4B, live on :8009', () => {
       timeoutMs: 30_000,
     });
     expect(result).not.toBeNull();
-    expect(oddsAreValid(result!.odds, SITUATIONS.lightning_shelter.options.map((o) => o.key))).toBe(true);
+    expect(
+      oddsAreValid(
+        result!.odds,
+        SITUATIONS.lightning_shelter.options.map((o) => o.key),
+      ),
+    ).toBe(true);
     // a fan who cannot move fast, in lightning, having heard the alert: indoors
     expect(result!.odds.go_concourse).toBeGreaterThan(result!.odds.stay_put!);
   }, 60_000);

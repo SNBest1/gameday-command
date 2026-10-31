@@ -1,4 +1,4 @@
-import {NearestCells} from './nearest-cells.ts';
+import { NearestCells } from './nearest-cells.ts';
 import type { Id, MapBundle, SituationId } from '../../contracts.ts';
 import { CELL_SIZE_M, DOT_GROUP_SIZE } from '../../contracts.ts';
 import type { FlowField } from './flowfield.ts';
@@ -119,7 +119,7 @@ export class FlowMovement implements MovementModel {
   private gateCentre = new Map<number, { x: number; y: number }>();
   private seatingIndex = -1;
   private shelterIndex = -1;
-  private shelterSearch: NearestCells|null = null;
+  private shelterSearch: NearestCells | null = null;
   private parkingIndex = -1;
   /** For every cell, the smallest parking place containing it, or -1. */
   private parkingByCell!: Int32Array;
@@ -310,7 +310,7 @@ export class FlowMovement implements MovementModel {
     this.seatingIndex = this.indexOfKind(map, 'seating');
     this.shelterIndex = this.indexOfKind(map, 'shelter');
     if (this.shelterIndex < 0) this.shelterIndex = this.indexOfKind(map, 'concourse');
-    this.shelterSearch=new NearestCells(map.places[this.shelterIndex]?.cells??[],map.width);
+    this.shelterSearch = new NearestCells(map.places[this.shelterIndex]?.cells ?? [], map.width);
     this.parkingIndex = this.indexOfKind(map, 'parking');
     // Once at spawn: scanning every parking place per released fan was too slow.
     this.parkingByCell = new Int32Array(map.cells.length).fill(-1);
@@ -403,8 +403,7 @@ export class FlowMovement implements MovementModel {
     this.buildSectors(map, seatCells, usable);
     // An even split, no slack. With 1.15 the ten large catchments filled first
     // and Gate 5 (ESE), which is nobody's nearest gate, got 52 dots all game.
-    const gateQuota =
-      this.gateIndexes.length > 0 ? Math.ceil(n / this.gateIndexes.length) : n;
+    const gateQuota = this.gateIndexes.length > 0 ? Math.ceil(n / this.gateIndexes.length) : n;
 
     for (let i = 0; i < n; i++) {
       const roll = rng.next();
@@ -669,7 +668,11 @@ export class FlowMovement implements MovementModel {
       if (target < 0) continue;
       const targetKind = map.places[target]?.kind;
       const inside = this.insideBowl(cell);
-      if (this.admitted[i] === 1 && !inside && (targetKind === 'seating' || targetKind === 'concourse' || targetKind === 'shelter')) {
+      if (
+        this.admitted[i] === 1 &&
+        !inside &&
+        (targetKind === 'seating' || targetKind === 'concourse' || targetKind === 'shelter')
+      ) {
         // A fan outside was sent back into the bowl: queue at a gate instead.
         this.returnToGate(ctx, i);
         continue;
@@ -684,7 +687,11 @@ export class FlowMovement implements MovementModel {
       }
       // An admitted fan still inside with a parking/exit/gate target is leaving;
       // retry the instant exit if the gate mouth was full last step.
-      if (this.admitted[i] === 1 && inside && (targetKind === 'parking' || targetKind === 'exit' || targetKind === 'gate')) {
+      if (
+        this.admitted[i] === 1 &&
+        inside &&
+        (targetKind === 'parking' || targetKind === 'exit' || targetKind === 'gate')
+      ) {
         this.leaveToLots(ctx, i);
         continue;
       }
@@ -718,8 +725,13 @@ export class FlowMovement implements MovementModel {
       // fan whose chosen gate was on the far side otherwise walked out the
       // nearest opening and round the outside of the stadium to reach it first —
       // 1,406 fans more than 120 m from their gate, half an hour after the game.
-      if (this.admitted[i] === 1 && map.places[target]?.kind === 'gate' && !this.insideBowl(cell) && this.parkingIndex >= 0 &&
-          this.fields.field(this.parkingIndex, true).dist[cell] !== UNREACHABLE) {
+      if (
+        this.admitted[i] === 1 &&
+        map.places[target]?.kind === 'gate' &&
+        !this.insideBowl(cell) &&
+        this.parkingIndex >= 0 &&
+        this.fields.field(this.parkingIndex, true).dist[cell] !== UNREACHABLE
+      ) {
         this.flowOut[target * FLOW_WINDOW_S + this.flowSlot]!++;
         this.retarget(ctx, i, this.parkingIndex);
         continue;
@@ -762,9 +774,7 @@ export class FlowMovement implements MovementModel {
       // table gives the same factor densityFactor() would, without Math.exp.
       // The count must come from the grid as it stands after last step's
       // update, not from `occupancy`, which this step has already changed.
-      const standing = Math.round(
-        (density.standingPerM2[cell]! * (CELL_SIZE_M * CELL_SIZE_M)) / DOT_GROUP_SIZE,
-      );
+      const standing = Math.round((density.standingPerM2[cell]! * (CELL_SIZE_M * CELL_SIZE_M)) / DOT_GROUP_SIZE);
       const stride = free * SPEED_BY_COUNT[standing < MAX_DOTS_PER_CELL ? standing : MAX_DOTS_PER_CELL]! * dt;
       const here = field.dist[cell]!;
 
@@ -803,8 +813,13 @@ export class FlowMovement implements MovementModel {
               const ay = ((cell / map.width) | 0) + dy;
               if (ax < 0 || ay < 0 || ax >= map.width || ay >= map.height) continue;
               const ahead = ay * map.width + ax;
-              if (!this.fields.passable(ahead) || this.standingAt(ahead) >= MAX_DOTS_PER_CELL ||
-                  field.dist[ahead] === UNREACHABLE || field.dist[ahead]! > here + slack) continue;
+              if (
+                !this.fields.passable(ahead) ||
+                this.standingAt(ahead) >= MAX_DOTS_PER_CELL ||
+                field.dist[ahead] === UNREACHABLE ||
+                field.dist[ahead]! > here + slack
+              )
+                continue;
             } else if (pass === 1) continue; // shuffling inside one cell is not a detour
             dots.x[i] = nx;
             dots.y[i] = ny;
@@ -846,7 +861,8 @@ export class FlowMovement implements MovementModel {
           if (!this.fields.passable(next) || this.standingAt(next) >= MAX_DOTS_PER_CELL) continue;
           if (this.unscreenedEntry(i, cell, next)) continue;
           // No squeezing diagonally between two walls.
-          if (k % 2 === 0 && (!this.fields.passable(cy * map.width + ax) || !this.fields.passable(ay * map.width + cx))) continue;
+          if (k % 2 === 0 && (!this.fields.passable(cy * map.width + ax) || !this.fields.passable(ay * map.width + cx)))
+            continue;
           const there = field.dist[next]!;
           if (there === UNREACHABLE || there >= goalDist) continue;
           goalDist = there;
@@ -950,9 +966,7 @@ export class FlowMovement implements MovementModel {
     for (let s = 1; s <= gateCount; s++) start[s] = start[s]! + start[s - 1]!;
     if (n > 1) {
       const waiting = order.subarray(0, n);
-      waiting.sort(
-        (a, b) => slotOf[a]! - slotOf[b]! || distOf[a]! - distOf[b]! || spawnOf[a]! - spawnOf[b]! || a - b,
-      );
+      waiting.sort((a, b) => slotOf[a]! - slotOf[b]! || distOf[a]! - distOf[b]! || spawnOf[a]! - spawnOf[b]! || a - b);
     }
 
     // First-come-first-served by position in the queue, not by dot index: the
@@ -1079,8 +1093,13 @@ export class FlowMovement implements MovementModel {
   private shelterCell(ctx: SimContext, i: number): number {
     if (this.shelterIndex < 0) return -1;
     const { dots } = ctx;
-    return this.shelterSearch?.nearest(dots.x[i]!/CELL_SIZE_M,dots.y[i]!/CELL_SIZE_M,
-      cell=>this.fields.passable(cell)&&this.standingAt(cell)<MAX_DOTS_PER_CELL)??-1;
+    return (
+      this.shelterSearch?.nearest(
+        dots.x[i]! / CELL_SIZE_M,
+        dots.y[i]! / CELL_SIZE_M,
+        (cell) => this.fields.passable(cell) && this.standingAt(cell) < MAX_DOTS_PER_CELL,
+      ) ?? -1
+    );
   }
 
   /** Put an admitted fan in shelter immediately, respecting the reserved capacity. */
@@ -1104,10 +1123,7 @@ export class FlowMovement implements MovementModel {
     const place = ctx.map.places[gate];
     if (!place) return -1;
     const roomy = (cell: number) =>
-      cell >= 0 &&
-      !this.insideBowl(cell) &&
-      this.fields.passable(cell) &&
-      this.standingAt(cell) < MAX_DOTS_PER_CELL;
+      cell >= 0 && !this.insideBowl(cell) && this.fields.passable(cell) && this.standingAt(cell) < MAX_DOTS_PER_CELL;
     for (const cell of place.cells) if (roomy(cell)) return cell;
     for (const cell of place.cells) {
       const cx = cell % ctx.map.width;
@@ -1464,8 +1480,11 @@ export class FlowMovement implements MovementModel {
     const cell = this.cellOf(ctx, i);
     if (cell < 0) return -1;
     // A corridor walk cell with no exterior route counts as inside.
-    const inside = this.insideBowl(cell) || (this.admitted[i] === 1 && this.parkingIndex >= 0 &&
-      this.fields.field(this.parkingIndex, true).dist[cell] === UNREACHABLE);
+    const inside =
+      this.insideBowl(cell) ||
+      (this.admitted[i] === 1 &&
+        this.parkingIndex >= 0 &&
+        this.fields.field(this.parkingIndex, true).dist[cell] === UNREACHABLE);
     let best = -1;
     let bestDist = UNREACHABLE;
     for (const index of candidates) {
@@ -1629,17 +1648,25 @@ export class FlowMovement implements MovementModel {
       case 'officer_instruction':
         if (option === 'follow' && ctx.officerRelief?.size) {
           const cell = this.cellOf(ctx, dot);
-          let directive = -1, closest = Infinity;
+          let directive = -1,
+            closest = Infinity;
           for (const officer of ctx.officers) {
             const gate = ctx.officerRelief.get(officer.id);
             if (gate === undefined || !this.isOpen(ctx, gate)) continue;
-            const dx = officer.cell % ctx.map.width - cell % ctx.map.width;
+            const dx = (officer.cell % ctx.map.width) - (cell % ctx.map.width);
             const dy = Math.floor(officer.cell / ctx.map.width) - Math.floor(cell / ctx.map.width);
             if (Math.abs(dx) > officer.radiusCells || Math.abs(dy) > officer.radiusCells) continue;
-            if (dx * dx + dy * dy < closest) {closest = dx * dx + dy * dy; directive = gate;}
+            if (dx * dx + dy * dy < closest) {
+              closest = dx * dx + dy * dy;
+              directive = gate;
+            }
           }
-          if (directive >= 0 && this.admitted[dot] !== 1 && !this.returningToCar[dot] &&
-              this.fields.field(directive, true).dist[cell] !== UNREACHABLE) {
+          if (
+            directive >= 0 &&
+            this.admitted[dot] !== 1 &&
+            !this.returningToCar[dot] &&
+            this.fields.field(directive, true).dist[cell] !== UNREACHABLE
+          ) {
             if (directive !== dots.targetPlace[dot]) {
               this.retarget(ctx, dot, directive);
               return;

@@ -1,4 +1,10 @@
-export { makeTestMap, TEST_GATE_XS, TEST_GATE_THROUGHPUT_PER_MIN, TEST_MAP_WIDTH, TEST_MAP_HEIGHT } from './test-map.ts';
+export {
+  makeTestMap,
+  TEST_GATE_XS,
+  TEST_GATE_THROUGHPUT_PER_MIN,
+  TEST_MAP_WIDTH,
+  TEST_MAP_HEIGHT,
+} from './test-map.ts';
 export {
   CLEAR_DENSITY,
   GAME_END_S,

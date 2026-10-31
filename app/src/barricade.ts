@@ -33,7 +33,11 @@ function nearestRoad(map: MapBundle, cell: number): number {
 }
 
 /** A pedestrian-only fence along a walkable stretch, starting at the clicked cell. */
-export function fenceAt(map: MapBundle, cell: number, reachM = 20): { closableId: string; name: string; cells: number[]; existing: false } | null {
+export function fenceAt(
+  map: MapBundle,
+  cell: number,
+  reachM = 20,
+): { closableId: string; name: string; cells: number[]; existing: false } | null {
   if (!Number.isInteger(cell) || cell < 0 || cell >= map.width * map.height || map.cells[cell] !== 'walk') return null;
   const cells = [cell];
   const seen = new Set([cell]);
@@ -41,18 +45,23 @@ export function fenceAt(map: MapBundle, cell: number, reachM = 20): { closableId
     const at = cells[head]!;
     const cx = at % map.width;
     const cy = Math.floor(at / map.width);
-    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+    for (const [dx, dy] of [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ]) {
       const x = cx + dx;
       const y = cy + dy;
       if (x < 0 || y < 0 || x >= map.width || y >= map.height) continue;
       const next = y * map.width + x;
       if (seen.has(next) || map.cells[next] !== 'walk') continue;
-      if (Math.hypot(x - cell % map.width, y - Math.floor(cell / map.width)) * CELL_SIZE_M > reachM) continue;
+      if (Math.hypot(x - (cell % map.width), y - Math.floor(cell / map.width)) * CELL_SIZE_M > reachM) continue;
       seen.add(next);
       cells.push(next);
     }
   }
-  return {closableId:`fence-${cell}`, name:'Pedestrian fence', cells, existing:false};
+  return { closableId: `fence-${cell}`, name: 'Pedestrian fence', cells, existing: false };
 }
 
 export function barricadeAt(
@@ -69,7 +78,8 @@ export function barricadeAt(
   cell = nearestRoad(map, cell);
   if (cell < 0) return null;
   const existing = map.closables.find((c) => c.cells.includes(cell) && !isGateDoor(map, c));
-  if (existing && !newGeometry) return { closableId: existing.id, name: existing.name, cells: [...existing.cells], existing: true };
+  if (existing && !newGeometry)
+    return { closableId: existing.id, name: existing.name, cells: [...existing.cells], existing: true };
 
   // Four-way steps cannot jump diagonally across a pavement corner, and each
   // BFS level costs exactly CELL_SIZE_M metres along the road.
@@ -81,7 +91,12 @@ export function barricadeAt(
     if (nextDistance > reachM) continue;
     const x = at % map.width;
     const y = Math.floor(at / map.width);
-    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+    for (const [dx, dy] of [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ]) {
       const nx = x + dx;
       const ny = y + dy;
       if (nx < 0 || nx >= map.width || ny < 0 || ny >= map.height) continue;
@@ -92,7 +107,7 @@ export function barricadeAt(
     }
   }
 
-  const x = (cell % map.width + 0.5) * CELL_SIZE_M;
+  const x = ((cell % map.width) + 0.5) * CELL_SIZE_M;
   const y = (Math.floor(cell / map.width) + 0.5) * CELL_SIZE_M;
   let nearest = 10;
   let streetName = '';

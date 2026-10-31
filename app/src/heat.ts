@@ -23,11 +23,56 @@ export const HEAT_FLOOR = 0.08;
 
 export function heatBands(danger: number): HeatBand[] {
   return [
-    { id: 0, label: 'Free flow', range: `under 1 /m²`, min: HEAT_FLOOR, max: 1, rgb: [0x2e, 0xc4, 0x8a], alpha: 0.42, note: 'People walk at their own pace.' },
-    { id: 1, label: 'Busy', range: '1–2 /m²', min: 1, max: 2, rgb: [0xb6, 0xd8, 0x3c], alpha: 0.6, note: 'Walking slows; groups merge.' },
-    { id: 2, label: 'Dense', range: '2–3 /m²', min: 2, max: 3, rgb: [0xf5, 0xc5, 0x2a], alpha: 0.72, note: 'Shuffling pace, no passing.' },
-    { id: 3, label: 'Crowded', range: `3–${danger} /m²`, min: 3, max: danger, rgb: [0xff, 0x8a, 0x2b], alpha: 0.82, note: 'Contact with neighbours; hard to leave.' },
-    { id: 4, label: 'Danger', range: `${danger}+ /m²`, min: danger, max: Infinity, rgb: [0xff, 0x2d, 0x6f], alpha: 0.92, note: 'Counted as danger minutes on the scorecard.' },
+    {
+      id: 0,
+      label: 'Free flow',
+      range: `under 1 /m²`,
+      min: HEAT_FLOOR,
+      max: 1,
+      rgb: [0x2e, 0xc4, 0x8a],
+      alpha: 0.42,
+      note: 'People walk at their own pace.',
+    },
+    {
+      id: 1,
+      label: 'Busy',
+      range: '1–2 /m²',
+      min: 1,
+      max: 2,
+      rgb: [0xb6, 0xd8, 0x3c],
+      alpha: 0.6,
+      note: 'Walking slows; groups merge.',
+    },
+    {
+      id: 2,
+      label: 'Dense',
+      range: '2–3 /m²',
+      min: 2,
+      max: 3,
+      rgb: [0xf5, 0xc5, 0x2a],
+      alpha: 0.72,
+      note: 'Shuffling pace, no passing.',
+    },
+    {
+      id: 3,
+      label: 'Crowded',
+      range: `3–${danger} /m²`,
+      min: 3,
+      max: danger,
+      rgb: [0xff, 0x8a, 0x2b],
+      alpha: 0.82,
+      note: 'Contact with neighbours; hard to leave.',
+    },
+    {
+      id: 4,
+      label: 'Danger',
+      range: `${danger}+ /m²`,
+      min: danger,
+      max: Infinity,
+      rgb: [0xff, 0x2d, 0x6f],
+      alpha: 0.92,
+      note: 'Counted as danger minutes on the scorecard.',
+    },
   ];
 }
 
@@ -74,7 +119,13 @@ export interface Hotspot {
  * little forgiving: two patches one cell apart are the same queue, so cells of
  * this band OR denser are joined (a danger core sits inside a crowded ring).
  */
-export function hotspots(peoplePerM2: Float32Array, map: MapBundle, band: HeatBand, places: PlaceIndex, limit = 5): Hotspot[] {
+export function hotspots(
+  peoplePerM2: Float32Array,
+  map: MapBundle,
+  band: HeatBand,
+  places: PlaceIndex,
+  limit = 5,
+): Hotspot[] {
   const { width: W, height: H } = map;
   const seen = new Uint8Array(W * H);
   const inBand = (v: number) => v >= band.min;
@@ -83,7 +134,16 @@ export function hotspots(peoplePerM2: Float32Array, map: MapBundle, band: HeatBa
   const area = CELL_SIZE_M * CELL_SIZE_M;
   for (let start = 0; start < peoplePerM2.length; start++) {
     if (seen[start] || !inBand(peoplePerM2[start]!)) continue;
-    let x0 = W, y0 = H, x1 = 0, y1 = 0, cells = 0, people = 0, peak = 0, sx = 0, sy = 0, count = 0;
+    let x0 = W,
+      y0 = H,
+      x1 = 0,
+      y1 = 0,
+      cells = 0,
+      people = 0,
+      peak = 0,
+      sx = 0,
+      sy = 0,
+      count = 0;
     stack.push(start);
     seen[start] = 1;
     while (stack.length) {

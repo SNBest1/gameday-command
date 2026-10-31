@@ -67,7 +67,9 @@ export function PlanEditor({ plan, map, disabled, onChange }: PlanEditorProps) {
           <label className="step-on">
             <input type="checkbox" checked={!disabled.has(index)} onChange={() => toggle(index)} />
           </label>
-          <span className="step-what" title={describeAction(action, map)}>{describeAction(action, map)}</span>
+          <span className="step-what" title={describeAction(action, map)}>
+            {describeAction(action, map)}
+          </span>
           <label className="step-at">
             <input
               type="number"
@@ -99,7 +101,9 @@ export function PlanEditor({ plan, map, disabled, onChange }: PlanEditorProps) {
                 max={100}
                 value={Math.round(action.reachShare * 100)}
                 onChange={(e) =>
-                  update(index, { reachShare: Math.min(1, Math.max(0, Number(e.target.value) / 100)) } as Partial<PlanAction>)
+                  update(index, {
+                    reachShare: Math.min(1, Math.max(0, Number(e.target.value) / 100)),
+                  } as Partial<PlanAction>)
                 }
               />
               %
@@ -112,7 +116,11 @@ export function PlanEditor({ plan, map, disabled, onChange }: PlanEditorProps) {
       ))}
       {plan.actions.length === 0 && <p className="muted">This plan does nothing — a useful baseline.</p>}
       {map && (
-        <StepAdder map={map} maxOfficers={plan.officersAvailable} onAdd={(step) => onChange({ ...plan, actions: [...plan.actions, step] }, disabled)} />
+        <StepAdder
+          map={map}
+          maxOfficers={plan.officersAvailable}
+          onAdd={(step) => onChange({ ...plan, actions: [...plan.actions, step] }, disabled)}
+        />
       )}
     </div>
   );

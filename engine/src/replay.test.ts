@@ -40,7 +40,7 @@ function stubKev(): { fetchImpl: typeof fetch; calls: () => number } {
       const options = DECISION_DEFAULTS.situations.find((s) => s.id === ask.situation)!.options;
       let hash = 2166136261;
       for (let i = 0; i < ask.key.length; i++) {
-        hash = (Math.imul(hash ^ ask.key.charCodeAt(i), 16777619) >>> 0);
+        hash = Math.imul(hash ^ ask.key.charCodeAt(i), 16777619) >>> 0;
       }
       const weights = options.map((_, i) => ((hash >>> (i * 4)) & 7) + 1);
       const total = weights.reduce((a, b) => a + b, 0);

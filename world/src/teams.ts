@@ -86,7 +86,12 @@ const TEAMS: Entry[] = [
   [/allianz arena|bayern/i, 'Bayern Munich', '#dc052d', '#0066b2'],
 ];
 
-export const OHIO_THEME: StadiumTheme = { team: 'Ohio State Buckeyes', primary: '#bb0000', secondary: '#666666', source: 'built in' };
+export const OHIO_THEME: StadiumTheme = {
+  team: 'Ohio State Buckeyes',
+  primary: '#bb0000',
+  secondary: '#666666',
+  source: 'built in',
+};
 
 /** A stable, distinct colour pair from a name, for stadiums the table does not know. */
 function hashTheme(name: string): StadiumTheme {
@@ -98,11 +103,18 @@ function hashTheme(name: string): StadiumTheme {
     const f = (n: number) => {
       const k = (n + hh / 30) % 12;
       const c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-      return Math.round(c * 255).toString(16).padStart(2, '0');
+      return Math.round(c * 255)
+        .toString(16)
+        .padStart(2, '0');
     };
     return `#${f(0)}${f(8)}${f(4)}`;
   };
-  return { team: name, primary: hsl(hue, 0.65, 0.38), secondary: hsl((hue + 150) % 360, 0.7, 0.55), source: 'generated from the name (team colours not known)' };
+  return {
+    team: name,
+    primary: hsl(hue, 0.65, 0.38),
+    secondary: hsl((hue + 150) % 360, 0.7, 0.55),
+    source: 'generated from the name (team colours not known)',
+  };
 }
 
 /**

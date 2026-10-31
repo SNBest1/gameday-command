@@ -14,8 +14,17 @@ import { VEHICLE_TYPES } from '../../world/src/vehicles.ts';
 
 /** Real-world paint mix: mostly white, black, grey and silver, and some Buckeye scarlet. */
 const PAINT: [string, number][] = [
-  ['#eef1f4', 22], ['#2a2f37', 18], ['#7c848e', 16], ['#b9c0c9', 14], ['#2f5fa8', 9],
-  ['#b5322b', 7], ['#bb0000', 5], ['#3e6e57', 3], ['#c8b48d', 3], ['#5b3d7a', 1], ['#e07b2a', 2],
+  ['#eef1f4', 22],
+  ['#2a2f37', 18],
+  ['#7c848e', 16],
+  ['#b9c0c9', 14],
+  ['#2f5fa8', 9],
+  ['#b5322b', 7],
+  ['#bb0000', 5],
+  ['#3e6e57', 3],
+  ['#c8b48d', 3],
+  ['#5b3d7a', 1],
+  ['#e07b2a', 2],
 ];
 const PAINT_TOTAL = PAINT.reduce((s, [, w]) => s + w, 0);
 
@@ -102,10 +111,13 @@ function car(ctx: CanvasRenderingContext2D, kind: VehicleKind, L: number, W: num
 
   // Cabin proportions differ by body style.
   const cabin =
-    kind === 'suv' ? { back: -0.4, roofFront: 0.1, glassFront: 0.24 } :
-    kind === 'minivan' ? { back: -0.44, roofFront: 0.14, glassFront: 0.3 } :
-    kind === 'compact' ? { back: -0.28, roofFront: 0.1, glassFront: 0.24 } :
-    { back: -0.3, roofFront: 0.08, glassFront: 0.24 };
+    kind === 'suv'
+      ? { back: -0.4, roofFront: 0.1, glassFront: 0.24 }
+      : kind === 'minivan'
+        ? { back: -0.44, roofFront: 0.14, glassFront: 0.3 }
+        : kind === 'compact'
+          ? { back: -0.28, roofFront: 0.1, glassFront: 0.24 }
+          : { back: -0.3, roofFront: 0.08, glassFront: 0.24 };
   const half = W * 0.4;
   // Rear window, roof, windshield.
   glassBand(ctx, L * (cabin.back - 0.08), L * cabin.back, half * 0.86, half);
@@ -264,7 +276,8 @@ export function drawVehicle(ctx: CanvasRenderingContext2D, { kind, index, look, 
 
   if (lengthPx < 4.5) {
     // Too small for anything but its colour, and red tail if braking.
-    ctx.fillStyle = kind === 'police' ? '#5d8bff' : kind === 'ambulance' ? '#ffffff' : kind === 'bus' ? '#e8e8e6' : paint;
+    ctx.fillStyle =
+      kind === 'police' ? '#5d8bff' : kind === 'ambulance' ? '#ffffff' : kind === 'bus' ? '#e8e8e6' : paint;
     ctx.fillRect(-L / 2, -W / 2, L, W);
     if (look.braking && lengthPx > 2.2) {
       ctx.fillStyle = '#ff3030';
@@ -297,7 +310,12 @@ export function drawVehicle(ctx: CanvasRenderingContext2D, { kind, index, look, 
     ctx.fillRect(-L / 2 - 0.9, -W / 2, 0.9, W);
   }
   if (look.flashing) {
-    const colour = look.flashPhase < 0.5 ? 'rgba(255,40,40,0.32)' : kind === 'police' ? 'rgba(50,110,255,0.32)' : 'rgba(255,255,255,0.28)';
+    const colour =
+      look.flashPhase < 0.5
+        ? 'rgba(255,40,40,0.32)'
+        : kind === 'police'
+          ? 'rgba(50,110,255,0.32)'
+          : 'rgba(255,255,255,0.28)';
     const g = ctx.createRadialGradient(0, 0, 0.5, 0, 0, 9);
     g.addColorStop(0, colour);
     g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -307,7 +325,16 @@ export function drawVehicle(ctx: CanvasRenderingContext2D, { kind, index, look, 
 
   if (lengthPx < 14) {
     // Mid zoom: body, windshield, tails.
-    const body = kind === 'police' ? '#1d222a' : kind === 'ambulance' ? '#f4f5f2' : kind === 'bus' ? '#e8e8e6' : kind === 'rv' ? '#ece4d3' : paint;
+    const body =
+      kind === 'police'
+        ? '#1d222a'
+        : kind === 'ambulance'
+          ? '#f4f5f2'
+          : kind === 'bus'
+            ? '#e8e8e6'
+            : kind === 'rv'
+              ? '#ece4d3'
+              : paint;
     rr(ctx, -L / 2, -W / 2, L, W, 0.5);
     ctx.fillStyle = body;
     ctx.fill();
@@ -317,7 +344,8 @@ export function drawVehicle(ctx: CanvasRenderingContext2D, { kind, index, look, 
       ctx.fillStyle = '#23282f';
       ctx.fillRect(-L / 2 + 0.2, -W / 2 + 0.25, L * 0.38, W - 0.5);
     }
-    if (kind === 'police' || kind === 'ambulance') lightBar(ctx, 0, W, look, kind === 'police' ? ['#ff2a2a', '#2a6bff'] : ['#ff2a2a', '#ffffff']);
+    if (kind === 'police' || kind === 'ambulance')
+      lightBar(ctx, 0, W, look, kind === 'police' ? ['#ff2a2a', '#2a6bff'] : ['#ff2a2a', '#ffffff']);
     ctx.fillStyle = look.braking ? '#ff3030' : '#7d1d1d';
     ctx.fillRect(-L / 2, -W / 2 + 0.1, 0.2, W - 0.2);
     return;
@@ -362,7 +390,13 @@ export function vehicleIcon(kind: VehicleKind, canvas: HTMLCanvasElement, index 
   drawVehicle(ctx, {
     kind,
     index,
-    scale: scale / dpr * 4,
-    look: { braking: false, beams: false, flashing: kind === 'police' || kind === 'ambulance', flashPhase: 0.2, parked: false },
+    scale: (scale / dpr) * 4,
+    look: {
+      braking: false,
+      beams: false,
+      flashing: kind === 'police' || kind === 'ambulance',
+      flashPhase: 0.2,
+      parked: false,
+    },
   });
 }

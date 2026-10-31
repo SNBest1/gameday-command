@@ -16,7 +16,8 @@ describe('decision cache version', () => {
     const path = join(dir, 'gameday.db');
 
     const old = openDb(path);
-    old.prepare('insert or replace into decision_cache (key, odds, model, ms, created_at) values (?, ?, ?, ?, ?)')
+    old
+      .prepare('insert or replace into decision_cache (key, odds, model, ms, created_at) values (?, ?, ?, ?, ?)')
       .run('stale-key', '{"follow":1,"ignore":0}', 'kev-4b', 200, 0);
     old.exec('PRAGMA user_version = 0');
     old.close();
@@ -35,7 +36,8 @@ describe('decision cache version', () => {
     const path = join(dir, 'gameday.db');
 
     const first = openDb(path);
-    first.prepare('insert or replace into decision_cache (key, odds, model, ms, created_at) values (?, ?, ?, ?, ?)')
+    first
+      .prepare('insert or replace into decision_cache (key, odds, model, ms, created_at) values (?, ?, ?, ?, ?)')
       .run('fresh-key', '{"follow":1,"ignore":0}', 'kev-4b', 200, 0);
     first.close();
 

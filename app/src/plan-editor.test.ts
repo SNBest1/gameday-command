@@ -29,7 +29,9 @@ describe('plan editor', () => {
     expect(describeAction(actions[2]!)).toBe('Send 6 officers to gate-1');
     expect(describeAction(actions[4]!)).toBe('PA announcement aimed at 70% of fans in range');
     // With the map, ids become the names a commander reads.
-    expect(describeAction({ at: 0, type: 'send_officers', count: 6, toPlaceId: 'test-gate-a' }, map)).toBe('Send 6 officers to Gate 1');
+    expect(describeAction({ at: 0, type: 'send_officers', count: 6, toPlaceId: 'test-gate-a' }, map)).toBe(
+      'Send 6 officers to Gate 1',
+    );
     expect(describeAction({ at: 0, type: 'close', closableId: 'test-gate-a-door' }, map)).toBe('Close Gate 1');
   });
 
@@ -58,7 +60,9 @@ describe('plan editor', () => {
         { at: 30, type: 'alert', channel: 'pa', message: 'Use Gate 2.', reachShare: 0.7 },
       ],
     };
-    const html = renderToStaticMarkup(createElement(PlanEditor, { plan, map, disabled: new Set<number>(), onChange: () => {} }));
+    const html = renderToStaticMarkup(
+      createElement(PlanEditor, { plan, map, disabled: new Set<number>(), onChange: () => {} }),
+    );
     expect(html).toContain('min after the incident');
     expect(html).not.toContain('min in');
     // the officer stepper's own label, not the "Send 6 officers" description
@@ -96,7 +100,10 @@ describe('what the app offers the commander', () => {
       const plans: ResponsePlan[] = playbookFor(incident.kind, map);
       expect(plans.length, incident.kind).toBeGreaterThanOrEqual(3);
       // editable means there is something to edit
-      expect(plans.every((p) => p.actions.length > 0), incident.kind).toBe(true);
+      expect(
+        plans.every((p) => p.actions.length > 0),
+        incident.kind,
+      ).toBe(true);
     }
   });
 

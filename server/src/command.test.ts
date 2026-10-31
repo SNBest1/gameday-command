@@ -10,7 +10,11 @@ const post = (app: ReturnType<typeof createApp>, path: string, body: unknown) =>
 describe('command routes', () => {
   it('averages history per gate and minute across runs', async () => {
     const app = createApp(openDb(':memory:'));
-    await post(app, '/api/history', { mapId: 'm', runId: 'r1', samples: [{ kind: 'gate_waiting', subject: 'gate-1', minute: -10, value: 400 }] });
+    await post(app, '/api/history', {
+      mapId: 'm',
+      runId: 'r1',
+      samples: [{ kind: 'gate_waiting', subject: 'gate-1', minute: -10, value: 400 }],
+    });
     await post(app, '/api/history', {
       mapId: 'm',
       runId: 'r2',
@@ -19,7 +23,10 @@ describe('command routes', () => {
         { kind: 'nonsense', subject: 'x', minute: 0, value: 1 },
       ],
     });
-    const res = (await (await app.request('/api/history?map=m')).json()) as { runs: number; samples: { subject: string; mean: number; n: number }[] };
+    const res = (await (await app.request('/api/history?map=m')).json()) as {
+      runs: number;
+      samples: { subject: string; mean: number; n: number }[];
+    };
     expect(res.runs).toBe(2);
     expect(res.samples).toEqual([{ kind: 'gate_waiting', subject: 'gate-1', minute: -10, mean: 600, n: 2 }]);
   });
@@ -51,7 +58,17 @@ describe('conditions feed format', () => {
   const gate = map.places.find((p) => p.kind === 'gate')!;
 
   it('reads JSON by gate name, ignoring a "(N)" suffix and case', () => {
-    const c = parseConditions(JSON.stringify({ source: 'Gate scans', at: '2026-10-24T15:00:00Z', gates: [{ gate: gate.name.toUpperCase(), waiting: 1400 }, { gate: 'Gate 99', waiting: 5 }] }), map);
+    const c = parseConditions(
+      JSON.stringify({
+        source: 'Gate scans',
+        at: '2026-10-24T15:00:00Z',
+        gates: [
+          { gate: gate.name.toUpperCase(), waiting: 1400 },
+          { gate: 'Gate 99', waiting: 5 },
+        ],
+      }),
+      map,
+    );
     expect(c.source).toBe('Gate scans');
     expect(c.gates.get(gate.id)).toBe(1400);
     expect(c.unmatched).toEqual(['gate Gate 99']);
@@ -64,7 +81,10 @@ describe('conditions feed format', () => {
   });
 
   it('reads CSV lines and reports what it could not match', () => {
-    const c = parseConditions(`kind,name,value\ngate,${gate.name},250\nstreet,Nowhere Road,4\ngate,${gate.name},oops`, map);
+    const c = parseConditions(
+      `kind,name,value\ngate,${gate.name},250\nstreet,Nowhere Road,4\ngate,${gate.name},oops`,
+      map,
+    );
     expect(c.gates.get(gate.id)).toBe(250);
     expect(c.unmatched).toHaveLength(2);
   });

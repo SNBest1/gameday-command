@@ -20,7 +20,9 @@ const map: MapBundle = {
 const places = { describe: (cell: number) => `cell ${cell}` };
 const S = (name: (typeof VEHICLE_STATES)[number]) => VEHICLE_STATES.indexOf(name);
 
-function vehicles(list: { x: number; y: number; speed: number; state: (typeof VEHICLE_STATES)[number] }[]): VehicleFrame {
+function vehicles(
+  list: { x: number; y: number; speed: number; state: (typeof VEHICLE_STATES)[number] }[],
+): VehicleFrame {
   return {
     x: Float32Array.from(list.map((v) => v.x)),
     y: Float32Array.from(list.map((v) => v.y)),
@@ -41,11 +43,14 @@ describe('congestion', () => {
   });
 
   it('paints moving vehicles onto the road and ignores parked ones', () => {
-    const flow = trafficFlow(map, vehicles([
-      { x: 60, y: 60, speed: 12, state: 'driving' },
-      { x: 90, y: 90, speed: 0, state: 'stopped' },
-      { x: 100, y: 30, speed: 0, state: 'parked' },
-    ]));
+    const flow = trafficFlow(
+      map,
+      vehicles([
+        { x: 60, y: 60, speed: 12, state: 'driving' },
+        { x: 90, y: 90, speed: 0, state: 'stopped' },
+        { x: 100, y: 30, speed: 0, state: 'parked' },
+      ]),
+    );
     expect(flow[30 * W + 30]).toBe(FLOW_FREE);
     expect(flow[45 * W + 45]).toBe(FLOW_JAM);
     expect(flow[15 * W + 50]).toBe(0);
@@ -57,7 +62,9 @@ describe('congestion', () => {
     for (let y = 0; y < 20; y++) for (let x = 0; x < 10; x++) density[y * W + x] = 5;
     // A packed standing crowd on the street.
     for (let y = 40; y < 46; y++) for (let x = 40; x < 50; x++) density[y * W + x] = 4.5;
-    const jam = vehicles(Array.from({ length: 6 }, (_, i) => ({ x: 30 + i * 6, y: 20, speed: 0, state: 'stopped' as const })));
+    const jam = vehicles(
+      Array.from({ length: 6 }, (_, i) => ({ x: 30 + i * 6, y: 20, speed: 0, state: 'stopped' as const })),
+    );
     const spots = policeHotspots(map, density, jam, places, 4);
     expect(spots.length).toBe(2);
     expect(spots[0]!.kind).toBe('crowd');

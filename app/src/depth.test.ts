@@ -7,7 +7,11 @@ describe('close-up ground depth', () => {
   });
 
   it('keeps every point in a cell after its top and before the next diagonal', () => {
-    for (const [u, v] of [[0, 0], [3, 5], [799, 799]]) {
+    for (const [u, v] of [
+      [0, 0],
+      [3, 5],
+      [799, 799],
+    ]) {
       for (const dx of [0, 0.01, 1, 1.999999]) {
         for (const dy of [0, 0.01, 1, 1.999999]) {
           const z = personZ(u * 2 + dx, v * 2 + dy);
@@ -24,8 +28,13 @@ describe('close-up ground depth', () => {
   });
 
   it.each([
-    [0, 13], [Math.PI / 2, 13], [Math.PI, 13], [-Math.PI / 2, 13],
-    [Math.PI / 4, 12], [-Math.PI / 4, 11], [3 * Math.PI / 4, 11],
+    [0, 13],
+    [Math.PI / 2, 13],
+    [Math.PI, 13],
+    [-Math.PI / 2, 13],
+    [Math.PI / 4, 12],
+    [-Math.PI / 4, 11],
+    [(3 * Math.PI) / 4, 11],
   ])('uses the front-most footprint corner at heading %s', (heading, expected) => {
     expect(vehicleDiagonal(10, 10, heading, 8, 4)).toBe(expected);
     expect(vehicleDiagonal(10, 10, heading, 8, 4)).toBeGreaterThanOrEqual(10);
@@ -39,7 +48,13 @@ describe('close-up ground depth', () => {
     const height = new Float32Array([0, 0, 0, 0, 15, 0, 0, 0, 0]);
     expect(heightAt(height, 3, 3, 2, 2)).toBe(15);
     expect(heightAt(height, 3, 3, 3.99, 3.99)).toBe(15);
-    for (const [x, y] of [[0, 0], [-0.1, 2], [2, -0.1], [6, 0], [0, 6]]) {
+    for (const [x, y] of [
+      [0, 0],
+      [-0.1, 2],
+      [2, -0.1],
+      [6, 0],
+      [0, 6],
+    ]) {
       expect(heightAt(height, 3, 3, x, y)).toBe(0);
     }
   });

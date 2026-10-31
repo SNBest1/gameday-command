@@ -114,25 +114,37 @@ describe('POST /decide', () => {
   });
 
   it('falls back when the odds do not add up to 1', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => kevReply({ hold_place: 0.9, try_other_gate: 0.9, back_off: 0.9 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => kevReply({ hold_place: 0.9, try_other_gate: 0.9, back_off: 0.9 })),
+    );
     const [answer] = await decide();
     expect(answer!.source).toBe('default');
   });
 
   it('falls back when Kev names an option that does not exist', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => kevReply({ sprint_the_fence: 1.0 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => kevReply({ sprint_the_fence: 1.0 })),
+    );
     const [answer] = await decide();
     expect(answer!.source).toBe('default');
   });
 
   it('falls back when Kev answers a different question type', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => kevJunk({ answers: { decision: { type: 'noul', noul: 0.7 } } })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => kevJunk({ answers: { decision: { type: 'noul', noul: 0.7 } } })),
+    );
     const [answer] = await decide();
     expect(answer!.source).toBe('default');
   });
 
   it('falls back when the answer carries no probabilities at all', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => kevJunk({ answers: {} })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => kevJunk({ answers: {} })),
+    );
     const [answer] = await decide();
     expect(answer!.source).toBe('default');
   });
@@ -140,21 +152,22 @@ describe('POST /decide', () => {
   it('falls back when Kev takes longer than the contract allows', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn((_url: string | URL | Request, init?: RequestInit) =>
-        new Promise<Response>((resolve, reject) => {
-          // Far slower than the contract allows, so "it gave up" and "it waited
-          // for the answer" are a long way apart. They used to be 100 ms apart,
-          // which a loaded machine's timer jitter could close, making this test
-          // fail for reasons that had nothing to do with the code.
-          const timer = setTimeout(
-            () => resolve(kevReply({ hold_place: 0.5, try_other_gate: 0.3, back_off: 0.2 })),
-            SLOW_ANSWER_MS,
-          );
-          init?.signal?.addEventListener('abort', () => {
-            clearTimeout(timer);
-            reject(new Error('aborted'));
-          });
-        }),
+      vi.fn(
+        (_url: string | URL | Request, init?: RequestInit) =>
+          new Promise<Response>((resolve, reject) => {
+            // Far slower than the contract allows, so "it gave up" and "it waited
+            // for the answer" are a long way apart. They used to be 100 ms apart,
+            // which a loaded machine's timer jitter could close, making this test
+            // fail for reasons that had nothing to do with the code.
+            const timer = setTimeout(
+              () => resolve(kevReply({ hold_place: 0.5, try_other_gate: 0.3, back_off: 0.2 })),
+              SLOW_ANSWER_MS,
+            );
+            init?.signal?.addEventListener('abort', () => {
+              clearTimeout(timer);
+              reject(new Error('aborted'));
+            });
+          }),
       ),
     );
     const started = Date.now();
@@ -168,7 +181,10 @@ describe('POST /decide', () => {
   }, 20_000);
 
   it('never caches a bad answer', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => kevReply({ hold_place: 2 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => kevReply({ hold_place: 2 })),
+    );
     await decide();
     const row = db.prepare('select odds from decision_cache where key = ?').get(ask.key) as
       | { odds: string }

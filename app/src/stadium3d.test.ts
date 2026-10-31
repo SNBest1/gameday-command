@@ -5,9 +5,16 @@ import { personZ } from './depth.ts';
 
 it('splits a bowl into increasing diagonals with seats in the same order', () => {
   const map: MapBundle = {
-    version: CONTRACT_VERSION, id: 'ring', name: 'Ring', width: 5, height: 5,
-    cells: Array.from({ length: 25 }, (_, c) => c % 5 > 0 && c % 5 < 4 && c >= 5 && c < 20 ? 'stands' : 'walk'),
-    field: [12], places: [], closables: [], sources: [],
+    version: CONTRACT_VERSION,
+    id: 'ring',
+    name: 'Ring',
+    width: 5,
+    height: 5,
+    cells: Array.from({ length: 25 }, (_, c) => (c % 5 > 0 && c % 5 < 4 && c >= 5 && c < 20 ? 'stands' : 'walk')),
+    field: [12],
+    places: [],
+    closables: [],
+    sources: [],
   };
   const bowl = buildBowl(map)!;
   expect(Array.isArray(bowl.shell)).toBe(true);

@@ -11,10 +11,32 @@ import type { WeatherState } from '../../contracts.ts';
  * like static. When the sky is clear in every panel the loop stops entirely.
  */
 
-interface Drop { x: number; y: number; len: number; speed: number }
-interface Flake { x: number; y: number; r: number; drift: number; phase: number; speed: number }
-interface Blob { x: number; y: number; r: number; speed: number }
-interface Flash { next: number; alpha: number; bolt: { x: number; y: number }[] | null; second: number }
+interface Drop {
+  x: number;
+  y: number;
+  len: number;
+  speed: number;
+}
+interface Flake {
+  x: number;
+  y: number;
+  r: number;
+  drift: number;
+  phase: number;
+  speed: number;
+}
+interface Blob {
+  x: number;
+  y: number;
+  r: number;
+  speed: number;
+}
+interface Flash {
+  next: number;
+  alpha: number;
+  bolt: { x: number; y: number }[] | null;
+  second: number;
+}
 
 interface PanelFx {
   drops: Drop[];
@@ -32,7 +54,8 @@ export interface WeatherFxProps {
   totalW: number;
 }
 
-const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const reducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 function boltPath(w: number, h: number): { x: number; y: number }[] {
   const points = [{ x: w * (0.15 + Math.random() * 0.7), y: 0 }];
@@ -91,7 +114,12 @@ export function WeatherFx({ weathers, panelW, panelH, gap, totalW }: WeatherFxPr
         const ox = index * (panelW + gap) * k;
         let fx = fxRef.current[index];
         if (!fx) {
-          fx = { drops: [], flakes: [], blobs: [], flash: { next: now + 1500 + Math.random() * 3000, alpha: 0, bolt: null, second: 0 } };
+          fx = {
+            drops: [],
+            flakes: [],
+            blobs: [],
+            flash: { next: now + 1500 + Math.random() * 3000, alpha: 0, bolt: null, second: 0 },
+          };
           fxRef.current[index] = fx;
         }
         ctx.save();
@@ -109,13 +137,21 @@ export function WeatherFx({ weathers, panelW, panelH, gap, totalW }: WeatherFxPr
 
         // Sky tint first: storms darken, snow brightens, heat warms.
         const tint =
-          w.kind === 'thunderstorm' ? `rgba(4,8,22,${0.1 + 0.12 * I})` :
-          w.kind === 'heavy_rain' ? `rgba(6,12,26,${0.07 + 0.1 * I})` :
-          w.kind === 'rain' ? `rgba(8,14,28,${0.08 + 0.1 * I})` :
-          w.kind === 'overcast' ? `rgba(12,16,24,${0.1 + 0.12 * I})` :
-          w.kind === 'snow' ? `rgba(225,235,250,${0.04 + 0.06 * I})` :
-          w.kind === 'fog' ? `rgba(196,204,212,${0.08 + 0.14 * I})` :
-          w.kind === 'heat' ? `rgba(255,120,30,${0.04 + 0.06 * I})` : null;
+          w.kind === 'thunderstorm'
+            ? `rgba(4,8,22,${0.1 + 0.12 * I})`
+            : w.kind === 'heavy_rain'
+              ? `rgba(6,12,26,${0.07 + 0.1 * I})`
+              : w.kind === 'rain'
+                ? `rgba(8,14,28,${0.08 + 0.1 * I})`
+                : w.kind === 'overcast'
+                  ? `rgba(12,16,24,${0.1 + 0.12 * I})`
+                  : w.kind === 'snow'
+                    ? `rgba(225,235,250,${0.04 + 0.06 * I})`
+                    : w.kind === 'fog'
+                      ? `rgba(196,204,212,${0.08 + 0.14 * I})`
+                      : w.kind === 'heat'
+                        ? `rgba(255,120,30,${0.04 + 0.06 * I})`
+                        : null;
         if (tint) {
           ctx.fillStyle = tint;
           ctx.fillRect(0, 0, pw, ph);
@@ -126,10 +162,15 @@ export function WeatherFx({ weathers, panelW, panelH, gap, totalW }: WeatherFxPr
           active = true;
           const want = Math.round(((pw * ph) / 3200) * (0.3 + I));
           while (fx.drops.length < want) {
-            fx.drops.push({ x: Math.random() * pw, y: Math.random() * ph, len: (6 + Math.random() * 10) * k, speed: (500 + Math.random() * 500) * k });
+            fx.drops.push({
+              x: Math.random() * pw,
+              y: Math.random() * ph,
+              len: (6 + Math.random() * 10) * k,
+              speed: (500 + Math.random() * 500) * k,
+            });
           }
           fx.drops.length = Math.min(fx.drops.length, want);
-          const dx = wx * (0.35 + gust) ;
+          const dx = wx * (0.35 + gust);
           const dy = 1 + wy * 0.2;
           const norm = Math.hypot(dx, dy) || 1;
           const ux = dx / norm;
@@ -141,7 +182,10 @@ export function WeatherFx({ weathers, panelW, panelH, gap, totalW }: WeatherFxPr
             if (!still) {
               d.x += ux * d.speed * dt;
               d.y += uy * d.speed * dt;
-              if (d.y > ph + 20) { d.y = -20; d.x = Math.random() * pw; }
+              if (d.y > ph + 20) {
+                d.y = -20;
+                d.x = Math.random() * pw;
+              }
               if (d.x > pw + 20) d.x = -20;
               if (d.x < -20) d.x = pw + 20;
             }
@@ -168,7 +212,14 @@ export function WeatherFx({ weathers, panelW, panelH, gap, totalW }: WeatherFxPr
           active = true;
           const want = Math.round(((pw * ph) / 4200) * (0.3 + I));
           while (fx.flakes.length < want) {
-            fx.flakes.push({ x: Math.random() * pw, y: Math.random() * ph, r: (0.8 + Math.random() * 1.6) * k, drift: Math.random() * 2 - 1, phase: Math.random() * 6, speed: (25 + Math.random() * 45) * k });
+            fx.flakes.push({
+              x: Math.random() * pw,
+              y: Math.random() * ph,
+              r: (0.8 + Math.random() * 1.6) * k,
+              drift: Math.random() * 2 - 1,
+              phase: Math.random() * 6,
+              speed: (25 + Math.random() * 45) * k,
+            });
           }
           fx.flakes.length = Math.min(fx.flakes.length, want);
           ctx.fillStyle = 'rgba(245,248,255,0.7)';
@@ -178,7 +229,10 @@ export function WeatherFx({ weathers, panelW, panelH, gap, totalW }: WeatherFxPr
               f.phase += dt * 1.5;
               f.x += (wx * 30 * gust * k + Math.sin(f.phase) * 12 * k * f.drift) * dt;
               f.y += f.speed * dt;
-              if (f.y > ph + 5) { f.y = -5; f.x = Math.random() * pw; }
+              if (f.y > ph + 5) {
+                f.y = -5;
+                f.x = Math.random() * pw;
+              }
               if (f.x > pw + 5) f.x = -5;
               if (f.x < -5) f.x = pw + 5;
             }
@@ -191,7 +245,12 @@ export function WeatherFx({ weathers, panelW, panelH, gap, totalW }: WeatherFxPr
         if (w.kind === 'fog') {
           active = true;
           while (fx.blobs.length < 9) {
-            fx.blobs.push({ x: Math.random() * pw, y: Math.random() * ph, r: (120 + Math.random() * 180) * k, speed: (4 + Math.random() * 8) * k });
+            fx.blobs.push({
+              x: Math.random() * pw,
+              y: Math.random() * ph,
+              r: (120 + Math.random() * 180) * k,
+              speed: (4 + Math.random() * 8) * k,
+            });
           }
           for (const b of fx.blobs) {
             if (!still) {
