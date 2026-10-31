@@ -1,5 +1,5 @@
 import { Roadblocks } from './Roadblocks.tsx';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   Briefing,
   DecisionDefaults,
@@ -36,6 +36,7 @@ import {
 import { getBriefing, getDecisionDefaults, getMap, saveComparison } from './api.ts';
 import { markSignedIn, signedInThisSession } from './session.ts';
 import { pitchFor } from './pitch.ts';
+import { Info } from './Info.tsx';
 import { ComparisonMaps, type FocusBox, type MapPick } from './ComparisonMaps.tsx';
 import { CrowdView } from './CrowdView.tsx';
 import { Inspector, type EditRequest } from './Inspector.tsx';
@@ -100,15 +101,6 @@ interface Loaded {
 interface PlanState {
   plan: ResponsePlan;
   disabled: Set<number>;
-}
-
-/** A "?" that explains a number in plain words on hover or tap. */
-function Info({ children }: { children: ReactNode }) {
-  return (
-    <span className="info" tabIndex={0}>
-      ?<span className="info-pop">{children}</span>
-    </span>
-  );
 }
 
 /** A, B and C in one table: live while they run, results once all three finish. */
