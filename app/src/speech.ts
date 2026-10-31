@@ -1,11 +1,13 @@
 /**
- * Speech to text for the command box's mic button, through the browser's own
- * recogniser (the Web Speech API). In Chrome the audio goes to Google's speech
- * service, so it needs a connection; Safari uses Apple's. Everything after the
- * words come back (matching, confirming, read-back) stays in the app. A local
- * model (Whisper in the browser) can replace this file without touching the
- * rest: it only has to call `onWords` and `onEnd` the same way.
+ * Speech to text for the command box's mic button. The browser's own
+ * recogniser (Web Speech API) is the default; when the server reports a
+ * configured speech-to-text service, recorded audio goes through that instead.
+ * In Chrome the Web Speech API sends audio to Google, so it needs a connection;
+ * Safari uses Apple's. Everything after the words come back (matching,
+ * confirming, read-back) stays in the app.
  */
+import { getSpeechConfig } from './api.ts';
+import { listenRecorded } from './speech-recorded.ts';
 
 interface RecognitionResult {
   isFinal: boolean;
@@ -34,7 +36,25 @@ function recognitionCtor(): RecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-export const speechSupported = () => recognitionCtor() !== null;
+let recorded = false;
+let configPromise: Promise<void> | null = null;
+
+/** Load the server's speech config once per page. */
+export function speechConfigReady(): Promise<void> {
+  if (!configPromise) {
+    configPromise = getSpeechConfig()
+      .then((config) => {
+        recorded = config.stt;
+      })
+      .catch(() => {
+        recorded = false;
+      });
+  }
+  return configPromise;
+}
+void speechConfigReady();
+
+export const speechSupported = () => recorded || recognitionCtor() !== null;
 
 /**
  * A sentence for the commander for each way listening can fail. Brave ships the
@@ -70,6 +90,14 @@ export interface Listening {
  * speaker stops); `onEnd` runs once, with an error sentence if it failed.
  */
 export function listen(
+  onWords: (text: string, final: boolean) => void,
+  onEnd: (error: string | null) => void,
+): Listening | null {
+  if (recorded) return listenRecorded(onWords, onEnd);
+  return listenBrowser(onWords, onEnd);
+}
+
+function listenBrowser(
   onWords: (text: string, final: boolean) => void,
   onEnd: (error: string | null) => void,
 ): Listening | null {

@@ -166,7 +166,7 @@ Run the waves in this order:
   - `stop()` ends the recording, posts the blob to `/api/speech/transcribe`, then calls `onWords(text, true)` and `onEnd(null)`, or `onEnd(<sentence>)` on failure.
   - Stops by itself after 12 s.
   - Shows no interim words: the box says "Listening…" and then "Transcribing…".
-- [ ] **C2.** In `speech.ts`, choose the recogniser once per page from `GET /api/speech/config`: recorded when `stt` is true, else the Web Speech API. `speechSupported()` is true if either works. `CommandBar` keeps calling one `listen` function.
+- [x] **C2.** In `speech.ts`, choose the recogniser once per page from `GET /api/speech/config`: recorded when `stt` is true, else the Web Speech API. `speechSupported()` is true if either works. `CommandBar` keeps calling one `listen` function.
   - Push-to-talk (hold Space) maps to start on press and `stop()` on release.
   - The mic button toggles.
 
