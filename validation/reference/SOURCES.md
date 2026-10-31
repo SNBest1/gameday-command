@@ -50,7 +50,7 @@ the paper supplies the position.
 
 For each run:
 
-1. Build each person’s trajectory from `ID, time, X, Y`, with time `s:frame` at 25 fps.
+1. Build each person's trajectory from `ID, time, X, Y`, with time `s:frame` at 25 fps.
 2. Interpolate the crossing time linearly between the last sample above the line and
    the first sample at or below it. Sort the crossings by time; let `N` be the number
    of crossings.
@@ -58,11 +58,11 @@ For each run:
 4. `J = ((N-k) - (k+1)) / (t[N-k] - t[k+1])` — intervals divided by time, not people
    divided by time. For N=20, k=2, so this uses crossings 3 through 18.
 5. `Js = J / width`.
-6. Also record the first-to-last value from the paper’s Table 2: `J_first_last =
+6. Also record the first-to-last value from the paper's Table 2: `J_first_last =
    N / (t[N] - t[1])` and `Js_first_last = J_first_last / width`.
 
 The CSV columns are `width_m, participants, crossings, J, Js, J_first_last,
-Js_first_last`. `participants` is the run’s nominal group size; `crossings` is the
+Js_first_last`. `participants` is the run's nominal group size; `crossings` is the
 number of people whose trajectory crossed y=0.4 m.
 
 ## Corridor method (`speed-density.csv`)
@@ -73,15 +73,15 @@ Experiment: `corridor5`, “Pedestrian flow in a unidirectional corridor”, DOI
 The corridor readme gives no measurement area. Accepted fallback: a **2 m long
 stretch in the middle of the 18 m corridor, across its full 5 m width**. The run
 geometry places the corridor between y=0 m and y=5 m and the middle at x=0, so the
-area is x in [-1, 1] m, y in [0, 5] m, area = 10 m².
+area is x in [-1, 1] m, y in [0, 5] m, area = 10 m2.
 
 For each frame:
 
-1. `density = persons inside the area / 10 m²`.
+1. `density = persons inside the area / 10 m2`.
 2. For each person inside, estimate position at `t - 0.2 s` and `t + 0.2 s` by linear
-   interpolation along that person’s trajectory, then take
+   interpolation along that person's trajectory, then take
    `speed = distance / 0.4 s`.
-3. Bin density in 0.25 p/m² steps. Report the mean and sample standard deviation of
+3. Bin density in 0.25 p/m2 steps. Report the mean and sample standard deviation of
    speed per bin, and the number of person-frame samples.
 
 This is the classical method; the 0.4 s window is centered on the frame. The CSV
@@ -95,8 +95,8 @@ This row is recorded as the fitted relation already used by `densityFactor()` in
 
 - Source: U. Weidmann, *Transporttechnik der Fußgänger*, Schriftenreihe des IVT 90,
   ETH Zürich, 1993; parameters as cited in the `densityFactor()` comment.
-- Free flow up to 0.5 p/m².
-- `v = v_free * (1 - exp(-1.913 * (1/rho - 1/rho_jam)))`, with `rho_jam = 5.4 p/m²`.
+- Free flow up to 0.5 p/m2.
+- `v = v_free * (1 - exp(-1.913 * (1/rho - 1/rho_jam)))`, with `rho_jam = 5.4 p/m2`.
 - Speed floor: 5% of free speed.
 
 Because the model uses this curve, a model-versus-Weidmann comparison checks the
