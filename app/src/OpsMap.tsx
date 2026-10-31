@@ -193,7 +193,8 @@ export function OpsMap(props: CrowdViewProps) {
     const map = mapRef.current;
     if (!map || props.selected === null) return;
     const kept = props.run.frames.current ?? [];
-    const view = props.scrubIndex === null ? props.run.latest.current : kept[Math.min(props.scrubIndex, kept.length - 1)];
+    const view =
+      props.scrubIndex === null ? props.run.latest.current : kept[Math.min(props.scrubIndex, kept.length - 1)];
     const frame = view?.frame;
     if (!frame) return;
     const x = frame.x[props.selected];
@@ -222,13 +223,7 @@ export function OpsMap(props: CrowdViewProps) {
   clickRef.current = (event) => {
     const overlay = overlayRef.current;
     if (!overlay) return;
-    const cell = lngLatToCell(
-      georefRef.current,
-      bundle.width,
-      bundle.height,
-      event.lngLat.lng,
-      event.lngLat.lat,
-    );
+    const cell = lngLatToCell(georefRef.current, bundle.width, bundle.height, event.lngLat.lng, event.lngLat.lat);
     // A police order waiting for a click takes it outright, as in the close-up.
     if (props.onPickStreet) {
       if (cell >= 0) {
@@ -304,7 +299,7 @@ export function OpsMap(props: CrowdViewProps) {
       drawRef.current();
     };
 
-    const useFallback = () => {
+    const fallbackToGrid = () => {
       if (!map || fallback) return;
       fallback = true;
       theme = currentTheme();
@@ -370,7 +365,7 @@ export function OpsMap(props: CrowdViewProps) {
         setBasemap();
       });
 
-      if (!gridOnly) timer = window.setTimeout(() => useFallback(), STYLE_TIMEOUT_MS);
+      if (!gridOnly) timer = window.setTimeout(() => fallbackToGrid(), STYLE_TIMEOUT_MS);
       else setBasemap();
 
       const setTheme = () => {
