@@ -31,8 +31,8 @@ Everything must work on both macOS and Windows; CI checks Ubuntu, Windows and ma
 
 | # | Phase | Status | Plan | Done when |
 | --- | --- | --- | --- | --- |
-| 0 | Foundations | **Ready for review** on branch `phase-0/foundations` | [phase-0-foundations.md](plans/phase-0-foundations.md) | CI green on every PR; lint and format enforced; `App.tsx` split; app imports engine only through `engine/src/index.ts` |
-| 1 | Headless engine and validation | Ready after Phase 0 merges | [phase-1-headless-engine.md](plans/phase-1-headless-engine.md) | Server-side and browser runs give identical scorecards; validation report compares the model with cited published data |
+| 0 | Foundations | Done, merged into `main` (0cdbb5e) | [phase-0-foundations.md](plans/phase-0-foundations.md) | CI green on every PR; lint and format enforced; `App.tsx` split; app imports engine only through `engine/src/index.ts` |
+| 1 | Headless engine and validation | In progress on `phase-1/headless-engine` | [phase-1-headless-engine.md](plans/phase-1-headless-engine.md) | Server-side and browser runs give identical scorecards; validation report compares the model with cited published data |
 | 2 | Real data | Needs people, not code | [briefs/real-data.md](plans/briefs/real-data.md) | One past game day replayed against its real gate counts |
 | 3 | Map UI | Brief only | [briefs/map-ui.md](plans/briefs/map-ui.md) | GIS map replaces the gamified view as the default |
 | 4 | Voice | Brief only | [briefs/voice.md](plans/briefs/voice.md) | Spoken orders go through tool calling to typed `PoliceOrder`s, confirmed and audited |
