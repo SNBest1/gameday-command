@@ -51,7 +51,7 @@ import { lastUndoable } from './after-action.ts';
 import { describeUndo } from './voice-answers.ts';
 import { StartScreen } from './StartScreen.tsx';
 import { applyTheme } from './theme.ts';
-import { rankByPriority, stoppedPerStreet, streetIndex, type HistorySample, type Priority } from './command.ts';
+import { rankByPriority, type HistorySample, type Priority } from './command.ts';
 import { OfficerPanel } from './OfficerPanel.tsx';
 import { OfficerRoster, ZoneTable, LotBoard } from './SideBoards.tsx';
 import { GatesPanel } from './GatesPanel.tsx';
@@ -68,6 +68,7 @@ import { wallClock } from './dayclock.ts';
 import { HOTSPOT_COLOUR, policeHotspots, standingDensity, type PoliceHotspot } from './congestion.ts';
 import { bandTotals, heatBands, hotspots, makePlaceIndex, type Hotspot } from './heat.ts';
 import { useRun, type RunHandle, type RunInit } from './useRun.ts';
+import { useHistoryRecording } from './useHistoryRecording.ts';
 
 /** A stadium's crowd is its capacity, up to the 100,000 the engine is sized for. */
 const fanCount = (map: MapBundle) =>
@@ -278,6 +279,7 @@ export function App() {
 
   const cards = runs.map((r) => r.scorecard);
   const allDone = cards.every((c) => c !== null);
+  useHistoryRecording({ loaded, runA, runB, runC, generation, allDone, loadHistory });
   // When all three plans finish, show the verdict once; after that the rail stays where the commander puts it.
   const wasDone = useRef(false);
   useEffect(() => {
@@ -289,54 +291,6 @@ export function App() {
   const order = allDone ? rankByPriority(cards, priority) : null;
   void rankPlans;
   const rankOf = (i: number) => (order ? order.indexOf(i) : null);
-
-  // Record this run's gate queues and stopped traffic by minute to kickoff, so
-  // the next run of this stadium has a "usual" to compare against. Each run
-  // only adds moments later than its last, so a rewind does not count twice.
-  const recorded = useRef<{
-    generation: number;
-    lastT: number[];
-    samples: { kind: string; subject: string; minute: number; value: number }[];
-    sent: boolean;
-  }>({
-    generation: -1,
-    lastT: [],
-    samples: [],
-    sent: false,
-  });
-  const streets = useMemo(() => (loaded ? streetIndex(loaded.map) : null), [loaded]);
-  useEffect(() => {
-    if (!loaded || !streets) return;
-    const rec = recorded.current;
-    if (rec.generation !== generation)
-      recorded.current = { generation, lastT: [-Infinity, -Infinity, -Infinity], samples: [], sent: false };
-    runs.forEach((run, i) => {
-      const scene = run.scene.current;
-      const frame = run.latest.current?.frame;
-      if (!scene || !frame || scene.t <= recorded.current.lastT[i]! || scene.t % 60 !== 0) return;
-      recorded.current.lastT[i] = scene.t;
-      const minute = Math.round(scene.t / 60);
-      for (const g of scene.gates) {
-        const place = loaded.map.places[g.place];
-        if (place) recorded.current.samples.push({ kind: 'gate_waiting', subject: place.id, minute, value: g.waiting });
-      }
-      stoppedPerStreet(loaded.map, streets, frame.vehicles).forEach((value, k) => {
-        recorded.current.samples.push({ kind: 'street_stopped', subject: streets.streets[k]!.id, minute, value });
-      });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runA.tick, runB.tick, runC.tick, loaded, streets, generation]);
-  useEffect(() => {
-    const rec = recorded.current;
-    if (!allDone || !loaded || rec.sent || rec.samples.length === 0) return;
-    rec.sent = true;
-    void fetch('/api/history', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ mapId: loaded.map.id, runId: `gen-${generation}-${Date.now()}`, samples: rec.samples }),
-    }).then(() => loadHistory(loaded.map.id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allDone, loaded, generation]);
 
   // Start without a click when asked, once all three workers are ready. Only
   // once: `playing` is not a dependency, so this effect never sees a pause,
