@@ -203,7 +203,7 @@ Run the waves in this order:
   - how to check it works (`GET /api/speech/config`).
 
   Name example servers only as examples, without claiming versions or performance.
-- [ ] **D6.** Browser check, without and with the services configured:
+- [x] **D6.** Browser check, without and with the services configured:
   1. With no variables set: the box behaves exactly as before. Typed "close gate 2" confirms; push-to-talk uses the browser recogniser.
   2. With a fake or real LLM: typed "can we get four units over to the north-east lot" reads back a send-officers order; "yes" confirms it on the plan on the map.
   3. Stop the LLM: the same sentence falls back to the old parser without an error.

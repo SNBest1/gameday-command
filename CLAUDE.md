@@ -410,6 +410,46 @@ switch, and `?view=close|plan|compare` still selects them directly.
   runs officers, then vehicles, then fans, and a police pick mode keeps the
   close-up's non-blocked cell rule in `app/src/street-pick.ts`.
 
+## Voice assistant
+
+The command box keeps its local grammar. Two optional OpenAI-compatible
+services extend it; both are reached by the API server, never by the browser:
+
+```
+mic ─► speech.ts ──► Web Speech, or MediaRecorder ─► POST /api/speech/transcribe
+text ─► CommandBar ─► local confirm/cancel/undo
+                    └► POST /api/voice/interpret ─► tool call
+                    ─► voice-tools.fromToolCall() ─► Utterance
+                    (any failure ─► parseUtterance, today's parser)
+Utterance ─► existing read-back + "say yes to confirm" ─► existing order/step/control
+every interpreted utterance ─► POST /api/voice/log
+```
+
+- **Fallback rule.** Confirm, cancel and undo always run locally and instantly.
+  Everything else may go to the LLM when `/api/speech/config` says `llm`; a
+  timeout, HTTP error, invalid JSON, unknown tool, unresolved name or `none`
+  falls back to `parseUtterance`. A refusal is never shown as an order, and
+  nothing runs without the human's yes.
+- **Speech.** With `STT_URL` set, the app records a clip (MediaRecorder, webm
+  or ogg, 12 s cap) and sends it to `/api/speech/transcribe`; without it, the
+  browser's Web Speech recogniser is used. The server forwards multipart audio
+  to `${STT_URL}/v1/audio/transcriptions`; no audio is stored.
+- **Tool schema.** `app/src/voice-tools.ts` builds one tool per Intent, Control
+  and Question kind plus `show_plan` and `none`, and the system prompt with the
+  map's gate, place and street names (streets dropped first to stay under 8,000
+  characters). `fromToolCall` resolves names with the same `findChoice` lists
+  `parseCommand` uses; the model only proposes.
+- **Audit.** `server/src/voice.ts` writes `voice_log`: transcript, source
+  (`browser`/`stt`/`typed`), the tool call or `fallback`, the summary and
+  `confirmed`/`cancelled`/`none`. Confirm and cancel add a second row with the
+  outcome. Rows older than `VOICE_LOG_DAYS` (default 30) are pruned at startup.
+  The Orders tab's after-action report and JSON export include this page's rows.
+- **Environment.** `STT_URL`, `STT_MODEL`, `STT_KEY`, `STT_TIMEOUT_MS`,
+  `INTENT_LLM_URL`, `INTENT_LLM_MODEL`, `INTENT_LLM_KEY`,
+  `INTENT_LLM_TIMEOUT_MS` and `VOICE_LOG_DAYS`, documented in `.env.example`
+  and `docs/voice-setup.md`. `DECISION_CACHE_VERSION` and the decision cache are
+  untouched.
+
 Kev (optional — without it every decision is a fallback, by design):
 
 ```bash
@@ -418,7 +458,7 @@ uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
 
 ## Current state
 
-Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **404 checks in 68 files (399 pass, 5 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
+Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **416 checks in 70 files (410 pass, 6 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
 
 Measured on the stadium map (800x800 cells at 2 m, 100,000 fans as 20,000 dots). These are development-Mac numbers, not a controlled benchmark; `engine/src/perf.test.ts` asserts only the 10x bar, and a Windows run of this suite measured ~310x.
 
