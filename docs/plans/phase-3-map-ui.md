@@ -107,7 +107,7 @@ Run the waves in this order:
 
   When the georef is `null` (test map), use a **local flat frame**: the same functions with `center = { lat: 0, lon: 0 }`, `radiusM = width * cellSizeM / 2`. Everything downstream then works without special cases.
   Verify: `ops-geo.test.ts` round-trips cells on both the Ohio georef and the flat frame.
-- [ ] **B3.** `app/src/ops-basemap.ts`: `basemapImage(map: MapBundle, theme: 'light' | 'dark'): ImageData`, one pixel per cell, using muted operational colours:
+- [x] **B3.** `app/src/ops-basemap.ts`: `basemapImage(map: MapBundle, theme: 'light' | 'dark'): ImageData`, one pixel per cell, using muted operational colours:
   - roads mid-grey;
   - walkable ground near-background;
   - buildings and walls darker;
