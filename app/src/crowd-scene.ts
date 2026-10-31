@@ -13,6 +13,7 @@ import { DiagonalPool } from './diagonal-pool.ts';
 import { barricadePlacements, buildBarricades, closedAreas, closureKey, type BarricadeGroup } from './barricadeArt.ts';
 import { FLOW_RGB, HOTSPOT_COLOUR, standingDensity, trafficFlow, type PoliceHotspot } from './congestion.ts';
 import { buildBowl, buildStreetLines, streetLabels, type Bowl } from './stadium3d.ts';
+import { streetPickAt } from './street-pick.ts';
 
 /**
  * The close-up: one run on an isometric map you can zoom into until the dots
@@ -885,8 +886,9 @@ export class CrowdScene {
           const u = Math.floor(mx / CELL_SIZE_M),
             v = Math.floor(my / CELL_SIZE_M);
           // Check coordinates before flattening, so off-map clicks cannot wrap rows.
-          if (u >= 0 && u < map.width && v >= 0 && v < map.height && map.cells[v * map.width + u] !== 'blocked') {
-            this.init.onPickStreet(v * map.width + u);
+          if (u >= 0 && u < map.width && v >= 0 && v < map.height) {
+            const cell = streetPickAt(map, v * map.width + u);
+            if (cell >= 0) this.init.onPickStreet(cell);
           }
           down = null;
           return;

@@ -53,6 +53,10 @@ export interface ScatterProps {
   getFillColor: (d: PointDatum) => Rgba;
   getRadius: number | ((d: PointDatum) => number);
   radiusUnits: 'pixels' | 'meters';
+  stroked: boolean;
+  getLineColor: (d: PointDatum) => Rgba;
+  getLineWidth: number;
+  lineWidthUnits: 'pixels';
   visible: boolean;
   pickable: boolean;
 }
@@ -200,7 +204,13 @@ export function fanRows(map: MapBundle, geo: MapGeoref, frame: TickFrame, zoom: 
   return rows;
 }
 
-export function fansProps(map: MapBundle, geo: MapGeoref, frame: TickFrame, zoom: number): ScatterProps {
+export function fansProps(
+  map: MapBundle,
+  geo: MapGeoref,
+  frame: TickFrame,
+  zoom: number,
+  selected: number | null,
+): ScatterProps {
   return {
     id: 'ops-fans',
     data: fanRows(map, geo, frame, zoom),
@@ -208,6 +218,10 @@ export function fansProps(map: MapBundle, geo: MapGeoref, frame: TickFrame, zoom
     getFillColor: (d) => d.color,
     getRadius: 5,
     radiusUnits: 'pixels',
+    stroked: true,
+    getLineColor: (d) => ((d as FanRow).dot === selected ? [255, 255, 255, 255] : [0, 0, 0, 0]),
+    getLineWidth: 2,
+    lineWidthUnits: 'pixels',
     visible: zoom >= 17,
     pickable: true,
   };
@@ -264,6 +278,10 @@ export function vehiclesProps(
     getFillColor: (d) => d.color,
     getRadius: 6,
     radiusUnits: 'pixels',
+    stroked: true,
+    getLineColor: (d) => ((d as VehicleRow).vehicle === selected ? [255, 255, 255, 255] : [0, 0, 0, 0]),
+    getLineWidth: 2,
+    lineWidthUnits: 'pixels',
     visible: showVehicles,
     pickable: true,
   };
@@ -352,6 +370,10 @@ export function officersProps(
     getFillColor: (d) => d.color,
     getRadius: 7,
     radiusUnits: 'pixels',
+    stroked: true,
+    getLineColor: (d) => ((d as OfficerRow).id === selected ? [255, 255, 255, 255] : [0, 0, 0, 0]),
+    getLineWidth: 2,
+    lineWidthUnits: 'pixels',
     visible: true,
     pickable: true,
   };
@@ -561,6 +583,10 @@ export function hotspotsProps(geo: MapGeoref, width: number, spots: PoliceHotspo
     getFillColor: (d) => d.color,
     getRadius: (d) => (d as HotspotRow).radiusM,
     radiusUnits: 'meters',
+    stroked: false,
+    getLineColor: () => [0, 0, 0, 0],
+    getLineWidth: 0,
+    lineWidthUnits: 'pixels',
     visible: true,
     pickable: false,
   };
@@ -651,6 +677,7 @@ export interface OpsLayersInput {
   vehicleFocus: VehicleKind | null;
   selectedVehicle: number | null;
   selectedOfficer: string | null;
+  selected: number | null;
   showCoverage: boolean;
   hotspots: PoliceHotspot[];
   incidentCells: number[] | undefined;
@@ -673,6 +700,7 @@ export function opsLayerProps(input: OpsLayersInput): OpsLayerProps {
     vehicleFocus,
     selectedVehicle,
     selectedOfficer,
+    selected,
     showCoverage,
     hotspots,
     incidentCells,
@@ -680,7 +708,7 @@ export function opsLayerProps(input: OpsLayersInput): OpsLayerProps {
   } = input;
   return {
     density: densityProps(map, geo, frame, density?.peoplePerM2, dangerDensity, selectedBand),
-    fans: fansProps(map, geo, frame, zoom),
+    fans: fansProps(map, geo, frame, zoom, selected),
     vehicles: vehiclesProps(map, geo, frame, showVehicles, showFlow, vehicleFocus, selectedVehicle),
     officers: officersProps(map, geo, scene, selectedOfficer),
     routes: routesProps(map, geo, scene),

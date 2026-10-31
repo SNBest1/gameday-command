@@ -93,7 +93,7 @@ describe('operations map layer props', () => {
   it('shows fans only at zoom 17 or more and skips off-map dots', async () => {
     const run = await shortRun();
     expect(fanRows(map, geo, run.frame, 16)).toHaveLength(0);
-    expect(fansProps(map, geo, run.frame, 16).visible).toBe(false);
+    expect(fansProps(map, geo, run.frame, 16, null).visible).toBe(false);
     expect(fanRows(map, geo, run.frame, 17).length).toBeGreaterThan(0);
 
     const offMap = emptyFrame();
@@ -157,6 +157,7 @@ describe('operations map layer props', () => {
       vehicleFocus: null,
       selectedVehicle: null,
       selectedOfficer: null,
+      selected: null,
       showCoverage: false,
       hotspots: [],
       incidentCells: [0, 1, map.width, map.width + 1],
