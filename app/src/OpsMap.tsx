@@ -282,16 +282,18 @@ export function OpsMap(props: CrowdViewProps) {
     let disconnectTheme: (() => void) | undefined;
 
     const setBasemap = () => {
-      if (!map) return;
+      if (!map || !fallback) {
+        basemapRef.current = null;
+        drawRef.current();
+        return;
+      }
       const firstSymbol = map.getStyle()?.layers?.find((layer) => layer.type === 'symbol')?.id;
       const [[west, south], [east, north]] = mapBounds(georefRef.current, bundle.width, bundle.height);
       basemapRef.current = new BitmapLayer({
         id: 'ops-basemap',
         image: basemapImage(bundle, theme),
         bounds: [west, south, east, north],
-        // Online, the grid is a quiet tint under the real streets and labels;
-        // offline it is the whole base map.
-        opacity: fallback ? 1 : 0.22,
+        opacity: 1,
         pickable: false,
         ...(firstSymbol ? { beforeId: firstSymbol } : {}),
       } as unknown as BitmapLayerProps);
