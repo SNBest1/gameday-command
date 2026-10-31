@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   addProtocol,
   Map as MapLibreMap,
@@ -43,7 +43,11 @@ import type { MapGeoref } from '../../world/src/osm/georef.ts';
 
 const DEFAULT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 const DEFAULT_DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark';
+const DEFAULT_SATELLITE_TILES =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const DEFAULT_SATELLITE_ATTRIBUTION = 'Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community';
 const STYLE_TIMEOUT_MS = 5000;
+const BASEMAP_KEY = 'gd-basemap';
 
 const themeColour = (theme: 'light' | 'dark') => (theme === 'dark' ? '#14171a' : '#e9e7e1');
 
@@ -53,14 +57,54 @@ function currentTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+const viteEnv = () => (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+
 /** The configured styles. Dark falls back to the keyless OpenFreeMap Dark. */
 function configuredStyles(): { light: string; dark: string } {
-  const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+  const env = viteEnv();
   const value = env?.VITE_MAP_STYLE;
   return {
     light: value === undefined ? DEFAULT_STYLE : value.trim(),
     dark: env?.VITE_MAP_STYLE_DARK?.trim() || DEFAULT_DARK_STYLE,
   };
+}
+
+/** Satellite raster tiles, or '' when the deployment turned them off. */
+function satelliteTiles(): string {
+  const value = viteEnv()?.VITE_SATELLITE_TILES;
+  return value === undefined ? DEFAULT_SATELLITE_TILES : value.trim();
+}
+
+function satelliteStyle(): StyleSpecification {
+  return {
+    version: 8,
+    sources: {
+      satellite: {
+        type: 'raster',
+        tiles: [satelliteTiles()],
+        tileSize: 256,
+        maxzoom: 19,
+        attribution: viteEnv()?.VITE_SATELLITE_ATTRIBUTION?.trim() || DEFAULT_SATELLITE_ATTRIBUTION,
+      },
+    },
+    layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }],
+  };
+}
+
+function savedSatellite(): boolean {
+  try {
+    return localStorage.getItem(BASEMAP_KEY) === 'satellite';
+  } catch {
+    return false;
+  }
+}
+
+function saveSatellite(on: boolean): void {
+  try {
+    localStorage.setItem(BASEMAP_KEY, on ? 'satellite' : 'map');
+  } catch {
+    // Storage disabled: the choice lasts for this page only.
+  }
 }
 
 function styleForTheme(theme: 'light' | 'dark', styles: { light: string; dark: string }): string {
@@ -124,6 +168,14 @@ export function OpsMap(props: CrowdViewProps) {
   const themeRef = useRef<'light' | 'dark'>(currentTheme());
   const drawRef = useRef<() => void>(() => {});
   const clickRef = useRef<(event: MapMouseEvent) => void>(() => {});
+  const [satellite, setSatellite] = useState(() => savedSatellite() && satelliteTiles() !== '');
+  const satelliteRef = useRef(satellite);
+  satelliteRef.current = satellite;
+  const applyStyleRef = useRef<() => void>(() => {});
+  // Imagery has no real-world labels and only exists where the map is placed on Earth.
+  const [canSatellite, setCanSatellite] = useState(false);
+  // Labels over imagery read best light on dark, whatever the app theme.
+  const layerTheme = () => (satelliteRef.current && canSatellite ? 'dark' : themeRef.current);
 
   const draw = () => {
     const overlay = overlayRef.current;
@@ -144,7 +196,7 @@ export function OpsMap(props: CrowdViewProps) {
         density: view.density,
         scene: live ? props.run.scene.current : null,
         zoom: zoomRef.current,
-        theme: themeRef.current,
+        theme: layerTheme(),
         dangerDensity: props.dangerDensity,
         selectedBand: props.selectedBand,
         showVehicles: props.showVehicles,
@@ -331,11 +383,19 @@ export function OpsMap(props: CrowdViewProps) {
       const bounds = mapBounds(georefRef.current, bundle.width, bundle.height);
       const styles = configuredStyles();
       const gridOnly = fetched === null || styles.light === '' || navigator.onLine === false;
-      fallback = gridOnly;
+      const satelliteOk = fetched !== null && satelliteTiles() !== '' && navigator.onLine !== false;
+      setCanSatellite(satelliteOk);
+      const satelliteOn = () => satelliteOk && satelliteRef.current;
+      fallback = gridOnly && !satelliteOn();
       theme = currentTheme();
       themeRef.current = theme;
-      const initialStyle = gridOnly ? blankStyle(theme) : styleForTheme(theme, styles);
-      let currentStyle = initialStyle;
+      const initialStyle = satelliteOn()
+        ? satelliteStyle()
+        : gridOnly
+          ? blankStyle(theme)
+          : styleForTheme(theme, styles);
+      // What is on the map now: a style URL, 'satellite' or 'blank'.
+      let currentStyle = satelliteOn() ? 'satellite' : gridOnly ? 'blank' : styleForTheme(theme, styles);
       addProtocol('pmtiles', new Protocol().tile);
 
       const [west, south] = bounds[0];
@@ -380,14 +440,47 @@ export function OpsMap(props: CrowdViewProps) {
         setBasemap();
       });
 
-      if (!gridOnly) timer = window.setTimeout(() => fallbackToGrid(), STYLE_TIMEOUT_MS);
+      if (!gridOnly && !satelliteOn()) timer = window.setTimeout(() => fallbackToGrid(), STYLE_TIMEOUT_MS);
       else setBasemap();
+
+      applyStyleRef.current = () => {
+        if (!map) return;
+        if (timer !== undefined) window.clearTimeout(timer);
+        timer = undefined;
+        if (satelliteOn()) {
+          if (currentStyle === 'satellite') return;
+          fallback = false;
+          currentStyle = 'satellite';
+          map.setStyle(satelliteStyle());
+        } else if (gridOnly) {
+          if (currentStyle === 'blank') return;
+          fallback = true;
+          currentStyle = 'blank';
+          map.setStyle(blankStyle(theme));
+        } else {
+          const next = styleForTheme(theme, styles);
+          if (currentStyle === next) return;
+          fallback = false;
+          currentStyle = next;
+          map.setStyle(next);
+          timer = window.setTimeout(() => fallbackToGrid(), STYLE_TIMEOUT_MS);
+          map.once('styledata', () => {
+            if (timer !== undefined) window.clearTimeout(timer);
+            timer = undefined;
+          });
+        }
+        setBasemap();
+      };
 
       const setTheme = () => {
         const next = currentTheme();
         if (next === theme) return;
         theme = next;
         themeRef.current = next;
+        if (currentStyle === 'satellite') {
+          drawRef.current();
+          return;
+        }
         if (fallback) {
           map?.setPaintProperty('bg', 'background-color', themeColour(theme));
           setBasemap();
@@ -428,10 +521,17 @@ export function OpsMap(props: CrowdViewProps) {
       mapRef.current = null;
       overlayRef.current = null;
       basemapRef.current = null;
+      applyStyleRef.current = () => {};
       delete (window as unknown as { gamedayMap?: unknown }).gamedayMap;
       removeProtocol('pmtiles');
     };
   }, [bundle]);
+
+  useEffect(() => {
+    saveSatellite(satellite);
+    applyStyleRef.current();
+    drawRef.current();
+  }, [satellite]);
 
   return (
     <div className="ops-map-wrap">
@@ -447,6 +547,15 @@ export function OpsMap(props: CrowdViewProps) {
         >
           Incident
         </button>
+        {canSatellite && (
+          <button
+            title={satellite ? 'Show the street map' : 'Show satellite imagery'}
+            aria-pressed={satellite}
+            onClick={() => setSatellite((on) => !on)}
+          >
+            {satellite ? 'Map' : 'Satellite'}
+          </button>
+        )}
       </div>
     </div>
   );
