@@ -111,7 +111,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
   - Never use `--unsafe`.
 
   Verify: `npm run lint` exits 0. Then `npm run typecheck && npm test` still pass.
-- [ ] **B3.** Run `git add --renormalize .`, then `npm run format`. Commit the result **alone**, with the message `Format the codebase with Biome and normalise line endings (no logic changes)`.
+- [x] **B3.** Run `git add --renormalize .`, then `npm run format`. Commit the result **alone**, with the message `Format the codebase with Biome and normalise line endings (no logic changes)`.
   Verify:
   - `npm run format:check` exits 0;
   - `npm run typecheck && npm test && npm run build` pass;
