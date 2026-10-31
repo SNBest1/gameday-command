@@ -296,14 +296,14 @@ export function App() {
     setBriefingBusy,
   });
   const { showKeys, setShowKeys } = useShortcuts({ loaded, allDone, view, setCloseRun, setView, setPlaying });
-  // When all three plans finish, show the verdict once; after that the rail stays where the commander puts it.
+  // When all three plans finish, show the comparison once; after that the rail stays where the commander puts it.
   const wasDone = useRef(false);
   useEffect(() => {
     if (allDone && !wasDone.current) setRailTab('plans');
     wasDone.current = allDone;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allDone]);
-  // "Best" is best for the priority the commander picked.
+  // The ranking follows the priority the commander picked.
   const order = allDone ? rankByPriority(cards, priority) : null;
   void rankPlans;
   const rankOf = (i: number) => (order ? order.indexOf(i) : null);

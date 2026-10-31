@@ -178,7 +178,7 @@ Run the waves in this order:
 
 ### Stream E: Neutral wording
 
-- [ ] **E1.** In `app/src/story.ts`, `scoreboard.ts`, `CommandPanel.tsx`, `PlanCards.tsx` and `Rail.tsx`, replace judging words the user sees with reporting words. Known places: the `<h2>Verdict</h2>` heading in `Rail.tsx`, and the "Best plan" badge in `PlanCards.tsx`, which becomes "Lowest crush risk". Keep CSS class names and identifiers such as `verdictText` and `r.best` as they are.
+- [x] **E1.** In `app/src/story.ts`, `scoreboard.ts`, `CommandPanel.tsx`, `PlanCards.tsx` and `Rail.tsx`, replace judging words the user sees with reporting words. Known places: the `<h2>Verdict</h2>` heading in `Rail.tsx`, and the "Best plan" badge in `PlanCards.tsx`, which becomes "Lowest crush risk". Keep CSS class names and identifiers such as `verdictText` and `r.best` as they are.
   - "Verdict" → "Comparison";
   - "best" or "winner" → "lowest crush-risk minutes" or "fastest to clear", each with its number.
   - When the plan with the lowest crush-risk minutes is not the fastest, say both, as today.
