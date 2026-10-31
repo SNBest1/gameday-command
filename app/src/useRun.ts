@@ -13,6 +13,7 @@ import type {
   WorkerOut,
 } from '../../contracts.ts';
 import type { DotInfo, EditIn, EditOut, SceneInfo } from '../../engine/src/index.ts';
+import { serverSource, workerSource, type RunSource } from './run-source.ts';
 
 export interface RunSnapshotView {
   frame: TickFrame;
@@ -76,7 +77,7 @@ const RECENT_DECISIONS = 12;
  * cost far more than drawing it.
  */
 export function useRun(init: RunInit | null): RunHandle {
-  const workerRef = useRef<Worker | null>(null);
+  const sourceRef = useRef<RunSource | null>(null);
   const latest = useRef<RunSnapshotView | null>(null);
   const previous = useRef<RunSnapshotView | null>(null);
   const frames = useRef<RunSnapshotView[]>([]);
@@ -105,8 +106,15 @@ export function useRun(init: RunInit | null): RunHandle {
 
   useEffect(() => {
     if (!init) return;
-    const worker = new Worker(new URL('../../engine/src/worker.ts', import.meta.url), { type: 'module' });
-    workerRef.current = worker;
+    let cancelled = false;
+    const initMessage = {
+      type: 'init',
+      config: init.config,
+      map: init.map,
+      population: init.population,
+      defaults: init.defaults,
+      serverUrl: '',
+    } satisfies WorkerIn;
     latest.current = null;
     previous.current = null;
     frames.current = [];
@@ -135,8 +143,7 @@ export function useRun(init: RunInit | null): RunHandle {
       tick: 0,
     });
 
-    worker.onmessage = (event: MessageEvent<WorkerOut | EditOut>) => {
-      const out = event.data;
+    const handleMessage = (out: WorkerOut | EditOut) => {
       switch (out.type) {
         case 'responses':
           if (scene.current && out.t >= scene.current.t) {
@@ -200,7 +207,7 @@ export function useRun(init: RunInit | null): RunHandle {
           // Each plan's own worker hands back a restart point as it finishes,
           // so the contract's snapshot is exercised per plan and not only in
           // the bench harness.
-          worker.postMessage({ type: 'snapshot' } satisfies WorkerIn);
+          sourceRef.current?.post({ type: 'snapshot' } satisfies WorkerIn);
           setState((s) => ({
             ...s,
             scorecard: out.scorecard,
@@ -218,25 +225,38 @@ export function useRun(init: RunInit | null): RunHandle {
       }
     };
 
-    worker.postMessage({
-      type: 'init',
-      config: init.config,
-      map: init.map,
-      population: init.population,
-      defaults: init.defaults,
-      serverUrl: '',
-    } satisfies WorkerIn);
-    // The close-up interpolates along recorded paths; benches and the diag
-    // tools never ask, so their engine pays nothing for motion capture.
-    worker.postMessage({ type: 'motion', on: true } satisfies EditIn);
+    const useServer = new URLSearchParams(window.location.search).get('engine') === 'server';
+    const start = async () => {
+      let source: RunSource;
+      try {
+        source = useServer ? await serverSource(initMessage) : workerSource();
+      } catch (error) {
+        if (!cancelled) {
+          setState((s) => ({ ...s, error: error instanceof Error ? error.message : String(error) }));
+        }
+        return;
+      }
+      if (cancelled) {
+        source.close();
+        return;
+      }
+      sourceRef.current = source;
+      source.onMessage(handleMessage);
+      if (!useServer) source.post(initMessage);
+      // The close-up interpolates along recorded paths; benches and the diag
+      // tools never ask, so their engine pays nothing for motion capture.
+      source.post({ type: 'motion', on: true } satisfies EditIn);
+    };
+    void start();
 
     return () => {
-      worker.terminate();
-      workerRef.current = null;
+      cancelled = true;
+      sourceRef.current?.close();
+      sourceRef.current = null;
     };
   }, [init]);
 
-  const send = useCallback((message: WorkerIn | EditIn) => workerRef.current?.postMessage(message), []);
+  const send = useCallback((message: WorkerIn | EditIn) => sourceRef.current?.post(message), []);
 
   /**
    * Ask the worker to rewind. It restores its nearest checkpoint and steps
@@ -247,7 +267,7 @@ export function useRun(init: RunInit | null): RunHandle {
   const seekTo = useCallback((target: number) => {
     frames.current = frames.current.filter((f) => f.frame.t <= target);
     alerts.current = alerts.current.filter((a) => a.t <= target);
-    workerRef.current?.postMessage({ type: 'seek', t: target } satisfies WorkerIn);
+    sourceRef.current?.post({ type: 'seek', t: target } satisfies WorkerIn);
     setState((s) => ({ ...s, scorecard: null, frameCount: frames.current.length }));
   }, []);
 
