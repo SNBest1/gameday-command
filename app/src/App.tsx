@@ -22,6 +22,7 @@ import {
   DANGER,
   LABELS,
   MAP_PARAM,
+  minutes,
   n,
   OFFICERS,
   params,
@@ -44,7 +45,7 @@ import { CrowdView } from './CrowdView.tsx';
 import { Inspector, type EditRequest } from './Inspector.tsx';
 import { applyDisabled } from './PlanEditor.tsx';
 import { CommandPanel, Ranking } from './CommandPanel.tsx';
-import { ThemeToggle } from './ThemeToggle.tsx';
+import { AppHeader } from './AppHeader.tsx';
 import { CommandBar } from './CommandBar.tsx';
 import { resultRows, summaryText } from './scoreboard.ts';
 import { lastUndoable } from './after-action.ts';
@@ -83,7 +84,6 @@ const fanCount = (map: MapBundle) =>
     : TEST_FANS;
 /** The test map is a gate wall and a lot with no streets between them. */
 const hasRoads = (map: MapBundle) => trafficCapacity(map).entries > 0;
-const minutes = (seconds: number) => `${seconds < 0 ? '−' : '+'}${Math.abs(Math.round(seconds / 60))} min`;
 
 /** The side rail's tabs, in the order a commander works through them. */
 const RAIL_TABS = [
@@ -759,72 +759,28 @@ export function App() {
     <>
       {roleDialog}
       {keysCard}
-      <header className="top">
-        <div className="venue">
-          <span className="venue-stripe" aria-hidden="true" />
-          <div>
-            <h1>{loaded ? loaded.map.name.replace(/ \+ 0\.5 mi$/, '') : 'Loading stadium'}</h1>
-            <p>
-              {loaded?.map.theme ? (
-                <span title={`Colours: ${loaded.map.theme.source}`}>{loaded.map.theme.team}</span>
-              ) : (
-                'Gameday Command'
-              )}
-              <button
-                className="link"
-                onClick={() => {
-                  setPlaying(false);
-                  setLoaded(null);
-                  setMapId(null);
-                }}
-              >
-                Change stadium
-              </button>
-              {/* The dot scale, worked out from the crowd and the live frame, never typed. */}
-              <span className="scale" title="How the crowd on the map is drawn: one dot per group of fans.">
-                1 dot = {fansPerDot === null ? '…' : n(fansPerDot)} fans, {liveDots > 0 ? n(liveDots) : '…'} dots,{' '}
-                {liveFans > 0 ? n(liveFans) : '…'} fans
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <nav className="situations" aria-label="Situation">
-          {incidents.map((candidate, i) => (
-            <button
-              key={candidate.id}
-              className={i === incidentIndex ? 'on' : undefined}
-              onClick={() => setIncidentIndex(i)}
-              aria-pressed={i === incidentIndex}
-            >
-              <strong>{INCIDENT_LABELS[candidate.kind]}</strong>
-              <span>{clockText(candidate.at)}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="clock">
-          <div className="clock-read">
-            <strong>{clockText(t)}</strong>
-            {status && <span className={`status ${status.phase}`}>{status.text}</span>}
-          </div>
-          <span className="progress">
-            <i style={{ width: `${progress * 100}%` }} />
-            {incident && (
-              <b
-                className="incident-mark"
-                style={{ left: `${((incident.at - window_.startAt) / (window_.endAt - window_.startAt)) * 100}%` }}
-                title={`${INCIDENT_LABELS[incident.kind]} ${minutes(incident.at)} from kickoff`}
-              />
-            )}
-          </span>
-        </div>
-        <div className="role-switch">
-          <span>{officerRole ? (own?.unit ?? policeCopy.officer) : policeCopy.supervisor}</span>
-          <button onClick={() => setShowRole(true)}>{policeCopy.switchRole}</button>
-        </div>
-        <ThemeToggle />
-      </header>
+      <AppHeader
+        loaded={loaded}
+        incidents={incidents}
+        incident={incident}
+        incidentIndex={incidentIndex}
+        onIncident={setIncidentIndex}
+        t={t}
+        status={status}
+        progress={progress}
+        timeWindow={window_}
+        fansPerDot={fansPerDot}
+        liveDots={liveDots}
+        liveFans={liveFans}
+        officerRole={officerRole}
+        own={own}
+        onChangeStadium={() => {
+          setPlaying(false);
+          setLoaded(null);
+          setMapId(null);
+        }}
+        onRole={() => setShowRole(true)}
+      />
 
       {showSynthetic && (
         <div className="banner notice">
