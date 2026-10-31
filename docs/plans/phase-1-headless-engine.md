@@ -166,7 +166,7 @@ Run the waves in this order:
     - a section "Known limits of the grid" stating plainly that openings narrower than one 2 m cell cannot be represented.
 
   Add the root script `"validate": "node validation/run.ts"`.
-- [ ] **F4.** Make sure `validation/` is **not** included in `vitest.config.ts` and **is** included in `tsconfig.json` (so it typechecks). Check that adding it to `tsconfig.json` `include` is the only change there.
+- [x] **F4.** Make sure `validation/` is **not** included in `vitest.config.ts` and **is** included in `tsconfig.json` (so it typechecks). Check that adding it to `tsconfig.json` `include` is the only change there.
   Verify: `npm run validate` writes the report; `npm run typecheck` passes.
 
 ### Stream G: Engine boundary proposal (document only)
