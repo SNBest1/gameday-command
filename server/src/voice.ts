@@ -1,4 +1,5 @@
 import type { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import type { Db } from './db.ts';
 
 /**
@@ -55,46 +56,51 @@ export function voiceRoutes(app: Hono, db: Db): void {
     }),
   );
 
-  app.post('/api/speech/transcribe', async (c) => {
-    const target = env('STT_URL');
-    if (!target) return c.json({ error: 'speech-to-text is not configured' }, 503);
+  app.post(
+    '/api/speech/transcribe',
+    bodyLimit({ maxSize: MAX_AUDIO_BYTES, onError: (c) => c.json({ error: 'audio is too large' }, 413) }),
+    async (c) => {
+      const target = env('STT_URL');
+      if (!target) return c.json({ error: 'speech-to-text is not configured' }, 503);
 
-    const type = (c.req.header('content-type') ?? '').split(';')[0]!.trim().toLowerCase();
-    if (type !== 'audio/webm' && type !== 'audio/ogg') {
-      return c.json({ error: 'send audio/webm or audio/ogg' }, 415);
-    }
-
-    let audio: ArrayBuffer;
-    try {
-      audio = await c.req.arrayBuffer();
-    } catch {
-      return c.json({ error: 'could not read the audio body' }, 400);
-    }
-    if (audio.byteLength > MAX_AUDIO_BYTES) return c.json({ error: 'audio is too large' }, 413);
-
-    const form = new FormData();
-    form.set('file', new Blob([audio], { type }), 'audio');
-    form.set('model', env('STT_MODEL') || 'whisper-1');
-    form.set('language', 'en');
-    const headers: Record<string, string> = {};
-    if (env('STT_KEY')) headers.Authorization = `Bearer ${env('STT_KEY')}`;
-
-    try {
-      const response = await fetch(`${baseUrl(target)}/v1/audio/transcriptions`, {
-        method: 'POST',
-        headers,
-        body: form,
-        signal: AbortSignal.timeout(envNumber('STT_TIMEOUT_MS', DEFAULT_STT_TIMEOUT_MS)),
-      });
-      const data = (await response.json().catch(() => null)) as { text?: unknown } | null;
-      if (!response.ok || typeof data?.text !== 'string') {
-        return c.json({ error: `speech-to-text returned ${response.status}` }, 502);
+      const type = (c.req.header('content-type') ?? '').split(';')[0]!.trim().toLowerCase();
+      if (type !== 'audio/webm' && type !== 'audio/ogg') {
+        return c.json({ error: 'send audio/webm or audio/ogg' }, 415);
       }
-      return c.json({ text: data.text });
-    } catch (error) {
-      return c.json({ error: error instanceof Error ? error.message : String(error) }, 502);
-    }
-  });
+
+      let audio: ArrayBuffer;
+      try {
+        audio = await c.req.arrayBuffer();
+      } catch {
+        return c.json({ error: 'could not read the audio body' }, 400);
+      }
+      // Second guard: a chunked body may not have had a Content-Length to check.
+      if (audio.byteLength > MAX_AUDIO_BYTES) return c.json({ error: 'audio is too large' }, 413);
+
+      const form = new FormData();
+      form.set('file', new Blob([audio], { type }), 'audio');
+      form.set('model', env('STT_MODEL') || 'whisper-1');
+      form.set('language', 'en');
+      const headers: Record<string, string> = {};
+      if (env('STT_KEY')) headers.Authorization = `Bearer ${env('STT_KEY')}`;
+
+      try {
+        const response = await fetch(`${baseUrl(target)}/v1/audio/transcriptions`, {
+          method: 'POST',
+          headers,
+          body: form,
+          signal: AbortSignal.timeout(envNumber('STT_TIMEOUT_MS', DEFAULT_STT_TIMEOUT_MS)),
+        });
+        const data = (await response.json().catch(() => null)) as { text?: unknown } | null;
+        if (!response.ok || typeof data?.text !== 'string') {
+          return c.json({ error: `speech-to-text returned ${response.status}` }, 502);
+        }
+        return c.json({ text: data.text });
+      } catch (error) {
+        return c.json({ error: error instanceof Error ? error.message : String(error) }, 502);
+      }
+    },
+  );
 
   app.post('/api/voice/interpret', async (c) => {
     let body: { text?: unknown; tools?: unknown; system?: unknown };
