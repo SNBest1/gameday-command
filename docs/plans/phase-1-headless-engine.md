@@ -171,7 +171,7 @@ Run the waves in this order:
 
 ### Stream G: Engine boundary proposal (document only)
 
-- [ ] **G1.** Write `docs/proposals/engine-boundary.md`:
+- [x] **G1.** Write `docs/proposals/engine-boundary.md`:
   - List every import in `engine/src/` from `../../world/` and `../../brain/` (use `git grep -n -e "from '../../world/" -e "from '../../brain/" -- engine/src`), grouped by imported symbol, with the engine files that use it.
   - For each symbol, propose one of:
     - (a) pass it in through `SimulationOptions` or `SimContext`;
