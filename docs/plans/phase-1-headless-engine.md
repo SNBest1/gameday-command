@@ -104,7 +104,7 @@ Run the waves in this order:
 
 ### Stream B: Wire protocol
 
-- [ ] **B1.** Create `engine/src/wire.ts` with `encode(message): string | Uint8Array` and `decode(data: string | ArrayBuffer): message`, for every `WorkerIn`, `WorkerOut`, `EditIn` and `EditOut` message.
+- [x] **B1.** Create `engine/src/wire.ts` with `encode(message): string | Uint8Array` and `decode(data: string | ArrayBuffer): message`, for every `WorkerIn`, `WorkerOut`, `EditIn` and `EditOut` message.
   - A message with no typed arrays is sent as a JSON text frame.
   - A message that carries typed arrays (frames, density, `types`) is sent as a binary frame:
     1. a `uint32` little-endian header length;
