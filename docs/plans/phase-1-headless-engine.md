@@ -124,7 +124,7 @@ Run the waves in this order:
   - A run with no sockets for 10 minutes is terminated.
 
   Register the routes in `server/src/index.ts`, and change nothing else there.
-- [ ] **C2.** Decisions: a server-side worker reaches `/api/decide` over HTTP, as the browser does. Pass `serverUrl` as `http://127.0.0.1:${PORT}` in the `init` the server forwards. Do not call the decision code in-process (that would change the timing the engine waits on).
+- [x] **C2.** Decisions: a server-side worker reaches `/api/decide` over HTTP, as the browser does. Pass `serverUrl` as `http://127.0.0.1:${PORT}` in the `init` the server forwards. Do not call the decision code in-process (that would change the timing the engine waits on).
 - [ ] **C3.** `server/src/runs.test.ts`: start the Hono app on a random port, create a run on `test-3gate`, connect with Node's built-in `WebSocket`, send `play`, and receive `hello`, frames and a final scorecard.
   Verify: `npx vitest run server/src/runs.test.ts`.
 
