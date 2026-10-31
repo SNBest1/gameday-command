@@ -79,7 +79,7 @@ export function addRunRoutes(app: Hono, decisionBaseUrl: string): void {
       run.sockets.clear();
     });
     bump(run);
-    worker.postMessage(init satisfies WorkerIn);
+    worker.postMessage({ ...init, serverUrl: decisionBaseUrl } satisfies WorkerIn);
     return c.json({ id });
   });
 
