@@ -375,7 +375,7 @@ uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
 
 ## Current state
 
-Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **386 checks in 63 files (381 pass, 5 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
+Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **389 checks in 63 files (384 pass, 5 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.
 
 Measured on the stadium map (800x800 cells at 2 m, 100,000 fans as 20,000 dots). These are development-Mac numbers, not a controlled benchmark; `engine/src/perf.test.ts` asserts only the 10x bar, and a Windows run of this suite measured ~310x.
 
