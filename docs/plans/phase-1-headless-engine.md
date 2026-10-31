@@ -39,7 +39,17 @@ The browser-worker path stays as it is and remains the default until the two pat
 
 ## Skills used
 
-Filled in at step 0: each skill found, whether you used it, and why.
+Searched 2026-10-31 with `npx skills find` for Node `worker_threads`, Hono
+WebSockets, binary protocols, Vitest and pedestrian dynamics.
+
+- `find-skills` (already available): used for the registry search; nothing installed.
+- `secondsky/claude-skills@bun-workers` (411 installs): Bun-specific workers, not Node `worker_threads`; not used.
+- Hono candidates (`vcode-sh/vibe-tools@hono-guide` 15 installs, `hankcraft/hankcraft-skills@hono-backend` 10 installs): too little adoption and no WebSocket-specific guidance; not used.
+- Binary-protocol results were reverse-engineering/security skills, not a framing format for this protocol; not used.
+- `pozapas/crowdskills@jupedsim` (2 installs): JuPedSim tooling, not the Jülich data archive; not used.
+- No Vitest skill was needed; the repo's existing config and Phase 0 scripts cover it.
+- The only dependency this plan names is `@hono/node-ws`, added in C1.
+- Installed: **none**.
 
 ## Streams and files
 
@@ -62,7 +72,7 @@ Run the waves in this order:
 
 ## Steps
 
-- [ ] **0. Skills and baseline.**
+- [x] **0. Skills and baseline.**
   1. Search for skills that could help with this plan: Node `worker_threads`, WebSockets with Hono, binary protocols, Vitest, pedestrian-dynamics data.
   2. Record them under "Skills used" above.
   3. Run `npm run typecheck`, `npm run lint`, `npm test` and `npm run build`, and note any failure that already existed.
@@ -71,7 +81,7 @@ Run the waves in this order:
 
 ### Stream A: Worker core
 
-- [ ] **A1.** Split `engine/src/worker.ts` into a host-independent core and a thin browser entry.
+- [x] **A1.** Split `engine/src/worker.ts` into a host-independent core and a thin browser entry.
   - Create `engine/src/worker-core.ts`. Move into it every line of `worker.ts` except the `host` global and the `host.onmessage = ...` assignment. Export `startWorker(host: WorkerHost): void`, with:
     ```ts
     export interface WorkerHost {
@@ -83,8 +93,8 @@ Run the waves in this order:
   - Keep `setTimeout`-based pacing as it is.
 
   Verify: `npm run typecheck && npm test && npm run build`; then open `npm run dev` with `?autorun=1` and check that runs play as before.
-- [ ] **A2.** Create `engine/src/worker-node.ts`: a `WorkerHost` over `parentPort` from `node:worker_threads` (`parentPort.postMessage(msg, transfer)` and `parentPort.on('message', ...)`), then `startWorker(host)`.
-- [ ] **A3.** Create `engine/src/worker-core.test.ts`:
+- [x] **A2.** Create `engine/src/worker-node.ts`: a `WorkerHost` over `parentPort` from `node:worker_threads` (`parentPort.postMessage(msg, transfer)` and `parentPort.on('message', ...)`), then `startWorker(host)`.
+- [x] **A3.** Create `engine/src/worker-core.test.ts`:
   - Start `worker-node.ts` with `new Worker(new URL('./worker-node.ts', import.meta.url))`.
   - Send `init` for the test map (`test-3gate`; copy how `app/src/bench.ts` builds its `init`).
   - Play to the end, and check that a scorecard arrives.
@@ -94,42 +104,42 @@ Run the waves in this order:
 
 ### Stream B: Wire protocol
 
-- [ ] **B1.** Create `engine/src/wire.ts` with `encode(message): string | Uint8Array` and `decode(data: string | ArrayBuffer): message`, for every `WorkerIn`, `WorkerOut`, `EditIn` and `EditOut` message.
+- [x] **B1.** Create `engine/src/wire.ts` with `encode(message): string | Uint8Array` and `decode(data: string | ArrayBuffer): message`, for every `WorkerIn`, `WorkerOut`, `EditIn` and `EditOut` message.
   - A message with no typed arrays is sent as a JSON text frame.
   - A message that carries typed arrays (frames, density, `types`) is sent as a binary frame:
     1. a `uint32` little-endian header length;
     2. a UTF-8 JSON header: the message with each typed array replaced by `{ "$ta": "<Float32Array|Uint8Array|...>", "offset": n, "length": n }`;
     3. the arrays' bytes, each aligned to 8 bytes.
   - Pure functions; no Node- or browser-only APIs.
-- [ ] **B2.** `engine/src/wire.test.ts`: a round trip of a real frame, scene, scorecard and snapshot taken from a short run on `test-3gate` must decode `toEqual` the original, with typed-array types preserved.
-- [ ] **B3.** Write `docs/wire-protocol.md`: the endpoint, the frame format above, which messages travel in which direction, and the version string `gameday-wire.1` sent as the first server message (`{ "type": "hello", "protocol": "gameday-wire.1" }`).
+- [x] **B2.** `engine/src/wire.test.ts`: a round trip of a real frame, scene, scorecard and snapshot taken from a short run on `test-3gate` must decode `toEqual` the original, with typed-array types preserved.
+- [x] **B3.** Write `docs/wire-protocol.md`: the endpoint, the frame format above, which messages travel in which direction, and the version string `gameday-wire.1` sent as the first server message (`{ "type": "hello", "protocol": "gameday-wire.1" }`).
   Verify: `npx vitest run engine/src/wire.test.ts`.
 
 ### Stream C: Server runs
 
-- [ ] **C1.** Add `@hono/node-ws` (exact version) to `server/package.json`. Create `server/src/runs.ts`, a run registry:
+- [x] **C1.** Add `@hono/node-ws` (exact version) to `server/package.json`. Create `server/src/runs.ts`, a run registry:
   - `POST /api/runs` takes the same `init` payload the app sends a worker today. It starts a `worker-node.ts` worker and returns `{ id }`.
   - `GET /api/runs/:id/ws` upgrades to a WebSocket and sends `hello`. It then forwards every worker message to every connected socket (encoded with `wire.ts`) and every socket message to the worker (decoded with `wire.ts`).
   - `DELETE /api/runs/:id` terminates the worker.
   - A run with no sockets for 10 minutes is terminated.
 
   Register the routes in `server/src/index.ts`, and change nothing else there.
-- [ ] **C2.** Decisions: a server-side worker reaches `/api/decide` over HTTP, as the browser does. Pass `serverUrl` as `http://127.0.0.1:${PORT}` in the `init` the server forwards. Do not call the decision code in-process (that would change the timing the engine waits on).
-- [ ] **C3.** `server/src/runs.test.ts`: start the Hono app on a random port, create a run on `test-3gate`, connect with Node's built-in `WebSocket`, send `play`, and receive `hello`, frames and a final scorecard.
+- [x] **C2.** Decisions: a server-side worker reaches `/api/decide` over HTTP, as the browser does. Pass `serverUrl` as `http://127.0.0.1:${PORT}` in the `init` the server forwards. Do not call the decision code in-process (that would change the timing the engine waits on).
+- [x] **C3.** `server/src/runs.test.ts`: start the Hono app on a random port, create a run on `test-3gate`, connect with Node's built-in `WebSocket`, send `play`, and receive `hello`, frames and a final scorecard.
   Verify: `npx vitest run server/src/runs.test.ts`.
 
 ### Stream D: App client
 
-- [ ] **D1.** Create `app/src/run-source.ts` with one interface, `RunSource { post(msg, transfer?); onMessage(handler); close() }`, and two implementations:
+- [x] **D1.** Create `app/src/run-source.ts` with one interface, `RunSource { post(msg, transfer?); onMessage(handler); close() }`, and two implementations:
   - `workerSource()` wraps today's `new Worker(new URL('../../engine/src/worker.ts', import.meta.url), { type: 'module' })`; keep that exact line.
   - `serverSource(init)` calls `POST /api/runs`, then opens the WebSocket, using `wire.ts`.
-- [ ] **D2.** In `app/src/useRun.ts`, replace direct use of the `Worker` with a `RunSource`. Pick `serverSource` only when the page URL has `engine=server`; otherwise use `workerSource`. Change nothing else about how `useRun` stores frames and records.
-- [ ] **D3.** `app/src/run-source.test.ts`: `serverSource` against a fake fetch and a fake WebSocket decodes a binary frame into the same shape a worker posts.
+- [x] **D2.** In `app/src/useRun.ts`, replace direct use of the `Worker` with a `RunSource`. Pick `serverSource` only when the page URL has `engine=server`; otherwise use `workerSource`. Change nothing else about how `useRun` stores frames and records.
+- [x] **D3.** `app/src/run-source.test.ts`: `serverSource` against a fake fetch and a fake WebSocket decodes a binary frame into the same shape a worker posts.
   Verify: `npm test`, then a browser check. Start `npm run serve` and `npm run dev`, and open http://localhost:5173/?autorun=1&engine=server. All three runs play, the rail tabs work, the console is clean, and `GET /api/health` still answers. Then open the same URL without `engine=server` and check that it behaves as before.
 
 ### Stream E: Parity
 
-- [ ] **E1.** `server/src/parity.test.ts`:
+- [x] **E1.** `server/src/parity.test.ts`:
   1. Run the gate-surge incident on `test-3gate` with a fixed seed and **default decisions only**, so there is no Kev and no cache: (a) in-process through `worker-core.ts` with an in-memory `WorkerHost`, and (b) through the server and WebSocket path from Stream C.
   2. Assert that the final scorecards are `toEqual`, and that the final frame's typed arrays are byte-identical.
   3. Then run the stadium map (`ohio-stadium`) for 10 sim minutes past the incident and assert the same. If this case takes over 60 s, mark it with `describe.skipIf(!process.env.PERF)` and add its file to `include` in `vitest.perf.config.ts` (from Phase 0), so it runs under `npm run test:perf`.
@@ -138,15 +148,15 @@ Run the waves in this order:
 
 ### Stream F: Validation suite
 
-- [ ] **F1.** Create `validation/reference/` and `validation/reference/SOURCES.md`. Download, from the Jülich pedestrian dynamics data archive (https://ped.fz-juelich.de/da/), the processed data for (a) a unidirectional corridor experiment (speed against density) and (b) a bottleneck experiment across several widths (flow against width). Commit the files you use, with URL, experiment name, licence and download date in `SOURCES.md`. Also record the Weidmann (1993, ETH IVT report 132) parameters already quoted in `densityFactor()` as a source entry.
+- [x] **F1.** Create `validation/reference/` and `validation/reference/SOURCES.md`. Download, from the Jülich pedestrian dynamics data archive (https://ped.fz-juelich.de/da/), the processed data for (a) a unidirectional corridor experiment (speed against density) and (b) a bottleneck experiment across several widths (flow against width). Commit the files you use, with URL, experiment name, licence and download date in `SOURCES.md`. Also record the Weidmann (1993, ETH IVT report 132) parameters already quoted in `densityFactor()` as a source entry.
 
   **If the archive cannot be reached from your environment, stop and ask.** Do not substitute values from memory or from a summary.
-- [ ] **F2.** `validation/maps.ts`: build synthetic `MapBundle`s in code:
+- [x] **F2.** `validation/maps.ts`: build synthetic `MapBundle`s in code:
   - a straight corridor, 50 m long, with an entry and a destination at the two ends;
   - a room that empties through a single opening, for opening widths of 2, 4, 6 and 8 m (multiples of the 2 m cell).
 
   Use the same `MapBundle` shape as the test map in `world/`.
-- [ ] **F3.** `validation/run.ts`:
+- [x] **F3.** `validation/run.ts`:
   - Run each map through `Simulation` with `FlowMovement`, no officers, no incidents and default decisions.
   - Measure:
     - mean walking speed against standing density, binned by density from the density grid, on the corridor;
@@ -156,12 +166,12 @@ Run the waves in this order:
     - a section "Known limits of the grid" stating plainly that openings narrower than one 2 m cell cannot be represented.
 
   Add the root script `"validate": "node validation/run.ts"`.
-- [ ] **F4.** Make sure `validation/` is **not** included in `vitest.config.ts` and **is** included in `tsconfig.json` (so it typechecks). Check that adding it to `tsconfig.json` `include` is the only change there.
+- [x] **F4.** Make sure `validation/` is **not** included in `vitest.config.ts` and **is** included in `tsconfig.json` (so it typechecks). Check that adding it to `tsconfig.json` `include` is the only change there.
   Verify: `npm run validate` writes the report; `npm run typecheck` passes.
 
 ### Stream G: Engine boundary proposal (document only)
 
-- [ ] **G1.** Write `docs/proposals/engine-boundary.md`:
+- [x] **G1.** Write `docs/proposals/engine-boundary.md`:
   - List every import in `engine/src/` from `../../world/` and `../../brain/` (use `git grep -n -e "from '../../world/" -e "from '../../brain/" -- engine/src`), grouped by imported symbol, with the engine files that use it.
   - For each symbol, propose one of:
     - (a) pass it in through `SimulationOptions` or `SimContext`;

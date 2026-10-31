@@ -18,6 +18,7 @@ import { playbookFor } from '../../world/src/playbook.ts';
 import { buildStadiumMap, extractExists, loadExtract, STADIUM_MAP_ID } from '../../world/src/osm/stadium.ts';
 import { openDb, type Db } from './db.ts';
 import { addCommandRoutes, importedMap } from './command.ts';
+import { addRunRoutes, injectRunWebSocket } from './runs.ts';
 import { OHIO_THEME } from '../../world/src/teams.ts';
 import { askKev } from './kev.ts';
 import { briefingIsSupported, templateBriefing } from './briefing.ts';
@@ -150,6 +151,8 @@ export function createApp(db: Db): Hono {
   });
 
   app.get('/api/decision-defaults', (c) => c.json(DECISION_DEFAULTS));
+
+  addRunRoutes(app, `http://127.0.0.1:${PORT}`);
 
   addCommandRoutes(
     app,
@@ -302,7 +305,8 @@ if (process.argv[1]?.replaceAll('\\', '/').includes('server/src/index.ts')) {
   const db = openDb();
   const app = createApp(db);
   const cached = (db.prepare('select count(*) as n from decision_cache').get() as { n: number }).n;
-  serve({ fetch: app.fetch, port: PORT });
+  const server = serve({ fetch: app.fetch, port: PORT });
+  injectRunWebSocket(server);
   console.log(`gameday server on http://127.0.0.1:${PORT} (kev ${KEV_URL}, fm ${FM_URL})`);
   console.log(`${cached} decisions cached — fan decisions come from the model, not the fallback table`);
 }
