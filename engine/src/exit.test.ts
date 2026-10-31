@@ -4,7 +4,7 @@ import { DECISION_DEFAULTS } from '../../brain/src/defaults.ts';
 import { makePopulation } from '../../brain/src/fan-types.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
 import { testGateSurge } from '../../world/src/incidents.ts';
-import { FlowFields } from './flowfield.ts';
+import type { FlowFields } from './flowfield.ts';
 import { FlowMovement, MAX_DOTS_PER_CELL, SEATS_PER_STANDS_CELL } from './movement-flow.ts';
 import { Simulation } from './sim.ts';
 

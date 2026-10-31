@@ -452,7 +452,7 @@ export function ComparisonMaps(props: ComparisonMapsProps) {
       const fly = flyRef.current;
       if (fly) {
         const k = Math.min(1, (now - fly.start) / fly.ms);
-        const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+        const e = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2;
         // Zoom moves in log space so the flight feels even.
         const z = Math.exp(Math.log(fly.from.z) + (Math.log(fly.to.z) - Math.log(fly.from.z)) * e);
         viewRef.current = clampView({ z, cx: fly.from.cx + (fly.to.cx - fly.from.cx) * e, cy: fly.from.cy + (fly.to.cy - fly.from.cy) * e });
