@@ -1,5 +1,5 @@
 import type { MapBundle } from '../../contracts.ts';
-import type { GateStat, OfficerStatus, PoliceOrder } from '../../engine/src/edits.ts';
+import type { GateStat, OfficerStatus, PoliceOrder } from '../../engine/src/index.ts';
 import type { PoliceHotspot } from './congestion.ts';
 import type { Question } from './voice-intents.ts';
 

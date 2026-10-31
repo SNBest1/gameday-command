@@ -1,8 +1,8 @@
 import { Application, Container, Graphics, Matrix, Sprite, Texture } from 'pixi.js';
 import type { CellKind, FanType, MapBundle, VehicleFrame, VehicleKind, WeatherState } from '../../contracts.ts';
 import { CELL_SIZE_M, DOT_STATES, VEHICLE_KINDS, VEHICLE_STATES } from '../../contracts.ts';
-import type { OfficerStatus, SceneInfo } from '../../engine/src/edits.ts';
-import { poseOnPath } from '../../engine/src/motion.ts';
+import type { OfficerStatus, SceneInfo } from '../../engine/src/index.ts';
+import { poseOnPath } from '../../engine/src/index.ts';
 import { policeStations } from '../../world/src/officers.ts';
 import { VEHICLE_TYPES } from '../../world/src/vehicles.ts';
 import { bandOf, heatBands, type HeatBand } from './heat.ts';

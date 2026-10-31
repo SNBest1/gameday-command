@@ -17,7 +17,7 @@ import { INCIDENT_LABELS, incidentsFor, windowFor } from '../../world/src/incide
 import { playbookFor } from '../../world/src/playbook.ts';
 import { VEHICLE_TYPES, VEHICLE_TYPE_LIST } from '../../world/src/vehicles.ts';
 import { WEATHER_LABELS, WEATHER_TIMELINES, weatherTimeline } from '../../world/src/weather.ts';
-import type { PoliceOrder } from '../../engine/src/edits.ts';
+import type { PoliceOrder } from '../../engine/src/index.ts';
 import { getBriefing, getDecisionDefaults, getMap, saveComparison } from './api.ts';
 import { ComparisonMaps, type FocusBox, type MapPick } from './ComparisonMaps.tsx';
 import { CrowdView } from './CrowdView.tsx';
@@ -35,7 +35,7 @@ import { rankByPriority, stoppedPerStreet, streetIndex, type HistorySample, type
 import { OfficerPanel } from './OfficerPanel.tsx';
 import { OfficerRoster, ZoneTable, LotBoard } from './SideBoards.tsx';
 import { GatesPanel } from './GatesPanel.tsx';
-import { trafficCapacity } from '../../engine/src/traffic.ts';
+import { trafficCapacity } from '../../engine/src/index.ts';
 import { policeCopy } from './police-copy.ts';
 import { responseTargets, dispatchSuggestions } from './suggestions.ts';
 import { DemoAccess } from './DemoAccess.tsx';

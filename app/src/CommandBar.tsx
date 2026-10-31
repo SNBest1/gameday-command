@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MapBundle, PlanAction } from '../../contracts.ts';
-import type { OfficerStatus, PoliceOrder } from '../../engine/src/edits.ts';
+import type { OfficerStatus, PoliceOrder } from '../../engine/src/index.ts';
 import { stepChoices } from './plan-steps.ts';
 import { listen, speechSupported, type Listening } from './speech.ts';
 import { answer, type Facts } from './voice-answers.ts';

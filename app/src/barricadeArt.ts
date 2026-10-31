@@ -1,6 +1,6 @@
 import { Graphics } from 'pixi.js';
 import { CELL_SIZE_M as C, type CellKind, type MapBundle } from '../../contracts.ts';
-import type { Barricade, SceneInfo } from '../../engine/src/edits.ts';
+import type { Barricade, SceneInfo } from '../../engine/src/index.ts';
 import { diagonalZ, vehicleDiagonal } from './depth.ts';
 import { isoProject } from './people.ts';
 

@@ -8,7 +8,7 @@ import type {
   VehicleFrame,
 } from '../../contracts.ts';
 import { CELL_SIZE_M, VEHICLE_STATES } from '../../contracts.ts';
-import type { GateStat } from '../../engine/src/edits.ts';
+import type { GateStat } from '../../engine/src/index.ts';
 
 /**
  * The commander's brief: how busy each gate and street is right now (low,

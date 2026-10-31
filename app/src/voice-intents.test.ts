@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GateStat, OfficerStatus } from '../../engine/src/edits.ts';
+import type { GateStat, OfficerStatus } from '../../engine/src/index.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
 import type { PoliceHotspot } from './congestion.ts';
 import { answer, describeUndo, type Facts } from './voice-answers.ts';

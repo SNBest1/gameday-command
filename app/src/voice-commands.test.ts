@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MapBundle } from '../../contracts.ts';
-import type { OfficerStatus } from '../../engine/src/edits.ts';
+import type { OfficerStatus } from '../../engine/src/index.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
 import { stepChoices } from './plan-steps.ts';
 import {

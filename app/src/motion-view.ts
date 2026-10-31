@@ -1,6 +1,6 @@
 import type { VehicleFrame } from '../../contracts.ts';
-import type { SceneInfo } from '../../engine/src/edits.ts';
-import { poseOnPath } from '../../engine/src/motion.ts';
+import type { SceneInfo } from '../../engine/src/index.ts';
+import { poseOnPath } from '../../engine/src/index.ts';
 import type { RunSnapshotView } from './useRun.ts';
 
 export interface Drawn {
