@@ -38,10 +38,7 @@ llmApp.post('/v1/chat/completions', async (c) => {
     return c.json({ choices: [{ message: { tool_calls: [] } }] });
   }
   if (llmMode === 'notool') return c.json({ choices: [{ message: { content: 'no tool' } }] });
-  const args =
-    llmMode === 'badargs'
-      ? '{"target":'
-      : JSON.stringify({ target: 'Gate 2', atMin: 0 });
+  const args = llmMode === 'badargs' ? '{"target":' : JSON.stringify({ target: 'Gate 2', atMin: 0 });
   return c.json({
     choices: [{ message: { tool_calls: [{ function: { name: 'close', arguments: args } }] } }],
   });
@@ -157,7 +154,11 @@ describe('voice routes', () => {
       summary: 'Close Gate 2, now',
       outcome: 'confirmed',
     });
-    const rows = (await (await app.request('/api/voice/log')).json()) as { transcript: string; toolCall: string; outcome: string }[];
+    const rows = (await (await app.request('/api/voice/log')).json()) as {
+      transcript: string;
+      toolCall: string;
+      outcome: string;
+    }[];
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ transcript: 'close gate 2', outcome: 'confirmed' });
     expect(JSON.parse(rows[0]!.toolCall)).toMatchObject({ name: 'close' });

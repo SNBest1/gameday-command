@@ -60,10 +60,21 @@ export function voiceTools(map: MapBundle): VoiceTool[] {
     tool(
       'send_officers',
       'Send officers to a gate, place or street',
-      { count: { type: 'number', minimum: 1, maximum: 40 }, place: NAME('place or street'), street: { type: 'boolean' }, atMin: AT_MIN, plan: PLAN },
+      {
+        count: { type: 'number', minimum: 1, maximum: 40 },
+        place: NAME('place or street'),
+        street: { type: 'boolean' },
+        atMin: AT_MIN,
+        plan: PLAN,
+      },
       ['count', 'place'],
     ),
-    tool('redirect', 'Redirect fans from one gate to another place', { from: NAME('gate'), to: NAME('place'), atMin: AT_MIN, plan: PLAN }, ['from', 'to']),
+    tool(
+      'redirect',
+      'Redirect fans from one gate to another place',
+      { from: NAME('gate'), to: NAME('place'), atMin: AT_MIN, plan: PLAN },
+      ['from', 'to'],
+    ),
     tool(
       'alert',
       'Send a PA announcement or phone alert',
@@ -74,7 +85,9 @@ export function voiceTools(map: MapBundle): VoiceTool[] {
     tool('play', 'Run or resume the plans'),
     tool('pause', 'Pause the simulation'),
     tool('speed', 'Change the simulation speed', { to: { enum: ['up', 'down', 5, 20, 60] } }, ['to']),
-    tool('view', 'Switch the map view', { view: { type: 'string', enum: ['ops', 'close', 'plan', 'compare'] } }, ['view']),
+    tool('view', 'Switch the map view', { view: { type: 'string', enum: ['ops', 'close', 'plan', 'compare'] } }, [
+      'view',
+    ]),
     tool(
       'tab',
       'Open a rail tab',
@@ -85,7 +98,10 @@ export function voiceTools(map: MapBundle): VoiceTool[] {
     tool(
       'zoom',
       'Focus the map on a named gate, place or street',
-      { place: NAME(gate ? `gate, place or street (for example ${gate})` : 'gate, place or street'), street: { type: 'boolean' } },
+      {
+        place: NAME(gate ? `gate, place or street (for example ${gate})` : 'gate, place or street'),
+        street: { type: 'boolean' },
+      },
       ['place'],
     ),
     tool('whole_map', 'Show the whole map'),
@@ -216,7 +232,17 @@ export function fromToolCall(call: ToolCall, map: MapBundle): Utterance | null {
       return { type: 'control', control: { kind: 'whole_map' } };
     case 'speed': {
       const to = args.to;
-      if (to !== 'up' && to !== 'down' && to !== 5 && to !== 20 && to !== 60 && to !== '5' && to !== '20' && to !== '60') return null;
+      if (
+        to !== 'up' &&
+        to !== 'down' &&
+        to !== 5 &&
+        to !== 20 &&
+        to !== 60 &&
+        to !== '5' &&
+        to !== '20' &&
+        to !== '60'
+      )
+        return null;
       const value = to === 'up' || to === 'down' ? to : Number(to);
       return { type: 'control', control: { kind: 'speed', to: value } };
     }

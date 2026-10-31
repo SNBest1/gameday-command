@@ -183,7 +183,9 @@ export function voiceRoutes(app: Hono, db: Db): void {
   app.get('/api/voice/log', (c) => {
     const since = c.req.query('since') ?? '';
     const rows = db
-      .prepare('select id, at, session, source, transcript, tool_call, summary, outcome from voice_log where at >= ? order by id')
+      .prepare(
+        'select id, at, session, source, transcript, tool_call, summary, outcome from voice_log where at >= ? order by id',
+      )
       .all(since) as {
       id: number;
       at: string;
