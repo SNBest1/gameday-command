@@ -117,7 +117,7 @@ Run the waves in this order:
 
   Reuse the cell kinds and the place lookups `ComparisonMaps.tsx` uses for its base texture. Do not import Pixi.
   Verify: `ops-basemap.test.ts`: the image is `width x height`, and a known road cell and a known building cell on the test map get different colours.
-- [ ] **B4.** `app/src/OpsMap.tsx`, first version:
+- [x] **B4.** `app/src/OpsMap.tsx`, first version:
   - Props: exactly `CrowdViewProps` from `app/src/CrowdView.tsx` (import the type), so `MapWorkspace` can swap views without new wiring.
   - On mount: fetch the georef. Create a `maplibregl.Map` with the style from `import.meta.env.VITE_MAP_STYLE` (default `https://tiles.openfreemap.org/styles/positron`). Fit to the map bounds, and set `maxBounds` to the bounds padded by 20%.
   - If the georef is null, or the style fails to load within 5 s, or the page is offline, switch to a blank style (`{ version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': <token> } }] }`).
