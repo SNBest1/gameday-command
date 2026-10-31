@@ -330,6 +330,7 @@ npm run serve         # API on 8787
 npm run dev           # app on 5173, proxies /api to 8787
 npm run fetch-map     # refetch the committed Ohio Stadium OSM extract
 npm run warm          # fill the decision cache against a live Kev
+npm run validate      # model-vs-reference report in validation/report.md
 npm run build         # production bundle for the app
 ```
 
@@ -338,6 +339,33 @@ The server and the three scripts load `.env` automatically through Node's
 one place. `.env` is git-ignored and optional. `docs/police-ops.md` lists the
 manual diagnostic scripts (`police-baseline.ts`, `diagnose-stadium.ts`,
 `diagnose-imported-crowd.ts`) that are deliberately outside `npm test`.
+
+## Running the engine on the server
+
+`npm run serve` also hosts the headless engine. `POST /api/runs` takes the
+same `init` a browser worker takes and starts `engine/src/worker-node.ts`; the
+run id opens at `GET /api/runs/:id/ws`. The first server message is
+`{ "type": "hello", "protocol": "gameday-wire.1" }`. Messages with typed arrays
+are binary frames; everything else is JSON text. The format and direction of
+every message are in `docs/wire-protocol.md`; `engine/src/wire.ts` is the codec.
+
+- The app keeps `engine/src/worker.ts` as its default. `?engine=server` switches
+  `app/src/run-source.ts` to `serverSource`, which posts the init and talks over
+  the socket. Nothing else in `useRun` changes: frames, decisions, scene and
+  tape still land in the same refs.
+- Server workers are pointed at the local `/api/decide` endpoint so decisions
+  still go through the cache/Kev/default chain; the server never calls the
+  decision code in-process.
+- A run with no socket for ten minutes is terminated. `DELETE /api/runs/:id`
+  stops one explicitly.
+- `server/src/parity.test.ts` compares the in-process worker core with the
+  server/WebSocket path on the test map and for ten minutes of the stadium
+  incident: equal scorecards and byte-identical final frames.
+- `validation/` is typechecked but is not part of `npm test`. `npm run validate`
+  writes `validation/report.md` from the committed CSVs. Raw Jülich files are
+  fetched by `node validation/fetch-reference.ts` (gitignored) and the tables
+  are produced by `node validation/derive-reference.ts`; `SOURCES.md` records
+  URLs, hashes, licence and methods.
 
 Kev (optional — without it every decision is a fallback, by design):
 
