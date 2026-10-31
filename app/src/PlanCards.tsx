@@ -135,7 +135,7 @@ export function PlanCard({
       <header>
         <span className="label">{label}</span>
         <h3>{state.plan.name}</h3>
-        {rank === 0 && <span className="badge best">Best plan</span>}
+        {rank === 0 && <span className="badge best">Lowest crush risk</span>}
         {selected && rank !== 0 && <span className="badge">on map</span>}
       </header>
 

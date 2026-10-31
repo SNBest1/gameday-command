@@ -48,8 +48,8 @@ export interface RankingProps {
  *   1. Right now: every gate and street, low / medium / high, from the
  *      simulation or from real conditions the commander loads.
  *   2. Suggested plans built from those conditions, loaded into A, B and C.
- * Which plan is best, and what the commander thinks of it, is `Ranking` on
- * the Plans tab, next to the verdict.
+ * Which plan ranks first, and what the commander thinks of it, is `Ranking` on
+ * the Plans tab, next to the comparison.
  */
 export function CommandPanel(props: CommandPanelProps) {
   const { map, incident, run, label, history, onSuggest } = props;
@@ -216,7 +216,7 @@ export function CommandPanel(props: CommandPanelProps) {
   );
 }
 
-/** Which plan is best for the priority the commander picks, and what they think of it. Never an order: "your call". */
+/** Which plan ranks first for the priority the commander picks, and what they think of it. Never an order: "your call". */
 export function Ranking({ map, incident, labels, planNames, cards, allDone, priority, onPriority }: RankingProps) {
   const order = allDone ? rankByPriority(cards, priority) : null;
   const best = order ? order[0]! : null;
@@ -237,12 +237,13 @@ export function Ranking({ map, incident, labels, planNames, cards, allDone, prio
         <p className="best-line">
           <strong>No plan managed this:</strong>{' '}
           {cards.map((c, i) => `${labels[i]} ${c ? why.why(c) : '…'}`).join(', ')}. Ranked by crush risk instead: Plan{' '}
-          {labels[best]} ({planNames[best]}) comes first. Your call.
+          {labels[best]} ({planNames[best]}), {Math.round(cards[best]!.dangerMinutes).toLocaleString()} crush-risk
+          minutes. Your call.
         </p>
       ) : best !== null && cards[best] ? (
         <p className="best-line">
           <strong>
-            Best for “{why.label.toLowerCase()}”: Plan {labels[best]}
+            Ranked by “{why.label.toLowerCase()}”: Plan {labels[best]}
           </strong>{' '}
           ({planNames[best]}), {why.why(cards[best]!)}.
           <span className="muted">

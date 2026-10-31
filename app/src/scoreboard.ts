@@ -2,7 +2,7 @@ import type { Scorecard } from '../../contracts.ts';
 
 /**
  * The plans side by side in one small table: live counts while they run, the
- * results once they finish. Lower is better on every row; the best value is
+ * results once they finish. Lower is better on every row; the lowest value is
  * marked only when it is strictly better than another plan's, so a tie marks
  * nothing. Never-cleared counts as worse than any time.
  */
