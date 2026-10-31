@@ -484,7 +484,7 @@ Measured on the stadium map (800x800 cells at 2 m, 100,000 fans as 20,000 dots).
 
 Gate surge now (Gate 2, 5,000-fan late rush, default decisions, headless): plan A clears in 17.3 min, C in 19.4, B in 26.9. Re-measure in Chrome with a warm cache before quoting it on stage; the earlier 6.2 / 8.6 / never figures were the old Gate 1 turnstile jam.
 
-**Rebuild status (2026-10-31).** Phase 0 is merged. Phases 1 (server-side engine and validation), 3 (operations map) and 4 (voice assistant) sit on stacked branches, to be merged in that order. `docs/roadmap.md` has the merge table and next steps; `docs/plans/` has each plan.
+**Rebuild status (2026-10-31).** Phases 0, 1 (server-side engine and validation), 3 (operations map) and 4 (voice assistant) are merged into `main`, plus a satellite imagery option on the operations map. Phase 2 (real data) needs people; vision is on hold. `docs/roadmap.md` has the merge table and next steps; `docs/plans/` has each plan.
 
 **Open items, in order:**
 
