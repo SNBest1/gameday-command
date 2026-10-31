@@ -88,7 +88,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
 
 ### Stream B: Lint and format
 
-- [ ] **B1.** Install Biome with `npm install -D -E @biomejs/biome@2`. Biome ships a separate native binary per platform as optional dependencies. Check that `package-lock.json` lists the `@biomejs/cli-*` packages for darwin, win32 and linux, so `npm ci` works on every OS. If any is missing, stop and ask.
+- [x] **B1.** Install Biome with `npm install -D -E @biomejs/biome@2`. Biome ships a separate native binary per platform as optional dependencies. Check that `package-lock.json` lists the `@biomejs/cli-*` packages for darwin, win32 and linux, so `npm ci` works on every OS. If any is missing, stop and ask.
 
   Create `biome.jsonc`, matching the style the code already mostly uses:
   - `formatter`: `indentStyle: "space"`, `indentWidth: 2`, `lineWidth: 120`, `lineEnding: "lf"`.
