@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { DECISION_DEFAULTS } from '../../brain/src/defaults.ts';
 import { makePopulation } from '../../brain/src/fan-types.ts';
 import type { SimConfig, TickFrame } from '../../contracts.ts';
+import { VEHICLE_STATES } from '../../contracts.ts';
 import { FlowMovement, Simulation } from '../../engine/src/index.ts';
 import type { SceneInfo } from '../../engine/src/index.ts';
 import { testGateSurge, windowFor } from '../../world/src/incidents.ts';
@@ -104,7 +105,26 @@ describe('operations map layer props', () => {
       state: new Uint8Array(2),
       waitedS: new Float32Array(2),
     };
-    expect(vehicleRows(map, geo, vehicles, true, null, null)).toHaveLength(1);
+    expect(vehicleRows(map, geo, vehicles, 18, true, null, null)).toHaveLength(1);
+  });
+
+  it('never paints a parked vehicle in the jam colour', () => {
+    const frame = emptyFrame();
+    frame.vehicles = {
+      x: Float32Array.from([10]),
+      y: Float32Array.from([10]),
+      heading: new Float32Array(1),
+      speed: new Float32Array(1),
+      kind: new Uint8Array(1),
+      state: Uint8Array.from([VEHICLE_STATES.indexOf('parked')]),
+      waitedS: new Float32Array(1),
+    };
+    const rows = vehicleRows(map, geo, frame, 18, true, null, null);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.driving).toBe(false);
+    expect(rows[0]!.color.slice(0, 3)).not.toEqual([0xff, 0x30, 0x40]);
+    expect(rows[0]!.radiusPx).toBeLessThan(6);
+    expect(vehicleRows(map, geo, frame, 14, true, null, null)).toHaveLength(0);
   });
 
   it('paints danger density in the danger band and nothing below the floor', () => {
