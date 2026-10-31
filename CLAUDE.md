@@ -446,9 +446,15 @@ every interpreted utterance ─► POST /api/voice/log
   The Orders tab's after-action report and JSON export include this page's rows.
 - **Environment.** `STT_URL`, `STT_MODEL`, `STT_KEY`, `STT_TIMEOUT_MS`,
   `INTENT_LLM_URL`, `INTENT_LLM_MODEL`, `INTENT_LLM_KEY`,
-  `INTENT_LLM_TIMEOUT_MS` and `VOICE_LOG_DAYS`, documented in `.env.example`
-  and `docs/voice-setup.md`. `DECISION_CACHE_VERSION` and the decision cache are
-  untouched.
+  `INTENT_LLM_TIMEOUT_MS`, `VOICE_LOG_DAYS`, `VOICE_RATE_PER_MIN` and
+  `TRUST_PROXY`, documented in `.env.example` and `docs/voice-setup.md`.
+  `DECISION_CACHE_VERSION` and the decision cache are untouched.
+- **Security.** The voice log stores police transcripts and the API has no
+  authentication yet. A hosted deployment must not expose the API server to the
+  public internet until the authentication phase lands; keep it on the local
+  network or behind an authenticating gateway. The interpret and transcribe
+  routes share a per-IP limit (`VOICE_RATE_PER_MIN`, default 30), and the log
+  route is body- and field-capped.
 
 Kev (optional — without it every decision is a fallback, by design):
 

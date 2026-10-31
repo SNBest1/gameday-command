@@ -1,5 +1,10 @@
 # Voice assistant setup
 
+> **Security warning.** The voice log stores police transcripts, and the API
+> server has no authentication yet. A hosted deployment must **not** expose the
+> API server to the public internet until the authentication phase lands. Keep
+> it on the local network or behind an authenticating gateway.
+
 The command box always works with its local keyword parser. Two optional
 OpenAI-compatible services make it understand free phrasing and recorded audio:
 
