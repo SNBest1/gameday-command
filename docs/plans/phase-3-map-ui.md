@@ -81,7 +81,7 @@ Run the waves in this order:
 
 ### Stream A: Georeference
 
-- [ ] **A1.** Create `world/src/osm/georef.ts`:
+- [x] **A1.** Create `world/src/osm/georef.ts`:
   - `export interface MapGeoref { center: { lat: number; lon: number }; radiusM: number; cellSizeM: number }`.
   - `georefOf(extract: OsmExtract): MapGeoref`, taking `center` and `radiusM` from the extract and `CELL_SIZE_M` from `contracts.ts`.
   - `cellCentreLngLat(geo, width, x, y): [lon, lat]` and `lngLatToXY(geo, lon, lat): { x, y }` in metres. These must be the exact inverse of `makeProjection` in `world/src/osm/raster.ts`, using the same `METERS_PER_DEGREE_LAT` (a private `const` there today; export it, which is the only change to `raster.ts`) and the cosine of the centre latitude.
