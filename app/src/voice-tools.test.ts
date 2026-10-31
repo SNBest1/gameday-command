@@ -49,10 +49,7 @@ describe('voice tool schema', () => {
   });
 
   it('resolves the definition-of-done examples', () => {
-    const send = fromToolCall(
-      { name: 'send_officers', arguments: { count: 4, place: 'Stadium Lot Northeast' } },
-      map,
-    );
+    const send = fromToolCall({ name: 'send_officers', arguments: { count: 4, place: 'Stadium Lot Northeast' } }, map);
     expect(send).toMatchObject({ type: 'order', parsed: { intent: { kind: 'send_officers', count: 4 } } });
     if (send?.type === 'order' && send.parsed.ok) expect(send.parsed.intent).toMatchObject({ place: { id: 'lot-ne' } });
 
