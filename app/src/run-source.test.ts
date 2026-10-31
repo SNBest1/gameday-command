@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { WorkerIn } from '../../contracts.ts';
-import { encode } from '../../engine/src/wire.ts';
+import { encode } from '../../engine/src/index.ts';
 import { serverSource } from './run-source.ts';
 
 class FakeWebSocket {
@@ -77,7 +77,10 @@ describe('serverSource', () => {
       host: 'localhost:5173',
       port: '5173',
     });
-    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ id: 'run-1' }) })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, json: async () => ({ id: 'run-1' }) })),
+    );
     vi.stubGlobal('WebSocket', FakeWebSocket);
 
     const source = await serverSource(init);

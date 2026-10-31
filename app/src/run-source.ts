@@ -1,6 +1,5 @@
 import type { WorkerIn, WorkerOut } from '../../contracts.ts';
-import type { EditIn, EditOut } from '../../engine/src/index.ts';
-import { decode, encode } from '../../engine/src/wire.ts';
+import { decode, encode, type EditIn, type EditOut } from '../../engine/src/index.ts';
 
 export interface RunSource {
   post(message: WorkerIn | EditIn, transfer?: Transferable[]): void;
