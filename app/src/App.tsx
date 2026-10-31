@@ -32,7 +32,7 @@ import {
   STADIUM_FANS,
   TEST_FANS,
 } from './app-config.ts';
-import { getBriefing, getDecisionDefaults, getMap, saveComparison } from './api.ts';
+import { getDecisionDefaults, getMap, saveComparison } from './api.ts';
 import { markSignedIn, signedInThisSession } from './session.ts';
 import { pitchFor } from './pitch.ts';
 import { Info } from './Info.tsx';
@@ -70,6 +70,7 @@ import { bandTotals, heatBands, hotspots, makePlaceIndex, type Hotspot } from '.
 import { useRun, type RunHandle, type RunInit } from './useRun.ts';
 import { useHistoryRecording } from './useHistoryRecording.ts';
 import { useAutorun } from './useAutorun.ts';
+import { useBriefing } from './useBriefing.ts';
 
 /** A stadium's crowd is its capacity, up to the 100,000 the engine is sized for. */
 const fanCount = (map: MapBundle) =>
@@ -296,6 +297,16 @@ export function App() {
     savedComparison,
     briefing,
   });
+  useBriefing({
+    allDone,
+    incident,
+    cards,
+    planStates,
+    briefing,
+    briefingBusy,
+    setBriefing,
+    setBriefingBusy,
+  });
   // When all three plans finish, show the verdict once; after that the rail stays where the commander puts it.
   const wasDone = useRef(false);
   useEffect(() => {
@@ -317,17 +328,6 @@ export function App() {
       .catch(() => {});
   }, [allDone, incident, savedComparison, cards]);
   const maxFrames = Math.max(...runs.map((r) => r.frameCount), 0);
-
-  // The briefing is only worth asking for once every plan has a scorecard.
-  useEffect(() => {
-    if (!allDone || !incident || briefing || briefingBusy) return;
-    const scorecards = cards.filter((c): c is Scorecard => c !== null);
-    setBriefingBusy(true);
-    void getBriefing({ incident, plans: planStates.map((p) => applyDisabled(p.plan, p.disabled)), scorecards })
-      .then(setBriefing)
-      .catch(() => setBriefing(null))
-      .finally(() => setBriefingBusy(false));
-  }, [allDone, incident, briefing, briefingBusy, cards, planStates]);
 
   const pickedRun = picked ? runs[picked.run] : undefined;
 
