@@ -39,7 +39,17 @@ The browser-worker path stays as it is and remains the default until the two pat
 
 ## Skills used
 
-Filled in at step 0: each skill found, whether you used it, and why.
+Searched 2026-10-31 with `npx skills find` for Node `worker_threads`, Hono
+WebSockets, binary protocols, Vitest and pedestrian dynamics.
+
+- `find-skills` (already available): used for the registry search; nothing installed.
+- `secondsky/claude-skills@bun-workers` (411 installs): Bun-specific workers, not Node `worker_threads`; not used.
+- Hono candidates (`vcode-sh/vibe-tools@hono-guide` 15 installs, `hankcraft/hankcraft-skills@hono-backend` 10 installs): too little adoption and no WebSocket-specific guidance; not used.
+- Binary-protocol results were reverse-engineering/security skills, not a framing format for this protocol; not used.
+- `pozapas/crowdskills@jupedsim` (2 installs): JuPedSim tooling, not the Jülich data archive; not used.
+- No Vitest skill was needed; the repo's existing config and Phase 0 scripts cover it.
+- The only dependency this plan names is `@hono/node-ws`, added in C1.
+- Installed: **none**.
 
 ## Streams and files
 
@@ -62,7 +72,7 @@ Run the waves in this order:
 
 ## Steps
 
-- [ ] **0. Skills and baseline.**
+- [x] **0. Skills and baseline.**
   1. Search for skills that could help with this plan: Node `worker_threads`, WebSockets with Hono, binary protocols, Vitest, pedestrian-dynamics data.
   2. Record them under "Skills used" above.
   3. Run `npm run typecheck`, `npm run lint`, `npm test` and `npm run build`, and note any failure that already existed.
