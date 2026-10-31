@@ -37,7 +37,18 @@ Make the repo safe to change, on macOS and Windows alike. A machine checks every
 
 ## Skills used
 
-Filled in at step 0: each skill found, whether you used it, and why.
+Searched 2026-10-31 with `npx skills find` and the skills.sh leaderboard.
+
+- `find-skills` (already available): used for the search; nothing installed.
+- `addyosmani/agent-skills@ci-cd-and-automation` (61.6K installs, 112K repository stars, three security audits pass): reviewed for the matrix CI and quality-gate steps A2/B4. **Not installed** — the plan specifies the workflow and scripts exactly, so the skill would add no project files and no value. The user chose to skip installation.
+- `wshobson/agents@github-actions-templates` (17.8K installs): reviewed; overlaps this plan and carries Docker/Kubernetes patterns the repo does not use.
+- `antfu/skills@vitest` (45.2K installs): reviewed; it describes Vitest 5.1-beta APIs while this repo is on Vitest 3.2.4.
+- `vercel-labs/agent-skills@vercel-react-best-practices` and `@vercel-composition-patterns`: reviewed; the plan requires cut-and-paste moves only, so their refactor and performance guidance is out of scope.
+- `haydenbleasel/ultracite@ultracite`: rejected; it is an opinionated Biome preset and would conflict with the exact `biome.jsonc` in B1.
+- `biomejs/biome@biome-developer`: rejected; it is for developing Biome itself, not configuring it.
+- No dedicated cross-platform Node-script or Biome-configuration skill was found.
+- `frontend-design`, `design-taste-frontend` and `opencode`: not relevant to Phase 0, which changes no UI.
+- Installed: **none**.
 
 ## Streams and files
 
@@ -53,7 +64,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
 
 ## Steps
 
-- [ ] **0. Skills and baseline.**
+- [x] **0. Skills and baseline.**
   1. Search for skills that could help with this plan: Biome, GitHub Actions, cross-platform Node scripts, React component extraction, Vitest.
   2. Record them under "Skills used" above.
   3. Run `npm run typecheck`, `npm test` and `npm run build`, and note any failure that already existed.
