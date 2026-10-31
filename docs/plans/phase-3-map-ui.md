@@ -184,7 +184,7 @@ Run the waves in this order:
   - When the plan with the lowest crush-risk minutes is not the fastest, say both, as today.
   - Keep the ranking rule itself (`rankPlans`: danger minutes, then time to clear) exactly as it is.
   - Keep "The commander always makes the call" and "assumption, not a forecast" wording wherever it already appears.
-- [ ] **E2.** Update `story.test.ts` and `scoreboard.test.ts` **only** where an expected string changes because of E1; ranking assertions stay as they are.
+- [x] **E2.** Update `story.test.ts` and `scoreboard.test.ts` **only** where an expected string changes because of E1; ranking assertions stay as they are.
   Verify: `npx vitest run app/src/story.test.ts app/src/scoreboard.test.ts`, then `git grep -n -i -e "verdict" -e "winner" -- app/src` shows only identifiers, not words the user sees.
 
 ## Stop and ask
