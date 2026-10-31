@@ -34,6 +34,7 @@ import {
   TEST_FANS,
 } from './app-config.ts';
 import { getBriefing, getDecisionDefaults, getMap, saveComparison } from './api.ts';
+import { markSignedIn, signedInThisSession } from './session.ts';
 import { ComparisonMaps, type FocusBox, type MapPick } from './ComparisonMaps.tsx';
 import { CrowdView } from './CrowdView.tsx';
 import { Inspector, type EditRequest } from './Inspector.tsx';
@@ -67,21 +68,6 @@ import { bandTotals, heatBands, hotspots, makePlaceIndex, type Hotspot } from '.
 import { useRun, type RunHandle, type RunInit } from './useRun.ts';
 import { vehicleIcon } from './vehicleArt.ts';
 
-/** The demo sign-in plays once per browser session, not on every page load. */
-function signedInThisSession(): boolean {
-  try {
-    return window.sessionStorage.getItem('gd-demo-seen') === '1';
-  } catch {
-    return false;
-  }
-}
-function markSignedIn(): void {
-  try {
-    window.sessionStorage.setItem('gd-demo-seen', '1');
-  } catch {
-    /* storage disabled: ask again next load */
-  }
-}
 /** A stadium's crowd is its capacity, up to the 100,000 the engine is sized for. */
 const fanCount = (map: MapBundle) =>
   map.width > 200
