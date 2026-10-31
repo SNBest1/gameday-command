@@ -121,12 +121,12 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
 
 ### Stream C: Doc drift
 
-- [ ] **C1.** `CLAUDE.md`, "Non-obvious decisions": the bullet "**The speed curve is linear:** `v = v_free · max(0.05, 1 − ρ/5.4)`..." is wrong. `densityFactor()` in `engine/src/movement-flow.ts` uses the Weidmann curve.
+- [x] **C1.** `CLAUDE.md`, "Non-obvious decisions": the bullet "**The speed curve is linear:** `v = v_free · max(0.05, 1 − ρ/5.4)`..." is wrong. `densityFactor()` in `engine/src/movement-flow.ts` uses the Weidmann curve.
   - Replace the bullet with one that describes the code as it is, quoting the formula from the comment in `densityFactor()`: free flow up to 0.5 people/m², jam density `RHO_JAM = 5.4`, and a 5% floor.
   - Also fix the sentence in "Where the key logic lives" that calls `densityFactor()` "the speed curve", but only if it states the curve's shape.
 
   Verify: `git grep -n "linear" -- CLAUDE.md` no longer describes the speed curve.
-- [ ] **C2.** `README.md` line 3 calls this "A practice tool for police commanders". It is a tool for live police operations.
+- [x] **C2.** `README.md` line 3 calls this "A practice tool for police commanders". It is a tool for live police operations.
   - Rewrite that opening sentence, and any other "practice" or "training" framing in `README.md` and `CLAUDE.md`, to say so.
   - Keep the sentences about the commander making the call and fan behaviour being an assumption.
   - Do **not** change `app/src/StartScreen.tsx`: "small practice map" refers to the 3-gate test map, which is correct.
