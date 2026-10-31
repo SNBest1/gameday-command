@@ -1,5 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { addProtocol, Map as MapLibreMap, removeProtocol, type StyleSpecification } from 'maplibre-gl';
+import {
+  addProtocol,
+  Map as MapLibreMap,
+  removeProtocol,
+  type MapMouseEvent,
+  type StyleSpecification,
+} from 'maplibre-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import {
   BitmapLayer,
@@ -19,15 +25,19 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { getMapGeo } from './api.ts';
 import type { CrowdViewProps } from './CrowdView.tsx';
 import { basemapImage } from './ops-basemap.ts';
-import { flatGeoref, mapBounds } from './ops-geo.ts';
+import { flatGeoref, lngLatToCell, mapBounds } from './ops-geo.ts';
 import {
   opsLayerProps,
+  type FanRow,
+  type OfficerRow,
   type OpsLayerProps,
   type PathDatum,
   type PointDatum,
   type PolygonDatum,
   type TextDatum,
+  type VehicleRow,
 } from './ops-layers.ts';
+import { streetPickAt } from './street-pick.ts';
 import type { MapGeoref } from '../../world/src/osm/georef.ts';
 
 const DEFAULT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
@@ -91,6 +101,7 @@ export function OpsMap(props: CrowdViewProps) {
   const basemapRef = useRef<BitmapLayer | null>(null);
   const zoomRef = useRef(10);
   const drawRef = useRef<() => void>(() => {});
+  const clickRef = useRef<(event: MapMouseEvent) => void>(() => {});
 
   const draw = () => {
     const overlay = overlayRef.current;
@@ -118,6 +129,7 @@ export function OpsMap(props: CrowdViewProps) {
         vehicleFocus: props.vehicleFocus,
         selectedVehicle: props.selectedVehicle,
         selectedOfficer: props.selectedOfficer,
+        selected: props.selected,
         showCoverage: !!props.showCoverage,
         hotspots: props.hotspots,
         incidentCells: props.incidentCells,
@@ -128,6 +140,44 @@ export function OpsMap(props: CrowdViewProps) {
     overlay.setProps({ layers });
   };
   drawRef.current = draw;
+
+  clickRef.current = (event) => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    const cell = lngLatToCell(
+      georefRef.current,
+      bundle.width,
+      bundle.height,
+      event.lngLat.lng,
+      event.lngLat.lat,
+    );
+    // A police order waiting for a click takes it outright, as in the close-up.
+    if (props.onPickStreet) {
+      if (cell >= 0) {
+        const street = streetPickAt(bundle, cell);
+        if (street >= 0) props.onPickStreet(street);
+      }
+      return;
+    }
+    const pick = (layerId: string) =>
+      overlay.pickObject({ x: event.point.x, y: event.point.y, radius: 5, layerIds: [layerId] });
+    const officer = pick('ops-officers');
+    if (officer?.object) {
+      props.onPickOfficer((officer.object as OfficerRow).id);
+      return;
+    }
+    const vehicle = pick('ops-vehicles');
+    if (vehicle?.object) {
+      props.onPickVehicle((vehicle.object as VehicleRow).vehicle);
+      return;
+    }
+    const fan = pick('ops-fans');
+    if (fan?.object) {
+      props.onPick((fan.object as FanRow).dot);
+      return;
+    }
+    props.onPick(null);
+  };
 
   useEffect(() => {
     drawRef.current();
@@ -216,6 +266,7 @@ export function OpsMap(props: CrowdViewProps) {
       overlay = new MapboxOverlay({ interleaved: true, layers: [] });
       overlayRef.current = overlay;
       map.addControl(overlay);
+      map.on('click', (event) => clickRef.current(event));
       zoomRef.current = map.getZoom();
       map.on('zoomend', () => {
         zoomRef.current = map?.getZoom() ?? zoomRef.current;
