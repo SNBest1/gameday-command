@@ -48,7 +48,12 @@ The isometric close-up and the side-by-side maps stay as optional views.
 
 ## Skills used
 
-Filled in at step 0. MapLibre's official skills (`maplibre/maplibre-agent-skills`: `maplibre-tile-sources`, `maplibre-pmtiles-patterns`) and the design skills already available (`frontend-design`, `web-design-guidelines`) are relevant here. Where a skill conflicts with this plan, the plan wins.
+Reviewed at step 0:
+
+- **`maplibre-tile-sources`** and **`maplibre-pmtiles-patterns`** (`maplibre/maplibre-agent-skills`, installed for this session with `npx skills add ... --agent opencode -g`). Used for the style/source split, the MapLibre 4+ `addProtocol` `{ data }` contract, and using `url:` (not `tiles:`) for PMTiles. Where they differ from this plan, the plan wins (`maplibre-gl@5`, the exact dependency list).
+- **`frontend-design`** (available). Used for the operational palette, legend and type treatment of the Map view.
+- **`web-design-guidelines`** (`vercel-labs/agent-skills`, read from its installed `SKILL.md`; its rules are fetched at review time). Used as the accessibility and interaction checklist for the Map view.
+- No repo or harness skill covers MapLibre, deck.gl, React or the app's existing Pixi shell beyond the plan itself; the plan's steps are the fallback.
 
 ## Streams and files
 
@@ -69,7 +74,7 @@ Run the waves in this order:
 
 ## Steps
 
-- [ ] **0. Skills and baseline.**
+- [x] **0. Skills and baseline.**
   1. Search for and review skills.
   2. Record them under "Skills used".
   3. Run `npm run typecheck`, `npm run lint`, `npm test` and `npm run build`, and note anything already failing.
