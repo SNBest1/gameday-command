@@ -10,7 +10,17 @@ import { makeOfficers } from '../../world/src/officers.ts';
 import { playbookFor } from '../../world/src/playbook.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
 import { heatBands } from './heat.ts';
-import { densityProps, fanRows, fansProps, gateLabelRows, opsLayerProps, vehicleRows } from './ops-layers.ts';
+import {
+  densityProps,
+  fanRows,
+  fansProps,
+  gateLabelRows,
+  gatesProps,
+  incidentLabelProps,
+  opsLayerProps,
+  unitLabelsProps,
+  vehicleRows,
+} from './ops-layers.ts';
 import { flatGeoref } from './ops-geo.ts';
 
 class TestImageData {
@@ -153,6 +163,37 @@ describe('operations map layer props', () => {
     expect(gateLabelRows(map, geo, open, 16)[0]?.text).toBe('Gate 1 · 105/min');
   });
 
+  it('draws theme-aware text with a real SDF outline', async () => {
+    const run = await shortRun();
+    const light = gatesProps(map, geo, run.scene, 16, 'light');
+    const dark = gatesProps(map, geo, run.scene, 16, 'dark');
+    for (const props of [light, dark]) {
+      expect(props.outlineWidth).toBeGreaterThan(0);
+      expect(props.fontSettings).toEqual({ sdf: true });
+    }
+    expect(light.getColor).not.toEqual(dark.getColor);
+    expect(light.outlineColor).not.toEqual(dark.outlineColor);
+    expect(unitLabelsProps(map, geo, run.scene, 'light').outlineWidth).toBeGreaterThan(0);
+    const incident = incidentLabelProps([0, 1, map.width, map.width + 1], map, geo, 'Gate surge', 'dark');
+    expect(incident.data[0]?.text).toBe('Gate surge');
+    expect(incident.outlineWidth).toBeGreaterThan(0);
+
+    const linear = (value: number) => {
+      const v = value / 255;
+      return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = (rgb: [number, number, number, number]) =>
+      0.2126 * linear(rgb[0]) + 0.7152 * linear(rgb[1]) + 0.0722 * linear(rgb[2]);
+    const contrast = (a: [number, number, number, number], b: [number, number, number, number]) => {
+      const x = luminance(a);
+      const y = luminance(b);
+      return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+    };
+    // The observed Positron and OpenFreeMap Dark backgrounds.
+    expect(contrast(light.getColor, [242, 243, 240, 255])).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(dark.getColor, [12, 12, 12, 255])).toBeGreaterThanOrEqual(4.5);
+  });
+
   it('builds every layer prop from one frame and scene', async () => {
     const run = await shortRun();
     const props = opsLayerProps({
@@ -167,6 +208,7 @@ describe('operations map layer props', () => {
       },
       scene: run.scene,
       zoom: 18,
+      theme: 'light',
       dangerDensity: 3.5,
       selectedBand: null,
       showVehicles: true,

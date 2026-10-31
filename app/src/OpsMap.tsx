@@ -99,6 +99,12 @@ function makeLayers(specs: OpsLayerProps): Layer[] {
       getTextAnchor: 'middle',
       getAlignmentBaseline: 'center',
     } as unknown as TextLayerProps<TextDatum>),
+    new TextLayer({
+      ...specs.incidentText,
+      fontFamily: 'system-ui, sans-serif',
+      getTextAnchor: 'middle',
+      getAlignmentBaseline: 'center',
+    } as unknown as TextLayerProps<TextDatum>),
   ];
 }
 
@@ -115,6 +121,7 @@ export function OpsMap(props: CrowdViewProps) {
   const georefRef = useRef<MapGeoref>(flatGeoref(bundle.width));
   const basemapRef = useRef<BitmapLayer | null>(null);
   const zoomRef = useRef(10);
+  const themeRef = useRef<'light' | 'dark'>(currentTheme());
   const drawRef = useRef<() => void>(() => {});
   const clickRef = useRef<(event: MapMouseEvent) => void>(() => {});
 
@@ -137,6 +144,7 @@ export function OpsMap(props: CrowdViewProps) {
         density: view.density,
         scene: live ? props.run.scene.current : null,
         zoom: zoomRef.current,
+        theme: themeRef.current,
         dangerDensity: props.dangerDensity,
         selectedBand: props.selectedBand,
         showVehicles: props.showVehicles,
@@ -325,6 +333,7 @@ export function OpsMap(props: CrowdViewProps) {
       const gridOnly = fetched === null || styles.light === '' || navigator.onLine === false;
       fallback = gridOnly;
       theme = currentTheme();
+      themeRef.current = theme;
       const initialStyle = gridOnly ? blankStyle(theme) : styleForTheme(theme, styles);
       let currentStyle = initialStyle;
       addProtocol('pmtiles', new Protocol().tile);
@@ -378,9 +387,11 @@ export function OpsMap(props: CrowdViewProps) {
         const next = currentTheme();
         if (next === theme) return;
         theme = next;
+        themeRef.current = next;
         if (fallback) {
           map?.setPaintProperty('bg', 'background-color', themeColour(theme));
           setBasemap();
+          drawRef.current();
           return;
         }
         const nextStyle = styleForTheme(theme, styles);
@@ -388,6 +399,7 @@ export function OpsMap(props: CrowdViewProps) {
           currentStyle = nextStyle;
           map?.setStyle(nextStyle);
         }
+        drawRef.current();
       };
       const observer = new MutationObserver(setTheme);
       observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
