@@ -177,7 +177,7 @@ Today `App.tsx` is 1,871 lines. `App()` runs from about line 420 to the end, and
 - [x] **E3.** Move the top header (the `<header className="top">` block, around line 1002, with the situation tabs and clock) into `app/src/AppHeader.tsx`. Pass what it reads as props.
 > **Revised after E3.** The original target of 700 lines was written before B3 reformatted `App.tsx` at 120 columns (1,872 lines became 2,399). After E1–E3 it is 1,851 lines, and the rail alone is about 440. Steps E3a–E3c were added to move the rest of the `<main>` block. The target is now **under 1,000 lines**. It stands in for "small enough to work in": do not invent splits just to hit the number. If plain moves of the pieces named here leave it a little over, report the number and stop.
 
-- [ ] **E3a.** Move the transport bar (the `<div className="controls transport">` block at the top of `<main>`, about lines 809–867) into `app/src/TransportBar.tsx`. Pass what it reads as props.
+- [x] **E3a.** Move the transport bar (the `<div className="controls transport">` block at the top of `<main>`, about lines 809–867) into `app/src/TransportBar.tsx`. Pass what it reads as props.
 - [ ] **E3b.** The `<CommandBar ... />` element (about lines 868–992) is mostly inline callbacks. Move those callbacks, with bodies unchanged, into a hook `app/src/useCommandBarProps.ts`. The hook takes what the callbacks read and returns the props object. `App.tsx` then renders `<CommandBar {...commandBarProps} />` under the same condition as now.
   - Keep any ref used by a callback as a ref (CLAUDE.md: "Callbacks read props through refs, because speech events fire long after the render that started them").
   - Do not wrap callbacks in `useCallback` or change when they are created.
