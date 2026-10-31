@@ -148,7 +148,7 @@ Run the waves in this order:
 
 ### Stream F: Validation suite
 
-- [ ] **F1.** Create `validation/reference/` and `validation/reference/SOURCES.md`. Download, from the Jülich pedestrian dynamics data archive (https://ped.fz-juelich.de/da/), the processed data for (a) a unidirectional corridor experiment (speed against density) and (b) a bottleneck experiment across several widths (flow against width). Commit the files you use, with URL, experiment name, licence and download date in `SOURCES.md`. Also record the Weidmann (1993, ETH IVT report 132) parameters already quoted in `densityFactor()` as a source entry.
+- [x] **F1.** Create `validation/reference/` and `validation/reference/SOURCES.md`. Download, from the Jülich pedestrian dynamics data archive (https://ped.fz-juelich.de/da/), the processed data for (a) a unidirectional corridor experiment (speed against density) and (b) a bottleneck experiment across several widths (flow against width). Commit the files you use, with URL, experiment name, licence and download date in `SOURCES.md`. Also record the Weidmann (1993, ETH IVT report 132) parameters already quoted in `densityFactor()` as a source entry.
 
   **If the archive cannot be reached from your environment, stop and ask.** Do not substitute values from memory or from a summary.
 - [ ] **F2.** `validation/maps.ts`: build synthetic `MapBundle`s in code:
