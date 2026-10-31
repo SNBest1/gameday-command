@@ -130,7 +130,7 @@ Run the waves in this order:
 
 ### Stream D: App client
 
-- [ ] **D1.** Create `app/src/run-source.ts` with one interface, `RunSource { post(msg, transfer?); onMessage(handler); close() }`, and two implementations:
+- [x] **D1.** Create `app/src/run-source.ts` with one interface, `RunSource { post(msg, transfer?); onMessage(handler); close() }`, and two implementations:
   - `workerSource()` wraps today's `new Worker(new URL('../../engine/src/worker.ts', import.meta.url), { type: 'module' })`; keep that exact line.
   - `serverSource(init)` calls `POST /api/runs`, then opens the WebSocket, using `wire.ts`.
 - [ ] **D2.** In `app/src/useRun.ts`, replace direct use of the `Worker` with a `RunSource`. Pick `serverSource` only when the page URL has `engine=server`; otherwise use `workerSource`. Change nothing else about how `useRun` stores frames and records.
