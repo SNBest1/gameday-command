@@ -127,7 +127,10 @@ describe.skipIf(!fmUp)('Apple on-device model through fm serve', () => {
 const voiceMap: MapBundle = {
   ...map,
   closables: [...map.closables, { id: 'lane-ave', name: 'West Lane Avenue', cells: [5] }],
-  places: [...map.places, { id: 'lot-ne', name: 'Stadium Lot Northeast', kind: 'parking', cells: [10, 11, 12], capacity: 500 }],
+  places: [
+    ...map.places,
+    { id: 'lot-ne', name: 'Stadium Lot Northeast', kind: 'parking', cells: [10, 11, 12], capacity: 500 },
+  ],
 };
 
 describe.skipIf(!process.env.INTENT_LLM_URL)('intent LLM, live', () => {
@@ -136,11 +139,21 @@ describe.skipIf(!process.env.INTENT_LLM_URL)('intent LLM, live', () => {
     const examples: { text: string; check: (u: ReturnType<typeof fromToolCall>) => void }[] = [
       {
         text: 'can we get four units over to the north-east lot',
-        check: (u) => expect(u).toMatchObject({ type: 'order', parsed: { intent: { kind: 'send_officers', count: 4 } } }),
+        check: (u) =>
+          expect(u).toMatchObject({ type: 'order', parsed: { intent: { kind: 'send_officers', count: 4 } } }),
       },
-      { text: 'shut gate two for now', check: (u) => expect(u).toMatchObject({ type: 'order', parsed: { intent: { kind: 'close' } } }) },
-      { text: "how's it looking at gate 2", check: (u) => expect(u).toMatchObject({ type: 'question', question: { kind: 'gate' } }) },
-      { text: 'put the map up', check: (u) => expect(u).toEqual({ type: 'control', control: { kind: 'view', view: 'ops' } }) },
+      {
+        text: 'shut gate two for now',
+        check: (u) => expect(u).toMatchObject({ type: 'order', parsed: { intent: { kind: 'close' } } }),
+      },
+      {
+        text: "how's it looking at gate 2",
+        check: (u) => expect(u).toMatchObject({ type: 'question', question: { kind: 'gate' } }),
+      },
+      {
+        text: 'put the map up',
+        check: (u) => expect(u).toEqual({ type: 'control', control: { kind: 'view', view: 'ops' } }),
+      },
     ];
     for (const example of examples) {
       const res = await app.request('/api/voice/interpret', {
