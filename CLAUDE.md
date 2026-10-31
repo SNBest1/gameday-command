@@ -388,13 +388,15 @@ switch, and `?view=close|plan|compare` still selects them directly.
   blank style and the map needs nothing external. Once a tile style loads, the
   grid layer is removed so no tinted square sits over the real map.
 - **Tiles and PMTiles.** `VITE_MAP_STYLE` defaults to keyless OpenFreeMap
-  Positron and is read at build time. `VITE_MAP_STYLE_DARK` is optional: when
-  the theme switches to dark and it is set, `OpsMap` calls `map.setStyle` with
-  it and leaves the deck.gl layers in place; otherwise the light style stays. A
-  deployment can point either at any MapLibre style; for an on-premises install,
-  a self-hosted style with a `pmtiles://https://host/basemap.pmtiles` source
-  works because `OpsMap` registers the `pmtiles` protocol and removes it on
-  unmount. `.env.example` documents both forms.
+  Positron and is read at build time. `VITE_MAP_STYLE_DARK` defaults to keyless
+  OpenFreeMap Dark: when the theme switches to dark, `OpsMap` calls
+  `map.setStyle` with it and leaves the deck.gl layers in place. Both are
+  overridable; `app/vite.config.ts` sets `envDir: '..'`, so the repo-root `.env`
+  is the one place for the server's and the app's variables. A deployment can
+  point either style at any MapLibre style; for an on-premises install, a
+  self-hosted style with a `pmtiles://https://host/basemap.pmtiles` source works
+  because `OpsMap` registers the `pmtiles` protocol and removes it on unmount.
+  `.env.example` documents both forms.
 - **One WebGL context.** MapLibre owns the context and deck.gl shares it through
   `MapboxOverlay({ interleaved: true })`. `MapWorkspace` mounts exactly one of
   `OpsMap`, `CrowdView` or `ComparisonMaps`.
