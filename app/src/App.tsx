@@ -18,6 +18,21 @@ import { playbookFor } from '../../world/src/playbook.ts';
 import { VEHICLE_TYPES, VEHICLE_TYPE_LIST } from '../../world/src/vehicles.ts';
 import { WEATHER_LABELS, WEATHER_TIMELINES, weatherTimeline } from '../../world/src/weather.ts';
 import type { PoliceOrder } from '../../engine/src/index.ts';
+import {
+  AUTORUN,
+  DANGER,
+  LABELS,
+  MAP_PARAM,
+  n,
+  OFFICERS,
+  params,
+  SEED,
+  SPEEDS,
+  START_TRAFFIC,
+  START_WEATHER,
+  STADIUM_FANS,
+  TEST_FANS,
+} from './app-config.ts';
 import { getBriefing, getDecisionDefaults, getMap, saveComparison } from './api.ts';
 import { ComparisonMaps, type FocusBox, type MapPick } from './ComparisonMaps.tsx';
 import { CrowdView } from './CrowdView.tsx';
@@ -52,11 +67,6 @@ import { bandTotals, heatBands, hotspots, makePlaceIndex, type Hotspot } from '.
 import { useRun, type RunHandle, type RunInit } from './useRun.ts';
 import { vehicleIcon } from './vehicleArt.ts';
 
-/** One seed for every plan in a comparison: the whole point is the same crowd. */
-const SEED = 20251023;
-const LABELS = ['A', 'B', 'C'] as const;
-const params = new URLSearchParams(window.location.search);
-
 /** The demo sign-in plays once per browser session, not on every page load. */
 function signedInThisSession(): boolean {
   try {
@@ -72,25 +82,6 @@ function markSignedIn(): void {
     /* storage disabled: ask again next load */
   }
 }
-/**
- * The server serves the stadium map when it has been fetched, else the test
- * map. `?map=test-3gate` forces the small one, which is handy for a quick look.
- */
-/** `?map=` picks a stadium; with none (and no autorun) the app starts empty, on the stadium chooser. */
-const MAP_PARAM = params.get('map');
-/** `?autorun=1` starts the three runs without a click, for an unattended demo. */
-const AUTORUN = params.get('autorun') === '1';
-/** `?weather=thunderstorm` and `?traffic=0` set the scenario from the URL. */
-const START_WEATHER = params.get('weather') ?? 'clear';
-const START_TRAFFIC = params.get('traffic') !== '0';
-const STADIUM_FANS = 100_000;
-const TEST_FANS = 1200;
-const OFFICERS = 24;
-const SPEEDS = [5, 20, 60] as const;
-// Per-run danger line: 3.5 p/m2, not the contract default 4. A 4 p/m2 line
-// only fires at the 5 p/m2 cap in this model, so plans separated by noise.
-const DANGER = 3.5;
-
 /** A stadium's crowd is its capacity, up to the 100,000 the engine is sized for. */
 const fanCount = (map: MapBundle) =>
   map.width > 200
@@ -102,7 +93,6 @@ const fanCount = (map: MapBundle) =>
 /** The test map is a gate wall and a lot with no streets between them. */
 const hasRoads = (map: MapBundle) => trafficCapacity(map).entries > 0;
 const minutes = (seconds: number) => `${seconds < 0 ? '−' : '+'}${Math.abs(Math.round(seconds / 60))} min`;
-const n = (value: number) => Math.round(value).toLocaleString();
 
 /** The situation in a sentence a judge gets on first read. */
 function pitchFor(incident: Incident, zoneName: string): string {
