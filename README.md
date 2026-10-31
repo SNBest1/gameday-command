@@ -1,6 +1,6 @@
 # Gameday Command
 
-A practice tool for police commanders who run game day at Ohio Stadium. It simulates the crowd, lets a commander trigger an incident, then runs the same moment under up to three response plans side by side and scores each one.
+A live police operations tool for game day at Ohio Stadium. It simulates the crowd and traffic, lets a commander trigger an incident, then runs the same moment under up to three response plans side by side and scores each one.
 
 The commander always makes the call. The tool shows tradeoffs; it never tells police what to do. Fan behavior is an **assumption, not a forecast**, and the app says so on screen.
 
