@@ -71,6 +71,7 @@ import { useRun, type RunHandle, type RunInit } from './useRun.ts';
 import { useHistoryRecording } from './useHistoryRecording.ts';
 import { useAutorun } from './useAutorun.ts';
 import { useBriefing } from './useBriefing.ts';
+import { useShortcuts } from './useShortcuts.ts';
 
 /** A stadium's crowd is its capacity, up to the 100,000 the engine is sized for. */
 const fanCount = (map: MapBundle) =>
@@ -307,6 +308,7 @@ export function App() {
     setBriefing,
     setBriefingBusy,
   });
+  const { showKeys, setShowKeys } = useShortcuts({ loaded, allDone, view, setCloseRun, setView, setPlaying });
   // When all three plans finish, show the verdict once; after that the rail stays where the commander puts it.
   const wasDone = useRef(false);
   useEffect(() => {
@@ -703,28 +705,6 @@ export function App() {
       .catch(() => setKevAnswers(null));
   }, [railTab]);
 
-  // Keyboard: 1-3 put a plan on the map, P runs or pauses, ? shows every shortcut.
-  // Space (talk) and / (type) live in the command box. Ignored while typing.
-  const [showKeys, setShowKeys] = useState(false);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (e.metaKey || e.ctrlKey || e.altKey || t?.closest?.('input, textarea, select, [contenteditable]')) return;
-      if (e.key === '?') {
-        e.preventDefault();
-        setShowKeys((v) => !v);
-      } else if (e.key === 'Escape') {
-        setShowKeys(false);
-      } else if (loaded && ['1', '2', '3'].includes(e.key)) {
-        setCloseRun(Number(e.key) - 1);
-        if (view === 'compare') setView('close');
-      } else if (loaded && (e.key === 'p' || e.key === 'P') && !allDone) {
-        setPlaying((p) => !p);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [loaded, allDone, view]);
   const keysCard = showKeys && (
     <div className="keys-card" role="dialog" aria-label="Keyboard shortcuts" onClick={() => setShowKeys(false)}>
       <div onClick={(e) => e.stopPropagation()}>

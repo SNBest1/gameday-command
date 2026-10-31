@@ -169,7 +169,7 @@ Today `App.tsx` is 1,871 lines. `App()` runs from about line 420 to the end, and
   - `signedInThisSession`, `markSignedIn` → `app/src/session.ts`
 
   Move the module-level constants (`SEED`, `LABELS`, `OFFICERS`, `SPEEDS`, `DANGER`, and the `params` / `AUTORUN` reads) to `app/src/app-config.ts`, unchanged.
-- [ ] **E2.** Move self-contained effects out of `App()` into custom hooks, each in its own file. Each hook takes the values it reads as arguments and returns what `App()` needs. Keep every effect's body and dependency list exactly as it is:
+- [x] **E2.** Move self-contained effects out of `App()` into custom hooks, each in its own file. Each hook takes the values it reads as arguments and returns what `App()` needs. Keep every effect's body and dependency list exactly as it is:
   - the history-recording effect (comment starts "Record this run's gate queues") → `app/src/useHistoryRecording.ts`
   - the autorun effect ("Start without a click when asked") and the "Published for an unattended run" effect → `app/src/useAutorun.ts`
   - the briefing effect ("The briefing is only worth asking for") → `app/src/useBriefing.ts`
