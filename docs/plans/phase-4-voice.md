@@ -174,13 +174,13 @@ Run the waves in this order:
 
 ### Stream D: Wiring, audit and docs
 
-- [ ] **D1.** In the command-box flow (`CommandBar.tsx` / `useCommandBarProps.ts`), interpret final words like this:
+- [x] **D1.** In the command-box flow (`CommandBar.tsx` / `useCommandBarProps.ts`), interpret final words like this:
   1. If the local regexes in `parseUtterance()` match confirm, cancel or undo, use that at once (no network).
   2. Else, if `llm` is true in the speech config, post `voiceTools`, `voiceSystemPrompt` and the text to `/api/voice/interpret`, and run `fromToolCall`. Show "Understanding…" while waiting.
   3. If that gives `null`, or `llm` is false, use `parseUtterance()`.
 
   Everything after this step (read-back, confirm, order, plan step, control, answer) is unchanged. Keep reading props through refs.
-- [ ] **D2.** Log every interpreted utterance to `/api/voice/log`:
+- [x] **D2.** Log every interpreted utterance to `/api/voice/log`:
   - the transcript;
   - the source (`browser`, `stt` or `typed`);
   - the tool call or `'fallback'`;
