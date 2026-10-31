@@ -1,6 +1,7 @@
-import type { Hono } from 'hono';
+import type { Hono, MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import type { Db } from './db.ts';
+import { clientKey, takeRate, type RateBucket } from './rate-limit.ts';
 
 /**
  * Speech-to-text and intent-LLM routes. Both services are plain
@@ -8,6 +9,8 @@ import type { Db } from './db.ts';
  */
 
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
+const MAX_INTERPRET_BYTES = 64 * 1024;
+const MAX_TEXT_CHARS = 500;
 const MAX_SYSTEM_CHARS = 8000;
 /** The schema has 22 tools (6 orders, 8 controls, 6 questions, show_plan, none). */
 const MAX_TOOLS = 24;
@@ -49,6 +52,20 @@ const validTools = (tools: unknown): tools is ToolDefinition[] =>
 const failure = (reason: string) => ({ call: null, reason });
 
 export function voiceRoutes(app: Hono, db: Db): void {
+  const buckets = new Map<string, RateBucket>();
+  const voiceLimit: MiddlewareHandler = async (c, next) => {
+    const configured = Number(process.env.VOICE_RATE_PER_MIN ?? 30);
+    const limit = Number.isFinite(configured) && configured >= 0 ? Math.floor(configured) : 30;
+    const incoming = (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming;
+    const key = clientKey(
+      incoming?.socket?.remoteAddress,
+      c.req.header('x-forwarded-for'),
+      process.env.TRUST_PROXY === '1',
+    );
+    if (!takeRate(buckets, key, limit, Date.now())) return c.json({ error: 'too many requests' }, 429);
+    await next();
+  };
+
   app.get('/api/speech/config', (c) =>
     c.json({
       stt: env('STT_URL') !== '',
@@ -58,6 +75,7 @@ export function voiceRoutes(app: Hono, db: Db): void {
 
   app.post(
     '/api/speech/transcribe',
+    voiceLimit,
     bodyLimit({ maxSize: MAX_AUDIO_BYTES, onError: (c) => c.json({ error: 'audio is too large' }, 413) }),
     async (c) => {
       const target = env('STT_URL');
@@ -102,21 +120,26 @@ export function voiceRoutes(app: Hono, db: Db): void {
     },
   );
 
-  app.post('/api/voice/interpret', async (c) => {
-    let body: { text?: unknown; tools?: unknown; system?: unknown };
-    try {
-      body = await c.req.json();
-    } catch {
-      return c.json({ error: 'invalid JSON' }, 400);
-    }
-    const text = typeof body.text === 'string' ? body.text.trim() : '';
-    const system = typeof body.system === 'string' ? body.system : '';
-    if (!text) return c.json({ error: 'text is required' }, 400);
-    if (!validTools(body.tools)) return c.json({ error: 'tools must be at most 24 function definitions' }, 400);
-    if (system.length > MAX_SYSTEM_CHARS) return c.json({ error: 'system prompt is too long' }, 400);
+  app.post(
+    '/api/voice/interpret',
+    voiceLimit,
+    bodyLimit({ maxSize: MAX_INTERPRET_BYTES, onError: (c) => c.json({ error: 'request is too large' }, 413) }),
+    async (c) => {
+      let body: { text?: unknown; tools?: unknown; system?: unknown };
+      try {
+        body = await c.req.json();
+      } catch {
+        return c.json({ error: 'invalid JSON' }, 400);
+      }
+      const text = typeof body.text === 'string' ? body.text.trim() : '';
+      const system = typeof body.system === 'string' ? body.system : '';
+      if (!text) return c.json({ error: 'text is required' }, 400);
+      if (text.length > MAX_TEXT_CHARS) return c.json({ error: 'text is too long' }, 400);
+      if (!validTools(body.tools)) return c.json({ error: 'tools must be at most 24 function definitions' }, 400);
+      if (system.length > MAX_SYSTEM_CHARS) return c.json({ error: 'system prompt is too long' }, 400);
 
-    const target = env('INTENT_LLM_URL');
-    if (!target) return c.json(failure('intent LLM is not configured'));
+      const target = env('INTENT_LLM_URL');
+      if (!target) return c.json(failure('intent LLM is not configured'));
 
     const headers: Record<string, string> = { 'content-type': 'application/json' };
     if (env('INTENT_LLM_KEY')) headers.Authorization = `Bearer ${env('INTENT_LLM_KEY')}`;
