@@ -151,7 +151,7 @@ Run the waves in this order:
 - [x] **F1.** Create `validation/reference/` and `validation/reference/SOURCES.md`. Download, from the Jülich pedestrian dynamics data archive (https://ped.fz-juelich.de/da/), the processed data for (a) a unidirectional corridor experiment (speed against density) and (b) a bottleneck experiment across several widths (flow against width). Commit the files you use, with URL, experiment name, licence and download date in `SOURCES.md`. Also record the Weidmann (1993, ETH IVT report 132) parameters already quoted in `densityFactor()` as a source entry.
 
   **If the archive cannot be reached from your environment, stop and ask.** Do not substitute values from memory or from a summary.
-- [ ] **F2.** `validation/maps.ts`: build synthetic `MapBundle`s in code:
+- [x] **F2.** `validation/maps.ts`: build synthetic `MapBundle`s in code:
   - a straight corridor, 50 m long, with an entry and a destination at the two ends;
   - a room that empties through a single opening, for opening widths of 2, 4, 6 and 8 m (multiples of the 2 m cell).
 
