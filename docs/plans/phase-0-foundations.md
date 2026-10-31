@@ -13,7 +13,7 @@ Make the repo safe to change, on macOS and Windows alike. A machine checks every
 - `.github/workflows/ci.yml` runs install, typecheck, lint, format check, test and build on Ubuntu, Windows and macOS on every push and pull request, and all three pass.
 - `npm run lint`, `npm run format`, `npm run format:check` and `npm run test:perf` exist and work the same on macOS and Windows.
 - `README.md` and `CLAUDE.md` match the code on the points listed in Stream C.
-- `app/src/App.tsx` is under 700 lines, and every piece moved out of it behaves exactly as before.
+- `app/src/App.tsx` is under 1,000 lines (measured after the Biome formatting in B3), and every piece moved out of it behaves exactly as before.
 - No file under `app/` imports from `../../engine/src/<anything>` except `../../engine/src/index.ts`; the worker is still referenced by URL as `../../engine/src/worker.ts`. A lint rule enforces this.
 - `npm run typecheck && npm run lint && npm run format:check && npm test && npm run build` pass.
 
@@ -175,6 +175,13 @@ Today `App.tsx` is 1,871 lines. `App()` runs from about line 420 to the end, and
   - the briefing effect ("The briefing is only worth asking for") → `app/src/useBriefing.ts`
   - the keyboard shortcuts effect (the `window.addEventListener('keydown', onKey)` block, around line 966) → `app/src/useShortcuts.ts`
 - [x] **E3.** Move the top header (the `<header className="top">` block, around line 1002, with the situation tabs and clock) into `app/src/AppHeader.tsx`. Pass what it reads as props.
+> **Revised after E3.** The original target of 700 lines was written before B3 reformatted `App.tsx` at 120 columns (1,872 lines became 2,399). After E1–E3 it is 1,851 lines, and the rail alone is about 440. Steps E3a–E3c were added to move the rest of the `<main>` block. The target is now **under 1,000 lines**. It stands in for "small enough to work in": do not invent splits just to hit the number. If plain moves of the pieces named here leave it a little over, report the number and stop.
+
+- [ ] **E3a.** Move the transport bar (the `<div className="controls transport">` block at the top of `<main>`, about lines 809–867) into `app/src/TransportBar.tsx`. Pass what it reads as props.
+- [ ] **E3b.** The `<CommandBar ... />` element (about lines 868–992) is mostly inline callbacks. Move those callbacks, with bodies unchanged, into a hook `app/src/useCommandBarProps.ts`. The hook takes what the callbacks read and returns the props object. `App.tsx` then renders `<CommandBar {...commandBarProps} />` under the same condition as now.
+  - Keep any ref used by a callback as a ref (CLAUDE.md: "Callbacks read props through refs, because speech events fire long after the render that started them").
+  - Do not wrap callbacks in `useCallback` or change when they are created.
+- [ ] **E3c.** Move the map workspace (the `{loaded && (<> <div className="canvas-wrap ..."> ... </>)}` block, about lines 993–1381) into `app/src/MapWorkspace.tsx`, rendered under the same `loaded &&` condition. If it needs more than about 25 props, split it inside the same file into named parts (for example the two `<aside className="inspector vehicle-inspector">` panels as `VehicleInspector`), rather than passing everything through one component. The rule from CLAUDE.md still holds: only one of `CrowdView` and `ComparisonMaps` is mounted at a time.
 - [ ] **E4.** Move the right rail (the `<aside className="side">` block with `rail-tabs` and `rail-body`, around line 1549) into `app/src/Rail.tsx`. Leave the `officerRole ? <OfficerConsole .../> : ...` choice in `App.tsx`. If the rail needs more than about 25 props, move each tab's body into its own component in the same file rather than passing everything through.
 - [ ] **E5.** Check by hand in a browser (`npm run serve` and `npm run dev` in two terminals, then open http://localhost:5173/?autorun=1):
   - all three runs start;
@@ -182,11 +189,15 @@ Today `App.tsx` is 1,871 lines. `App()` runs from about line 420 to the end, and
   - every rail tab opens (Brief, Orders, Plans, Gates, Map key, About);
   - `1` `2` `3` and `P` work;
   - the light/dark toggle works;
+  - the transport bar's play, speed, weather and vehicles controls work;
+  - typing an order in the command box (for example "close gate 2") shows the confirmation;
+  - clicking a fan opens the inspector, and clicking a vehicle opens the vehicle panel;
+  - **Side by side** and back switches the map view;
   - the browser console shows no errors.
 
   Write the result, and which OS you checked on, in the commit message. The user checks the other OS.
   Verify:
-  - `node -e "console.log(require('fs').readFileSync('app/src/App.tsx','utf8').split('\n').length)"` prints under 700;
+  - `node -e "console.log(require('fs').readFileSync('app/src/App.tsx','utf8').split('\n').length)"` prints under 1,000;
   - `npm run typecheck && npm run lint && npm test && npm run build` pass.
 
 ## Stop and ask
