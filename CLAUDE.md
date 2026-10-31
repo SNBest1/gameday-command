@@ -134,9 +134,17 @@ Measured in headless Chrome against a cache warmed by the real Kev: **222.5x rea
 Drive a headless browser with Chrome's own DevTools Protocol — Node has a built-in `WebSocket`, so this needs no dependencies:
 
 ```bash
+# macOS
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
   --use-angle=swiftshader --enable-unsafe-swiftshader --remote-debugging-port=9222 \
   --user-data-dir=/tmp/gd-chrome about:blank
+```
+
+```powershell
+# Windows (PowerShell)
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new `
+  --use-angle=swiftshader --enable-unsafe-swiftshader --remote-debugging-port=9222 `
+  --user-data-dir="$env:TEMP\gd-chrome" about:blank
 ```
 
 **No `<StrictMode>` in `main.tsx`, deliberately.** StrictMode mounts every effect twice in development. PixiJS owns a WebGL context imperatively, and tearing the throwaway first `Application` down while the real second one is still initialising leaves the second `init()` unresolved: the page stops mid-setup, draws nothing, and reports no error. The production build was always fine, which made it easy to misread as the browser's fault. Found with `document.title` beacons — execution stopped at the `if (disposed)` branch — after `Debugger.pause` showed the main thread wedged. Waiting for the init promise before destroying is not enough; do not reintroduce StrictMode without re-checking `npm run dev` in a browser.
@@ -313,7 +321,11 @@ Takes a few minutes and settles when `/api/health`'s `cachedDecisions` stops mov
 
 ```bash
 npm run typecheck     # tsc over every lane, one pass
-npm test              # vitest (58 files, 380 checks; 3 live-model checks skip without the models)
+npm test              # vitest
+npm run test:perf     # the load-sensitive throughput tests
+npm run lint          # biome lint .
+npm run format        # biome format --write .
+npm run format:check  # biome format . (check only)
 npm run serve         # API on 8787
 npm run dev           # app on 5173, proxies /api to 8787
 npm run fetch-map     # refetch the committed Ohio Stadium OSM extract

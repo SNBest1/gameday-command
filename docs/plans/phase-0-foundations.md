@@ -132,7 +132,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
   - Do **not** change `app/src/StartScreen.tsx`: "small practice map" refers to the 3-gate test map, which is correct.
 
   Verify: `git grep -n -i -e "practice tool" -e "training tool" -- README.md CLAUDE.md` returns nothing.
-- [ ] **C3.** In `CLAUDE.md` "Commands", replace the test-count line with `npm test` alone, without counts, so it cannot drift again. Add `lint`, `format`, `format:check` and `test:perf`. Remove the macOS-only Chrome command from "Verifying the app in a browser", or add the Windows path beside it (`"C:\Program Files\Google\Chrome\Application\chrome.exe"`).
+- [x] **C3.** In `CLAUDE.md` "Commands", replace the test-count line with `npm test` alone, without counts, so it cannot drift again. Add `lint`, `format`, `format:check` and `test:perf`. Remove the macOS-only Chrome command from "Verifying the app in a browser", or add the Windows path beside it (`"C:\Program Files\Google\Chrome\Application\chrome.exe"`).
 
 ### Stream D: Engine public entry point
 
