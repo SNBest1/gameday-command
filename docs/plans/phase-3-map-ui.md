@@ -132,7 +132,7 @@ Run the waves in this order:
 
 ### Stream C: Data layers
 
-- [ ] **C1.** `app/src/ops-layers.ts`: pure functions that turn the current frame and scene into deck.gl layer **props** (plain objects), so they can be unit-tested without WebGL.
+- [x] **C1.** `app/src/ops-layers.ts`: pure functions that turn the current frame and scene into deck.gl layer **props** (plain objects), so they can be unit-tested without WebGL.
   - **Density:** an `ImageData` of standing density banded with `heatBands(dangerDensity)` from `app/src/heat.ts`, transparent below `HEAT_FLOOR`. Drawn as a `BitmapLayer` over the map bounds. Respect `selectedBand`.
   - **Fans:** a `ScatterplotLayer`, shown only at zoom 17 or more. Positions come from the frame's dot `x`/`y` (metres → lng/lat through `ops-geo`); off-map dots (x < 0) are skipped. Colour by state from `STATE_RGB` in `app/src/people.ts`; never by shirt or fan type, and never named.
   - **Vehicles:** a `ScatterplotLayer` at vehicle centres, coloured by `flowLevel` and `FLOW_RGB` (`app/src/congestion.ts`) when `showFlow`, else neutral. Shown when `showVehicles`. Respect `vehicleFocus`.
