@@ -93,7 +93,7 @@ Run the waves in this order:
 
 ### Stream A: Server routes
 
-- [ ] **A1.** `server/src/voice.ts` exports `voiceRoutes(app, db)`, registered from `server/src/index.ts`.
+- [x] **A1.** `server/src/voice.ts` exports `voiceRoutes(app, db)`, registered from `server/src/index.ts`.
   - `GET /api/speech/config` → `{ stt: boolean, llm: boolean }`. True when the matching URL environment variable is set.
   - `POST /api/speech/transcribe`:
     - Takes the raw audio body (`audio/webm` or `audio/ogg`, capped at 2 MB, else 413).
