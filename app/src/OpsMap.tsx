@@ -38,6 +38,7 @@ import {
   type VehicleRow,
 } from './ops-layers.ts';
 import { streetPickAt } from './street-pick.ts';
+import { cellCentreLngLat } from '../../world/src/osm/georef.ts';
 import type { MapGeoref } from '../../world/src/osm/georef.ts';
 
 const DEFAULT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
@@ -140,6 +141,77 @@ export function OpsMap(props: CrowdViewProps) {
     overlay.setProps({ layers });
   };
   drawRef.current = draw;
+
+  const fitCellBounds = (x0: number, y0: number, x1: number, y1: number) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const [west, north] = cellCentreLngLat(georefRef.current, bundle.width, x0 - 0.5, y0 - 0.5);
+    const [east, south] = cellCentreLngLat(georefRef.current, bundle.width, x1 + 0.5, y1 + 0.5);
+    map.fitBounds(
+      [
+        [west, south],
+        [east, north],
+      ],
+      { padding: 40, maxZoom: 18, duration: 0 },
+    );
+  };
+
+  const fitCells = (cells: number[] | undefined) => {
+    if (!cells || cells.length === 0) return;
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
+    for (const cell of cells) {
+      const x = cell % bundle.width;
+      const y = Math.floor(cell / bundle.width);
+      if (x < x0) x0 = x;
+      if (y < y0) y0 = y;
+      if (x > x1) x1 = x;
+      if (y > y1) y1 = y;
+    }
+    fitCellBounds(x0, y0, x1, y1);
+  };
+
+  const fitWhole = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.fitBounds(mapBounds(georefRef.current, bundle.width, bundle.height), {
+      padding: 24,
+      maxZoom: 18,
+      duration: 0,
+    });
+  };
+
+  const focusSelected = () => {
+    const map = mapRef.current;
+    if (!map || props.selected === null) return;
+    const kept = props.run.frames.current ?? [];
+    const view = props.scrubIndex === null ? props.run.latest.current : kept[Math.min(props.scrubIndex, kept.length - 1)];
+    const frame = view?.frame;
+    if (!frame) return;
+    const x = frame.x[props.selected];
+    const y = frame.y[props.selected];
+    if (x === undefined || y === undefined || x < 0 || y < 0) return;
+    const centre = cellCentreLngLat(
+      georefRef.current,
+      bundle.width,
+      x / georefRef.current.cellSizeM - 0.5,
+      y / georefRef.current.cellSizeM - 0.5,
+    );
+    map.easeTo({ center: centre, zoom: Math.max(map.getZoom(), 17.5), duration: 400 });
+  };
+
+  useEffect(() => {
+    if (props.focusBox) fitCellBounds(props.focusBox.x0, props.focusBox.y0, props.focusBox.x1, props.focusBox.y1);
+    // fitCellBounds is recreated with props; the nonce is what means "go there".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.focusBox]);
+
+  useEffect(() => {
+    if (props.focusToken > 0) focusSelected();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.focusToken]);
 
   clickRef.current = (event) => {
     const overlay = overlayRef.current;
@@ -268,6 +340,19 @@ export function OpsMap(props: CrowdViewProps) {
       map.addControl(overlay);
       map.on('click', (event) => clickRef.current(event));
       zoomRef.current = map.getZoom();
+      (window as unknown as { gamedayMap?: { lookAt(xM: number, yM: number, zoom: number): void } }).gamedayMap = {
+        lookAt: (xM, yM, zoom) => {
+          map?.jumpTo({
+            center: cellCentreLngLat(
+              georefRef.current,
+              bundle.width,
+              xM / georefRef.current.cellSizeM - 0.5,
+              yM / georefRef.current.cellSizeM - 0.5,
+            ),
+            zoom,
+          });
+        },
+      };
       map.on('zoomend', () => {
         zoomRef.current = map?.getZoom() ?? zoomRef.current;
         drawRef.current();
@@ -316,9 +401,26 @@ export function OpsMap(props: CrowdViewProps) {
       mapRef.current = null;
       overlayRef.current = null;
       basemapRef.current = null;
+      delete (window as unknown as { gamedayMap?: unknown }).gamedayMap;
       removeProtocol('pmtiles');
     };
   }, [bundle]);
 
-  return <div className="ops-map" ref={hostRef} />;
+  return (
+    <div className="ops-map-wrap">
+      <div className="ops-map" ref={hostRef} />
+      <div className="ops-tools">
+        <button title="Show the whole map" onClick={fitWhole}>
+          Whole map
+        </button>
+        <button
+          title="Back to the incident"
+          onClick={() => fitCells(props.incidentCells)}
+          disabled={!props.incidentCells || props.incidentCells.length === 0}
+        >
+          Incident
+        </button>
+      </div>
+    </div>
+  );
 }
