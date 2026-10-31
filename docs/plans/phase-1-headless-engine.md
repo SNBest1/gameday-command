@@ -1,6 +1,6 @@
 # Phase 1: Headless engine and validation
 
-Branch: `phase-1/headless-engine` (from `main`, **after Phase 0 has merged**).
+Branch: `phase-1/headless-engine`, created from `main` **after the user has merged Phase 0**. Work only on this branch. **Never commit to, merge into or push `main`.** Pushing `phase-1/headless-engine` to `origin` is allowed so CI can run.
 
 ## Goal
 
@@ -23,7 +23,8 @@ The browser-worker path stays as it is and remains the default until the two pat
 
 ## Constraints
 
-- Follow `AGENTS.md`. In particular: `contracts.ts` is frozen, the step order in `sim.ts` is fixed, and runs stay deterministic.
+- Follow `AGENTS.md`, including "Mac and Windows". In particular: `contracts.ts` is frozen, the step order in `sim.ts` is fixed, and runs stay deterministic.
+- **Everything works on macOS and Windows.** Server workers, WebSockets, the validation scripts and every npm script must behave the same on both. CI checks Ubuntu, Windows and macOS. Build file paths with `node:path` / `fileURLToPath`, never by joining strings.
 - **Do not change simulation behaviour.** No physics, decisions, scoring or constants change in this phase. The validation suite only measures.
 - The only new dependency allowed is `@hono/node-ws` (server, exact version) for WebSockets. Nothing for validation: write plain TypeScript.
 - **Reference numbers come only from files committed under `validation/reference/`, each with its URL and licence in `validation/reference/SOURCES.md`.** Never type a measured value from memory. If a source cannot be downloaded, stop and ask; the user can fetch it from a normal terminal.
@@ -35,6 +36,10 @@ The browser-worker path stays as it is and remains the default until the two pat
 - No live data input (vision is on hold; real data is Phase 2).
 - No change to the engine's imports of `world/` and `brain/`. This phase only writes the proposal.
 - No tuning of the model to match the reference data.
+
+## Skills used
+
+Filled in at step 0: each skill found, whether you used it, and why.
 
 ## Streams and files
 
@@ -56,6 +61,13 @@ Run the waves in this order:
 | G: Boundary proposal | `docs/proposals/engine-boundary.md` (new) |
 
 ## Steps
+
+- [ ] **0. Skills and baseline.**
+  1. Search for skills that could help with this plan: Node `worker_threads`, WebSockets with Hono, binary protocols, Vitest, pedestrian-dynamics data.
+  2. Record them under "Skills used" above.
+  3. Run `npm run typecheck`, `npm run lint`, `npm test` and `npm run build`, and note any failure that already existed.
+
+  Verify: "Skills used" is filled in, and the baseline results are in your first commit's message.
 
 ### Stream A: Worker core
 
@@ -120,7 +132,7 @@ Run the waves in this order:
 - [ ] **E1.** `server/src/parity.test.ts`:
   1. Run the gate-surge incident on `test-3gate` with a fixed seed and **default decisions only**, so there is no Kev and no cache: (a) in-process through `worker-core.ts` with an in-memory `WorkerHost`, and (b) through the server and WebSocket path from Stream C.
   2. Assert that the final scorecards are `toEqual`, and that the final frame's typed arrays are byte-identical.
-  3. Then run the stadium map (`ohio-stadium`) for 10 sim minutes past the incident and assert the same. Mark this case with `describe.skipIf(!process.env.PERF)` if it takes over 60 s.
+  3. Then run the stadium map (`ohio-stadium`) for 10 sim minutes past the incident and assert the same. If this case takes over 60 s, mark it with `describe.skipIf(!process.env.PERF)` and add its file to `include` in `vitest.perf.config.ts` (from Phase 0), so it runs under `npm run test:perf`.
 
   Verify: `npx vitest run server/src/parity.test.ts`.
 
@@ -150,7 +162,7 @@ Run the waves in this order:
 ### Stream G: Engine boundary proposal (document only)
 
 - [ ] **G1.** Write `docs/proposals/engine-boundary.md`:
-  - List every import in `engine/src/` from `../../world/` and `../../brain/` (use `grep -rn "from '../../\(world\|brain\)" engine/src`), grouped by imported symbol, with the engine files that use it.
+  - List every import in `engine/src/` from `../../world/` and `../../brain/` (use `git grep -n -e "from '../../world/" -e "from '../../brain/" -- engine/src`), grouped by imported symbol, with the engine files that use it.
   - For each symbol, propose one of:
     - (a) pass it in through `SimulationOptions` or `SimContext`;
     - (b) it belongs in `engine/`, so move it there;
@@ -167,10 +179,12 @@ Run the waves in this order:
 - Anything needs `contracts.ts`, or any existing test or scorecard number changes.
 - The app needs more than `useRun.ts` changed to use `RunSource` (D2).
 
-## Verification (supervisor, before opening the PR)
+## Verification (before telling the user it is done)
 
 1. `npm ci && npm run typecheck && npm run lint && npm run format:check && npm test && npm run build`.
-2. `npx vitest run server/src/parity.test.ts` passes, and `PERF=1` for the stadium case.
-3. A browser check with and without `?engine=server` (D3).
-4. `npm run validate`, and attach `validation/report.md` to the PR description.
-5. `docs/wire-protocol.md` and `docs/proposals/engine-boundary.md` exist. Mark Phase 1 done in `docs/roadmap.md` and add a short CLAUDE.md section, "Running the engine on the server".
+2. `npx vitest run server/src/parity.test.ts` passes, and `npm run test:perf` passes for the stadium case.
+3. A browser check with and without `?engine=server` (D3). Say which OS you checked on; the user checks the other.
+4. CI green on Ubuntu, Windows and macOS for the branch.
+5. `npm run validate`. Tell the user where `validation/report.md` is.
+6. `docs/wire-protocol.md` and `docs/proposals/engine-boundary.md` exist.
+7. Mark Phase 1 "Ready for review" in `docs/roadmap.md`, and add a short CLAUDE.md section, "Running the engine on the server".

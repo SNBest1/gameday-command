@@ -8,7 +8,15 @@ This file is the short rulebook. `CLAUDE.md` is the deep record of *why* the cod
 
 - **Planner (Claude)** writes the plans in `docs/plans/` and reviews the result.
 - **Implementer (you)** carries out one plan at a time, exactly as written. You do not redesign, widen the scope or "improve" things the plan does not mention. If the plan is wrong or unclear, stop and say so (see "Stop and ask").
-- Plan status lives in `docs/roadmap.md`. Only the supervisor of a plan ticks its `## Steps` boxes.
+- Plan status lives in `docs/roadmap.md`. Tick a step's `- [ ]` box in the plan file when its verify command passes.
+
+## How to work a plan
+
+1. Read this file, then the whole plan, then the `CLAUDE.md` sections for the files it touches.
+2. **Search for skills first.** Look for skills available to you that could help with this plan (for example: Biome, GitHub Actions, React refactoring, WebSockets, Node worker threads, testing). In the plan's "Skills used" section, list what you found and which ones you will use, and why. Do not install anything that adds a project dependency the plan does not name.
+3. Run the baseline: `npm run typecheck`, `npm test`, `npm run build` (plus `npm run lint` once it exists). Write down any failure that existed before you started.
+4. Do the steps in the order the plan gives. After each step, run its verify command and tick its box.
+5. Finish with the plan's "Verification" section.
 
 ## Commands
 
@@ -21,7 +29,17 @@ npm run serve        # API on :8787
 npm run dev          # app on :5173, proxies /api to :8787
 ```
 
-A change is **done** only when `npm run typecheck && npm test && npm run build` all pass. Once Phase 0 lands, `npm run lint` joins that list.
+A change is **done** only when `npm run typecheck && npm test && npm run build` all pass. Once Phase 0 lands, `npm run lint` and `npm run format:check` join that list.
+
+## Mac and Windows
+
+The team develops on both macOS and Windows, and everything must work on both.
+
+- **No shell-specific npm scripts.** No `VAR=1 cmd`, no `rm -rf`, no `&&` chains that depend on bash, no `.sh` scripts. Put the logic in a small Node `.ts` script under `scripts/`, or use a tool's own config (for example `test.env` in a Vitest config).
+- **File paths:** build them with `node:path` or `new URL(..., import.meta.url)` and `fileURLToPath`. Never join paths with a hard-coded `/` or `\` for the file system. Never assume a case-sensitive file system (macOS usually is not; Linux CI is).
+- **Line endings:** the repo stores LF (`.gitattributes`, added in Phase 0). Do not commit CRLF.
+- **Searching in verify commands:** use `git grep`, which behaves the same everywhere, rather than `grep`, `find` or `wc`.
+- **CI** runs on Ubuntu, Windows and macOS (added in Phase 0). A change is not done if any of them fails.
 
 ## Layout
 
@@ -58,15 +76,18 @@ Stop, write down what you found and ask the user when:
 - a step would touch `contracts.ts`;
 - any scorecard number or measured result in `CLAUDE.md` changes when the plan says behaviour should not change;
 - a test fails and the plan does not explain why;
+- something works on one operating system and not the other;
 - you need a dependency, file or tool the plan does not mention;
 - a step needs a reference number (a measured speed, a flow rate) that is not in a committed source file. **Never write a reference number from memory.**
 - the plan contradicts this file or `CLAUDE.md`.
 
 ## Git
 
-- One branch per plan, named in the plan (for example `phase-0/foundations`). Never commit to `main`.
+- Work only on the branch the plan names (for example `phase-0/foundations`).
+- **Never commit to, merge into or push `main`.** Only the user does that, when they explicitly ask.
+- Pushing the plan's own branch to `origin` is allowed, so CI can run on it.
 - Small commits, one idea each, with a clear message. A formatting-only commit stays separate from any logic change.
-- Do not rewrite history on a shared branch and do not force-push.
+- Do not rewrite history on a pushed branch and do not force-push.
 - Never commit `.env`, API keys or anything under `server/data/*.db`.
 
 ## Docs
