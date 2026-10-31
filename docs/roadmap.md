@@ -35,7 +35,7 @@ Everything must work on both macOS and Windows; CI checks Ubuntu, Windows and ma
 | 1 | Headless engine and validation | **Ready for review** on `phase-1/headless-engine` | [phase-1-headless-engine.md](plans/phase-1-headless-engine.md) | Server-side and browser runs give identical scorecards; validation report compares the model with cited published data |
 | 2 | Real data | Needs people, not code | [briefs/real-data.md](plans/briefs/real-data.md) | One past game day replayed against its real gate counts |
 | 3 | Map UI | **Ready for review** on `phase-3/map-ui` (stacked on Phase 1) | [phase-3-map-ui.md](plans/phase-3-map-ui.md) | GIS map replaces the gamified view as the default |
-| 4 | Voice | Brief only | [briefs/voice.md](plans/briefs/voice.md) | Spoken orders go through tool calling to typed `PoliceOrder`s, confirmed and audited |
+| 4 | Voice | In progress on `phase-4/voice` (stacked on Phase 3) | [phase-4-voice.md](plans/phase-4-voice.md) | Spoken orders go through tool calling to typed `PoliceOrder`s, confirmed and audited |
 | — | Vision | **On hold** | [briefs/vision.md](plans/briefs/vision.md) | Not started until the team decides |
 
 A brief becomes a full plan when the phases before it are done, because each depends on what those phases find.
