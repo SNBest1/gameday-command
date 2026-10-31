@@ -10,7 +10,7 @@ import {
 import type { GateStat, OfficerStatus, SceneInfo } from '../../engine/src/index.ts';
 import { cellCentreLngLat, type MapGeoref } from '../../world/src/osm/georef.ts';
 import { coverage } from './coverage.ts';
-import { flowLevel, FLOW_RGB, standingDensity, type PoliceHotspot } from './congestion.ts';
+import { flowLevel, FLOW_RGB, isDriving, standingDensity, type PoliceHotspot } from './congestion.ts';
 import { bandOf, HEAT_FLOOR, heatBands } from './heat.ts';
 import { mapBounds, metresToLngLat } from './ops-geo.ts';
 import { BARRICADE_SYMBOL, COVERAGE_SYMBOLS, HOTSPOT_SYMBOLS, INCIDENT_SYMBOL, UNIT_SYMBOLS } from './ops-symbols.ts';
@@ -224,12 +224,15 @@ export function fansProps(
 export interface VehicleRow extends PointDatum {
   vehicle: number;
   kind: VehicleKind;
+  driving: boolean;
+  radiusPx: number;
 }
 
 export function vehicleRows(
   map: MapBundle,
   geo: MapGeoref,
   frame: TickFrame,
+  zoom: number,
   showFlow: boolean,
   focus: VehicleKind | null,
   selected: number | null,
@@ -243,12 +246,21 @@ export function vehicleRows(
     if (x < 0 || y < 0) continue;
     if (x >= map.width * CELL_SIZE_M || y >= map.height * CELL_SIZE_M) continue;
     const kind = VEHICLE_KINDS[vehicles.kind[i]!]!;
+    const driving = isDriving(vehicles.state[i]!);
+    if (!driving && zoom < 15) continue;
     const level = flowLevel(vehicles.state[i]!, vehicles.speed[i]!);
-    const colour = showFlow ? (FLOW_RGB[level] ?? [190, 195, 200]) : [190, 195, 200];
-    const alpha = focus !== null && focus !== kind ? 60 : i === selected ? 255 : 220;
+    const colour = driving
+      ? showFlow
+        ? (FLOW_RGB[level] ?? [190, 195, 200])
+        : [190, 195, 200]
+      : [150, 155, 160];
+    const alpha =
+      focus !== null && focus !== kind ? 60 : i === selected ? 255 : driving ? 220 : 120;
     rows.push({
       vehicle: i,
       kind,
+      driving,
+      radiusPx: driving ? 6 : 3.6,
       position: metresToLngLat(geo, map.width, x, y),
       color: rgba(colour as [number, number, number], alpha),
     });
@@ -260,6 +272,7 @@ export function vehiclesProps(
   map: MapBundle,
   geo: MapGeoref,
   frame: TickFrame,
+  zoom: number,
   showVehicles: boolean,
   showFlow: boolean,
   focus: VehicleKind | null,
@@ -267,10 +280,10 @@ export function vehiclesProps(
 ): ScatterProps {
   return {
     id: 'ops-vehicles',
-    data: vehicleRows(map, geo, frame, showFlow, focus, selected),
+    data: vehicleRows(map, geo, frame, zoom, showFlow, focus, selected),
     getPosition: (d) => d.position,
     getFillColor: (d) => d.color,
-    getRadius: 6,
+    getRadius: (d) => (d as VehicleRow).radiusPx,
     radiusUnits: 'pixels',
     stroked: true,
     getLineColor: (d) => ((d as VehicleRow).vehicle === selected ? [255, 255, 255, 255] : [0, 0, 0, 0]),
@@ -734,7 +747,7 @@ export function opsLayerProps(input: OpsLayersInput): OpsLayerProps {
   return {
     density: densityProps(map, geo, frame, density?.peoplePerM2, dangerDensity, selectedBand),
     fans: fansProps(map, geo, frame, zoom, selected),
-    vehicles: vehiclesProps(map, geo, frame, showVehicles, showFlow, vehicleFocus, selectedVehicle),
+    vehicles: vehiclesProps(map, geo, frame, zoom, showVehicles, showFlow, vehicleFocus, selectedVehicle),
     officers: officersProps(map, geo, scene, selectedOfficer),
     unitLabels: unitLabelsProps(map, geo, scene),
     routes: routesProps(map, geo, scene),

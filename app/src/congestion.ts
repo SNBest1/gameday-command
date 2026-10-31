@@ -34,7 +34,7 @@ export function flowLevel(state: number, speed: number): number {
   return FLOW_FREE;
 }
 
-const isDriving = (state: number) =>
+export const isDriving = (state: number) =>
   state === VS.driving ||
   state === VS.stopped ||
   state === VS.departing ||
