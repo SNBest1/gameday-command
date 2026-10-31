@@ -37,6 +37,7 @@ function recognitionCtor(): RecognitionCtor | null {
 }
 
 let recorded = false;
+let llm = false;
 let configPromise: Promise<void> | null = null;
 
 /** Load the server's speech config once per page. */
@@ -45,15 +46,18 @@ export function speechConfigReady(): Promise<void> {
     configPromise = getSpeechConfig()
       .then((config) => {
         recorded = config.stt;
+        llm = config.llm;
       })
       .catch(() => {
         recorded = false;
+        llm = false;
       });
   }
   return configPromise;
 }
 void speechConfigReady();
 
+export const speechConfig = () => ({ stt: recorded, llm });
 export const speechSupported = () => recorded || recognitionCtor() !== null;
 
 /**

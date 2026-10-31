@@ -85,6 +85,27 @@ export interface VoiceLogEntry {
 
 export const logVoice = (entry: VoiceLogEntry) => postJson<VoiceLogEntry, { ok: true }>('/api/voice/log', entry);
 
+export interface VoiceLogRow {
+  id: number;
+  at: string;
+  session: string;
+  source: string;
+  transcript: string;
+  toolCall: string;
+  summary: string;
+  outcome: string;
+}
+
+export async function getVoiceLog(): Promise<VoiceLogRow[]> {
+  try {
+    const res = await fetch('/api/voice/log');
+    if (!res.ok) return [];
+    return (await res.json()) as VoiceLogRow[];
+  } catch {
+    return [];
+  }
+}
+
 async function postJson<Req, Res>(path: string, body: Req): Promise<Res> {
   const res = await fetch(path, {
     method: 'POST',
