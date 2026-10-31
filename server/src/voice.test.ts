@@ -169,6 +169,31 @@ describe('voice routes', () => {
     expect(transcribe.status).toBe(429);
   });
 
+  it('rejects invalid or oversized log fields', async () => {
+    const app = createApp(openDb(':memory:'));
+    const base = {
+      session: 's',
+      source: 'typed',
+      transcript: 'close gate 2',
+      toolCall: 'fallback',
+      summary: 'Close Gate 2, now',
+      outcome: 'none',
+    };
+    expect((await post(app, '/api/voice/log', { ...base, source: 'radio' })).status).toBe(400);
+    expect((await post(app, '/api/voice/log', { ...base, transcript: 'x'.repeat(2001) })).status).toBe(400);
+    expect((await post(app, '/api/voice/log', { ...base, summary: 'x'.repeat(2001) })).status).toBe(400);
+    expect(
+      (await post(app, '/api/voice/log', { ...base, toolCall: { name: 'close', blob: 'x'.repeat(9000) } })).status,
+    ).toBe(400);
+    const huge = JSON.stringify({ ...base, transcript: 'x'.repeat(17 * 1024) });
+    const res = await app.request('/api/voice/log', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: huge,
+    });
+    expect(res.status).toBe(413);
+  });
+
   it('stores, lists and prunes the voice log', async () => {
     const db = openDb(':memory:');
     const app = createApp(db);
