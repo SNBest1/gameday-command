@@ -1,5 +1,6 @@
 import type { Scorecard } from '../../contracts.ts';
 import type { PoliceOrder, SceneInfo } from '../../engine/src/index.ts';
+import type { VoiceLogRow } from './api.ts';
 import { clockText } from './story.ts';
 
 /**
@@ -85,10 +86,26 @@ const escape = (text: string) =>
   text.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]!);
 
 /** A printable after-action report. Every number is from the run's scorecard or log. */
-export function afterActionHtml(title: string, entries: TimelineEntry[], scorecard: Scorecard | null): string {
+export function afterActionHtml(
+  title: string,
+  entries: TimelineEntry[],
+  scorecard: Scorecard | null,
+  voice: VoiceLogRow[] = [],
+): string {
   const rows = entries
     .map((e) => `<tr><td>${escape(e.clock)}</td><td>${escape(e.kind)}</td><td>${escape(e.text)}</td></tr>`)
     .join('');
+  const voiceRows = voice
+    .map(
+      (row) =>
+        `<tr><td>${escape(new Date(row.at).toLocaleTimeString())}</td><td>${escape(row.transcript)}</td><td>${escape(
+          row.summary || row.toolCall,
+        )}</td><td>${escape(row.outcome)}</td></tr>`,
+    )
+    .join('');
+  const voiceSection = voice.length
+    ? `<h2>Voice</h2><table><thead><tr><th>Time</th><th>Said</th><th>Understood as</th><th>Outcome</th></tr></thead><tbody>${voiceRows}</tbody></table>`
+    : '';
   const score = scorecard
     ? `<ul>
 <li>Time to clear the zone: ${scorecard.timeToClearMin === null ? 'did not clear' : `${scorecard.timeToClearMin.toFixed(1)} min`}</li>
@@ -102,5 +119,5 @@ export function afterActionHtml(title: string, entries: TimelineEntry[], scoreca
 <style>body{font:14px/1.45 system-ui,sans-serif;margin:32px;color:#111;background:#fff}table{border-collapse:collapse;width:100%}
 td,th{border-bottom:1px solid #ccc;padding:6px 8px;text-align:left;vertical-align:top}th{font-weight:600}</style></head>
 <body><h1>${escape(title)}</h1><p>Synthetic simulation run. Times are game clock.</p><h2>Scorecard</h2>${score}
-<h2>Timeline</h2><table><thead><tr><th>Time</th><th>Kind</th><th>What happened</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+<h2>Timeline</h2><table><thead><tr><th>Time</th><th>Kind</th><th>What happened</th></tr></thead><tbody>${rows}</tbody></table>${voiceSection}</body></html>`;
 }
