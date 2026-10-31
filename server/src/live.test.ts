@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { BriefingRequest, DecisionAsk, Scorecard } from '../../contracts.ts';
+import type { BriefingRequest, DecisionAsk, MapBundle, Scorecard } from '../../contracts.ts';
 import { decisionKey } from '../../contracts.ts';
 import { SITUATIONS } from '../../brain/src/situations.ts';
 import { oddsAreValid } from '../../brain/src/sample.ts';
@@ -9,6 +9,9 @@ import { testGateSurge } from '../../world/src/incidents.ts';
 import { askKev } from './kev.ts';
 import { askFm } from './fm.ts';
 import { briefingIsSupported } from './briefing.ts';
+import { openDb } from './db.ts';
+import { createApp } from './index.ts';
+import { fromToolCall, voiceSystemPrompt, voiceTools } from '../../app/src/voice-tools.ts';
 
 const KEV_URL = process.env.KEV_URL ?? 'http://127.0.0.1:8009';
 const FM_URL = process.env.FM_URL ?? 'http://127.0.0.1:8080';
@@ -119,4 +122,39 @@ describe.skipIf(!fmUp)('Apple on-device model through fm serve', () => {
     // the guard that decides whether the commander sees this or the template
     expect(briefingIsSupported(result!.text, request), `invented a number: ${result!.text}`).toBe(true);
   }, 90_000);
+});
+
+const voiceMap: MapBundle = {
+  ...map,
+  closables: [...map.closables, { id: 'lane-ave', name: 'West Lane Avenue', cells: [5] }],
+  places: [...map.places, { id: 'lot-ne', name: 'Stadium Lot Northeast', kind: 'parking', cells: [10, 11, 12], capacity: 500 }],
+};
+
+describe.skipIf(!process.env.INTENT_LLM_URL)('intent LLM, live', () => {
+  it('turns the four examples into the expected tools', async () => {
+    const app = createApp(openDb(':memory:'));
+    const examples: { text: string; check: (u: ReturnType<typeof fromToolCall>) => void }[] = [
+      {
+        text: 'can we get four units over to the north-east lot',
+        check: (u) => expect(u).toMatchObject({ type: 'order', parsed: { intent: { kind: 'send_officers', count: 4 } } }),
+      },
+      { text: 'shut gate two for now', check: (u) => expect(u).toMatchObject({ type: 'order', parsed: { intent: { kind: 'close' } } }) },
+      { text: "how's it looking at gate 2", check: (u) => expect(u).toMatchObject({ type: 'question', question: { kind: 'gate' } }) },
+      { text: 'put the map up', check: (u) => expect(u).toEqual({ type: 'control', control: { kind: 'view', view: 'ops' } }) },
+    ];
+    for (const example of examples) {
+      const res = await app.request('/api/voice/interpret', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          text: example.text,
+          tools: voiceTools(voiceMap),
+          system: voiceSystemPrompt(voiceMap, ['A', 'B', 'C']),
+        }),
+      });
+      const body = (await res.json()) as { call: { name: string; arguments: unknown } | null };
+      expect(body.call, example.text).not.toBeNull();
+      example.check(fromToolCall(body.call!, voiceMap));
+    }
+  }, 60_000);
 });

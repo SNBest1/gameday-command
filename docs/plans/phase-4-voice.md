@@ -189,7 +189,7 @@ Run the waves in this order:
 
   Session id: one random id per page load, generated in the app (not in simulation code).
 - [x] **D3.** In `app/src/after-action.ts`, add the session's voice log to `afterActionHtml` as a table (time, said, understood as, outcome). Update `after-action.test.ts` only to add a test for this section.
-- [ ] **D4.** In `server/src/live.test.ts`, add a block that **skips itself unless `INTENT_LLM_URL` is set**, then:
+- [x] **D4.** In `server/src/live.test.ts`, add a block that **skips itself unless `INTENT_LLM_URL` is set**, then:
   - sends the four example phrases through `/api/voice/interpret` with the real tool schema;
   - checks each resolves with `fromToolCall` to the expected kind.
 
