@@ -100,7 +100,7 @@ Run the waves in this order:
 ### Stream B: Map shell
 
 - [x] **B1.** Install the dependencies from Constraints into `app/` with exact versions. Import `maplibre-gl/dist/maplibre-gl.css` in `OpsMap.tsx`.
-- [ ] **B2.** `app/src/ops-geo.ts`: pure helpers on top of `MapGeoref`:
+- [x] **B2.** `app/src/ops-geo.ts`: pure helpers on top of `MapGeoref`:
   - map bounds as `[[west, south], [east, north]]`;
   - a cell index to `[lon, lat]`;
   - a click's `[lon, lat]` to a cell index, or -1 off the map.
