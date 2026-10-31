@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeTestMap } from '../../world/src/test-map.ts';
-import type { OfficerStatus, SceneInfo } from '../../engine/src/edits.ts';
+import type { OfficerStatus, SceneInfo } from '../../engine/src/index.ts';
 import type { PoliceHotspot } from './congestion.ts';
 import { dispatchSuggestions, mergeHotspots, responseTargets } from './suggestions.ts';
 const map = makeTestMap();

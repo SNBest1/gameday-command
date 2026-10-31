@@ -1,6 +1,6 @@
 import type { MapBundle, PlanAction } from '../../contracts.ts';
 import { DOT_GROUP_SIZE } from '../../contracts.ts';
-import type { OfficerStatus, SceneInfo } from '../../engine/src/edits.ts';
+import type { OfficerStatus, SceneInfo } from '../../engine/src/index.ts';
 
 const n = (v: number) => v.toLocaleString();
 

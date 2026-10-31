@@ -146,7 +146,7 @@ Run the streams in this order: **A and C together, then B, then D, then E.** B r
   Use `export type { ... } from` for the types. `engine/package.json` already names `src/index.ts` as `main`.
 
   Verify: `npm run typecheck`.
-- [ ] **D2.** In every file under `app/src/` (tests included), replace imports from `../../engine/src/edits.ts`, `traffic.ts`, `motion.ts`, `junctions.ts` and `flowfield.ts` with imports from `../../engine/src/index.ts`.
+- [x] **D2.** In every file under `app/src/` (tests included), replace imports from `../../engine/src/edits.ts`, `traffic.ts`, `motion.ts`, `junctions.ts` and `flowfield.ts` with imports from `../../engine/src/index.ts`.
   - Keep `import type` where it was.
   - Do not touch the three `new Worker(new URL('../../engine/src/worker.ts', ...))` lines in `app/src/useRun.ts` and `app/src/bench.ts`.
   - List the files with: `git grep -l -e "engine/src/edits" -e "engine/src/traffic" -e "engine/src/motion" -e "engine/src/junctions" -e "engine/src/flowfield" -- app/src`

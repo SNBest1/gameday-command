@@ -12,7 +12,7 @@ import type {
   WorkerIn,
   WorkerOut,
 } from '../../contracts.ts';
-import type { DotInfo, EditIn, EditOut, SceneInfo } from '../../engine/src/edits.ts';
+import type { DotInfo, EditIn, EditOut, SceneInfo } from '../../engine/src/index.ts';
 
 export interface RunSnapshotView {
   frame: TickFrame;

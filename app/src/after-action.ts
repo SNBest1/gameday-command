@@ -1,5 +1,5 @@
 import type { Scorecard } from '../../contracts.ts';
-import type { PoliceOrder, SceneInfo } from '../../engine/src/edits.ts';
+import type { PoliceOrder, SceneInfo } from '../../engine/src/index.ts';
 import { clockText } from './story.ts';
 
 /**

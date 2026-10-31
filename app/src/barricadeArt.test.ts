@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONTRACT_VERSION, type MapBundle } from '../../contracts.ts';
-import type { SceneInfo } from '../../engine/src/edits.ts';
+import type { SceneInfo } from '../../engine/src/index.ts';
 import { barricadePlacements, buildBarricades, closedAreas, closureKey } from './barricadeArt.ts';
 import { diagonalZ, personZ, vehicleDiagonal } from './depth.ts';
 

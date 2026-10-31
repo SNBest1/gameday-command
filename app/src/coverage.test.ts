@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeTestMap } from '../../world/src/test-map.ts';
-import type { OfficerStatus } from '../../engine/src/edits.ts';
+import type { OfficerStatus } from '../../engine/src/index.ts';
 import { coverage } from './coverage.ts';
 const unit: OfficerStatus = {
   id: 'a',

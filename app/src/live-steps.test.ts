@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SceneInfo, OfficerStatus } from '../../engine/src/edits.ts';
+import type { SceneInfo, OfficerStatus } from '../../engine/src/index.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
 import { stepStatus } from './live-steps.ts';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GateStat } from '../../engine/src/edits.ts';
+import type { GateStat } from '../../engine/src/index.ts';
 import {
   SEIZED_HOLD_S,
   SEIZED_WAITING,

@@ -1,7 +1,7 @@
 import type { Incident, MapBundle, VehicleFrame } from '../../contracts.ts';
 import { CELL_SIZE_M, VEHICLE_STATES } from '../../contracts.ts';
-import { roadJunctions } from '../../engine/src/junctions.ts';
-import type { OfficerStatus, PoliceOrder, SceneInfo } from '../../engine/src/edits.ts';
+import { roadJunctions } from '../../engine/src/index.ts';
+import type { OfficerStatus, PoliceOrder, SceneInfo } from '../../engine/src/index.ts';
 import type { PoliceHotspot } from './congestion.ts';
 import { POLICE_WORK_S } from './police-copy.ts';
 

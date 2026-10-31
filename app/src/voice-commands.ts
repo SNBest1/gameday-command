@@ -1,5 +1,5 @@
 import type { Id, MapBundle, PlanAction } from '../../contracts.ts';
-import type { OfficerStatus, PoliceOrder } from '../../engine/src/edits.ts';
+import type { OfficerStatus, PoliceOrder } from '../../engine/src/index.ts';
 import { buildStep, stepChoices, type Choice, type StepChoices, type StepKind } from './plan-steps.ts';
 
 /**

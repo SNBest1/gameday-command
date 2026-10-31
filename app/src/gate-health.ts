@@ -1,4 +1,4 @@
-import type { GateStat } from '../../engine/src/edits.ts';
+import type { GateStat } from '../../engine/src/index.ts';
 
 /**
  * Classify gates from the samples the gates panel has actually seen.

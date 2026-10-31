@@ -1,5 +1,5 @@
 import { VEHICLE_STATES, type MapBundle, type VehicleFrame } from '../../contracts.ts';
-import type { SceneInfo } from '../../engine/src/edits.ts';
+import type { SceneInfo } from '../../engine/src/index.ts';
 import { closedAreas } from './barricadeArt.ts';
 import { clockText } from './story.ts';
 /** Counts observations near a closure; makes no causal claim about its effect. */

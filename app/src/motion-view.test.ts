@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TickFrame } from '../../contracts.ts';
-import type { SceneInfo } from '../../engine/src/edits.ts';
-import { MotionRecorder } from '../../engine/src/motion.ts';
+import type { SceneInfo } from '../../engine/src/index.ts';
+import { MotionRecorder } from '../../engine/src/index.ts';
 import { blend } from './motion-view.ts';
 
 function fixture() {

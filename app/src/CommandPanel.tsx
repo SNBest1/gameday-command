@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Incident, MapBundle, ResponsePlan, Scorecard } from '../../contracts.ts';
-import type { GateStat } from '../../engine/src/edits.ts';
+import type { GateStat } from '../../engine/src/index.ts';
 import {
   briefLine,
   PRIORITIES,

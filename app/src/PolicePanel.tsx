@@ -1,7 +1,7 @@
 import { Roadblocks } from './Roadblocks.tsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CELL_SIZE_M, type MapBundle, type Incident } from '../../contracts.ts';
-import type { OfficerStatus, PoliceOrder } from '../../engine/src/edits.ts';
+import type { OfficerStatus, PoliceOrder } from '../../engine/src/index.ts';
 import { isGateDoor } from './barricade.ts';
 import { clockText } from './story.ts';
 import type { RunHandle } from './useRun.ts';

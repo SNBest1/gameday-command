@@ -1,6 +1,6 @@
 import { CELL_SIZE_M, type MapBundle } from '../../contracts.ts';
-import { motorwayCells } from '../../engine/src/flowfield.ts';
-import type { OfficerStatus } from '../../engine/src/edits.ts';
+import { motorwayCells } from '../../engine/src/index.ts';
+import type { OfficerStatus } from '../../engine/src/index.ts';
 import { OFFICER_REACH_CELLS } from '../../world/src/officers.ts';
 import type { PoliceHotspot } from './congestion.ts';
 const terrain = new WeakMap<MapBundle, { mask: Uint8Array; count: number }>();

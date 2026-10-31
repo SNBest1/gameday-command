@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SceneInfo } from '../../engine/src/edits.ts';
+import type { SceneInfo } from '../../engine/src/index.ts';
 import { afterActionHtml, inverseOrder, lastUndoable, timeline } from './after-action.ts';
 
 const scene = (orders: SceneInfo['orders']): SceneInfo =>

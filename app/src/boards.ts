@@ -1,6 +1,6 @@
 import type { MapBundle } from '../../contracts.ts';
 import { CELL_SIZE_M } from '../../contracts.ts';
-import type { OfficerStatus } from '../../engine/src/edits.ts';
+import type { OfficerStatus } from '../../engine/src/index.ts';
 
 const AREA = CELL_SIZE_M * CELL_SIZE_M;
 

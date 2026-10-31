@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { OfficerStatus, PoliceOrder } from '../../engine/src/edits.ts';
+import type { OfficerStatus, PoliceOrder } from '../../engine/src/index.ts';
 import { policeCopy as c } from './police-copy.ts';
 type ReportKind = Extract<PoliceOrder, { type: 'officer_report' }>['kind'];
 export function OfficerConsole({
