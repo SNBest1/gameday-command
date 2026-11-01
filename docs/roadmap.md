@@ -22,7 +22,7 @@ Everything must work on both macOS and Windows; CI checks Ubuntu, Windows and ma
 | --- | --- |
 | Hackathon rules (no paid APIs, one Mac) | No longer apply |
 | Where it runs | Both: on police premises and hosted |
-| Vision | On hold until the team discusses it |
+| Vision | Camera counts are the goal (2026-10-31): live and past counts feed the forecast. Counts only, never faces or identities. The camera pipeline waits on camera access and legal review |
 | Purpose | Live police operations, not training |
 | Who owns validation against real data | Not decided |
 | Who talks to OSU and police about data | Not decided |
@@ -36,7 +36,8 @@ Everything must work on both macOS and Windows; CI checks Ubuntu, Windows and ma
 | 2 | Real data | Needs people, not code | [briefs/real-data.md](plans/briefs/real-data.md) | One past game day replayed against its real gate counts |
 | 3 | Map UI | Done, merged into `main` (7fcba7d) | [phase-3-map-ui.md](plans/phase-3-map-ui.md) | GIS map replaces the gamified view as the default |
 | 4 | Voice | Done, merged into `main` (2a3d9cb) | [phase-4-voice.md](plans/phase-4-voice.md) | Spoken orders go through tool calling to typed `PoliceOrder`s, confirmed and audited |
-| — | Vision | **On hold** | [briefs/vision.md](plans/briefs/vision.md) | Not started until the team decides |
+| 5 | Prediction from live observations | Planned, Stage 1 next | [phase-5-prediction.md](plans/phase-5-prediction.md) | Forecasts fork from the live state, follow posted zone counts, and beat persistence in a backtest; the What if panel sends the chosen option through the usual confirmation |
+| — | Camera pipeline (vision) | Wanted; waits on camera access and legal review | [briefs/vision.md](plans/briefs/vision.md) | Edge devices post zone counts to the Phase 5 observation route; video never leaves the edge |
 
 A brief becomes a full plan when the phases before it are done, because each depends on what those phases find.
 
@@ -53,9 +54,9 @@ Phases 1, 3 and 4 were stacked branches and are merged into `main` in that order
 
 ## Findings and next steps
 
-1. **The crowd model walks too slowly in open space.** `validation/report.md` shows the model at about 0.5 m/s at low density, where the Jülich corridor measured about 1.1 m/s. The likely cause: each dot is 5 people in a 2 × 2 m cell, so a group walking alone already counts itself as 1.25 people/m². The Weidmann curve then slows it to about 69% of its free speed before any other crowd is near. Fixing this is a deliberate model change that alters every scorecard, so it needs a team decision and its own plan. The validation suite is the tool to judge it. The bottleneck comparison is also erratic across opening widths (1.1 to 6.3 people/m/s), which suggests gate admission, not walking, is setting flow there.
+1. **The crowd model walks too slowly in open space, and the measuring code has bugs too.** Phase 5 Stage 1 fixes the measuring (density counted part-way through the loop, a 60 m² area labelled 30 m², a window that overlaps where fans are admitted, and a bottleneck that counts admissions rather than crossings); Stage 2 fixes the walking. `validation/report.md` shows the model at about 0.5 m/s at low density, where the Jülich corridor measured about 1.1 m/s. The likely cause: each dot is 5 people in a 2 × 2 m cell, so a group walking alone already counts itself as 1.25 people/m². The Weidmann curve then slows it to about 69% of its free speed before any other crowd is near. Fixing this is a deliberate model change that alters every scorecard, so Stage 2 stops for a team decision before making it the default. The validation suite is the tool to judge it. The bottleneck comparison is also erratic across opening widths (1.1 to 6.3 people/m/s), which suggests gate admission, not walking, is setting flow there.
 2. **Authentication and roles come before any hosted deployment.** The API (runs, voice, voice log with police transcripts) has no authentication. `docs/voice-setup.md` says so. This should be the next plan.
 3. **Real data (Phase 2) needs a person.** Nobody owns contacting OSU athletics and the police yet; see `briefs/real-data.md`.
 4. **Engine boundary.** `docs/proposals/engine-boundary.md` lists how the engine stops importing `world/` and `brain/`; none of it needs a contract change. It is ready to become a plan once the team agrees.
 5. **Tell Nipun:** Phase 0's formatting pass reformatted `contracts.ts`. Its contents are unchanged, but the frozen file's bytes changed.
-6. **Smaller items:** `Rail.tsx` is one large component with many props. The speech-to-text live test was skipped because no test recording was available. Vision stays on hold.
+6. **Smaller items:** `Rail.tsx` is one large component with many props. The speech-to-text live test was skipped because no test recording was available.
