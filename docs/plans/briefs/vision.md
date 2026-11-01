@@ -1,10 +1,10 @@
 # Brief: vision (camera input)
 
-Status: **ON HOLD.** The team has not decided whether to build this. Do not implement anything from this file. It records the design so the thinking is not lost.
+Status: **Wanted, not started.** On 2026-10-31 the user confirmed that live and past camera counts feeding a forecast are the product's purpose. Phase 5 (`../phase-5-prediction.md`) builds everything up to the observation route with synthetic counts; this pipeline waits on camera access and a legal review, and becomes a plan then.
 
 ## Idea
 
-Camera streams become live people counts, density and flow direction per zone. These feed the forecast in `engine/src/forecast.ts`, so the model of the crowd follows the real crowd.
+Camera streams become live people counts, density and flow direction per zone. These are posted to the Phase 5 observation route (`POST /api/observations`, schema in `docs/observations.md` once Stage 4 lands), and the forecast follows the real crowd.
 
 ## Design if it goes ahead
 
