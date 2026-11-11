@@ -306,4 +306,31 @@ describe('rewinding a run', () => {
     expect(sim.scorecard().dangerMinutes).toBeCloseTo(atPoint.dangerMinutes, 9);
     expect(sim.scorecard().fallbackDecisions).toBe(atPoint.fallbackDecisions);
   });
+
+  it('fires the plan steps again after a rewind to before them', async () => {
+    const make = (runId: string) =>
+      new Simulation({
+        config: configFor(runId),
+        map,
+        population: makePopulation(1200, SEED),
+        defaults: DECISION_DEFAULTS,
+        serverUrl: '',
+        movement: new FlowMovement(),
+        replay: { runId, answers: [] },
+      });
+    const straight = make('steps-straight');
+    await runToEnd(straight);
+
+    const rewound = make('steps-rewound');
+    for (let i = 0; i < 300; i++) await rewound.step(); // five minutes before the incident
+    const point = rewound.checkpoint();
+    await runToEnd(rewound); // every plan step fires on the way
+    rewound.rewind(point);
+    await runToEnd(rewound);
+
+    // Before the hooks were in the checkpoint, the steps stayed marked as fired,
+    // so the second pass ran with no plan and scored like one.
+    expect({ ...rewound.scorecard(), runId: '' }).toEqual({ ...straight.scorecard(), runId: '' });
+    expect(straight.scorecard().officerMinutesUsed).toBeGreaterThan(0);
+  });
 });

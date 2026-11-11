@@ -944,6 +944,92 @@ kbd {
   }
 }
 
+/* ── Early warning over the map ─────────────────────────────────── */
+.warning-banner {
+  position: absolute;
+  top: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  width: max-content;
+  max-width: min(640px, calc(100% - 32px));
+  background: var(--well-glass);
+  color: var(--well-ink);
+  border: 1px solid var(--well-line);
+  border-left: 6px solid var(--warn);
+  padding: 8px 10px 8px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.4);
+}
+.warning-banner.now {
+  border-left-color: var(--stop);
+}
+.warning-banner span {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.warning-banner strong {
+  font-family: Overpass, sans-serif;
+  white-space: nowrap;
+  color: var(--warn);
+}
+.warning-banner.now strong {
+  color: var(--stop);
+}
+
+/* ── My plans (saved in this browser) ───────────────────────────── */
+.saved-plans-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.saved-plans-save label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.saved-plans-save input {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.saved-plans-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.saved-plans-list li {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--glass-card);
+}
+.saved-name {
+  display: grid;
+  gap: 2px;
+}
+.saved-name em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.saved-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   button,
   select,

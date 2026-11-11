@@ -30,6 +30,25 @@ const OFFICER_REPEAT_S = 90;
 export interface WorldRuntime extends WorldHooks {
   /** Officers the plan has committed so far, for officer minutes on the scorecard. */
   committedOfficers(): number;
+  /** Which plan steps have fired and what they set going, for a checkpoint. */
+  capture(): WorldHooksState;
+  restore(state: WorldHooksState): void;
+}
+
+/**
+ * The hooks' own bookkeeping. Without it in a checkpoint, a rewind to before a
+ * plan step left the step marked as fired, so it never fired again and every
+ * plan replayed with no plan at all.
+ */
+export interface WorldHooksState {
+  applied: number[];
+  incidentRaised: boolean;
+  exodusRaised: boolean;
+  committed: number;
+  assigned: Id[];
+  posts: [Id, number][];
+  standingOrder: SituationId | null;
+  lastRepeat: number;
 }
 
 /**
@@ -155,5 +174,28 @@ export function createWorldHooks(incident: Incident, plan: ResponsePlan, gameEnd
       }
     },
     committedOfficers: () => committed,
+    capture: () => ({
+      applied: [...applied],
+      incidentRaised,
+      exodusRaised,
+      committed,
+      assigned: [...assigned],
+      posts: [...posts],
+      standingOrder,
+      lastRepeat,
+    }),
+    restore(state) {
+      applied.clear();
+      for (const i of state.applied) applied.add(i);
+      incidentRaised = state.incidentRaised;
+      exodusRaised = state.exodusRaised;
+      committed = state.committed;
+      assigned.clear();
+      for (const id of state.assigned) assigned.add(id);
+      posts.clear();
+      for (const [id, cell] of state.posts) posts.set(id, cell);
+      standingOrder = state.standingOrder;
+      lastRepeat = state.lastRepeat;
+    },
   };
 }

@@ -5,6 +5,8 @@ import type { PoliceOrder } from '../../engine/src/index.ts';
 import { INCIDENT_LABELS } from '../../world/src/incidents.ts';
 import { VEHICLE_TYPES } from '../../world/src/vehicles.ts';
 import { AlertBanner } from './AlertBanner.tsx';
+import type { EarlyWarning } from './early-warning.ts';
+import { WarningBanner } from './WarningBanner.tsx';
 import { DANGER, LABELS, n } from './app-config.ts';
 import { ComparisonMaps, type FocusBox, type MapPick } from './ComparisonMaps.tsx';
 import type { PoliceHotspot } from './congestion.ts';
@@ -43,6 +45,8 @@ export interface MapWorkspaceProps {
   showFlow: boolean;
   setShowFlow: (value: boolean | ((value: boolean) => boolean)) => void;
   playing: boolean;
+  warning: EarlyWarning | null;
+  onDismissWarning: () => void;
   setPlaying: (playing: boolean) => void;
   started: boolean;
   zoneName: string;
@@ -332,6 +336,9 @@ export function MapWorkspace(props: MapWorkspaceProps) {
           </div>
         )}
         {view === 'close' && <Legend />}
+        {view !== 'compare' && scrub === null && runs[closeRun] && (
+          <WarningBanner warning={props.warning} t={runs[closeRun]!.t} onDismiss={props.onDismissWarning} />
+        )}
         {view === 'close' && runs[closeRun] && planStates[closeRun] && (
           <AlertBanner
             run={runs[closeRun]!}
