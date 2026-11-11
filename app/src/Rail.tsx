@@ -10,6 +10,7 @@ import type { FocusBox } from './ComparisonMaps.tsx';
 import type { HistorySample, Priority } from './command.ts';
 import { GatesPanel } from './GatesPanel.tsx';
 import { Info } from './Info.tsx';
+import { SavedPlansPanel } from './SavedPlansPanel.tsx';
 import { CopySummary, PlanCard, PlanScoreboard, type PlanState } from './PlanCards.tsx';
 import { pitchFor } from './pitch.ts';
 import { PolicePanel, type PolicePickMode } from './PolicePanel.tsx';
@@ -346,6 +347,18 @@ export function Rail(props: RailProps) {
                 </button>
               )}
             </section>
+            {loaded && incident && planStates.length === 3 && (
+              <SavedPlansPanel
+                mapId={loaded.map.id}
+                kind={incident.kind}
+                labels={LABELS}
+                plans={planStates}
+                onLoad={(slot, plan) => {
+                  setPlanStates((prev) => prev.map((p, j) => (j === slot ? { plan, disabled: new Set<number>() } : p)));
+                  setPlansDirty(true);
+                }}
+              />
+            )}
           </>
         )}
 

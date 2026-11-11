@@ -23,7 +23,7 @@ import { DIR_DX as DIR_X, DIR_DY as DIR_Y } from './flowfield.ts';
 import { DecisionClient } from '../../brain/src/client.ts';
 import { sampleOdds } from '../../brain/src/sample.ts';
 import { Scorer, type ScorerState } from '../../world/src/scoring.ts';
-import { createWorldHooks, type WorldRuntime } from '../../world/src/hooks.ts';
+import { createWorldHooks, type WorldHooksState, type WorldRuntime } from '../../world/src/hooks.ts';
 import { GAME_END_S, lateRushFor } from '../../world/src/incidents.ts';
 import { CLEAR_SKY, decisionWeather, walkFactor, weatherAt } from '../../world/src/weather.ts';
 import { OFFICER_REACH_CELLS, OFFICER_SPEED_MPS } from '../../world/src/officers.ts';
@@ -95,7 +95,9 @@ export interface Checkpoint {
   movement: unknown;
   scorer: ScorerState;
   traffic?: unknown;
-  /** Engine bookkeeping omitted by the frozen Snapshot; world hooks keep their own state. */
+  /** Which plan steps have fired, so a rewind to before one fires it again. */
+  hooks?: WorldHooksState;
+  /** Engine bookkeeping omitted by the frozen Snapshot. */
   simulation?: {
     officerTargets: [Id, number][];
     officerPos: [Id, { x: number; y: number }][];
@@ -916,6 +918,7 @@ export class Simulation {
       movement: this.opts.movement.capture?.() ?? null,
       scorer: this.scorer.capture(),
       traffic: this.traffic?.capture(),
+      hooks: this.hooks.capture(),
       simulation: {
         markers: structuredClone(this.markers),
         vehicleClosed: [...this.vehicleClosed],
@@ -946,6 +949,7 @@ export class Simulation {
   /** Put the run back to a checkpoint. Stepping on from here repeats exactly. */
   rewind(point: Checkpoint): void {
     this.restore(point.snapshot);
+    if (point.hooks) this.hooks.restore(point.hooks);
     const state = point.simulation;
     if (state) {
       this.markers = structuredClone(state.markers ?? []);
