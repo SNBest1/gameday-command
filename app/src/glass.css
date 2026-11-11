@@ -438,16 +438,20 @@ textarea:focus-visible {
 .rail-tabs {
   background: transparent;
   border-bottom: 1px solid var(--glass-line);
-  padding: 8px 8px 0;
-  gap: 2px;
+  padding: 8px 6px 0;
+  gap: 1px;
 }
 .rail-tabs button {
   background: transparent;
   box-shadow: none;
   border-radius: 8px 8px 0 0;
-  padding: 9px 8px;
+  padding: 9px 6px;
   font-size: 13.5px;
   white-space: nowrap;
+}
+.rail-tabs .tab-count,
+.rail-tabs .tab-dot {
+  margin-left: 4px;
 }
 .rail-tabs button:hover:not(:disabled):not(.on) {
   background: var(--hover-tint);
@@ -601,7 +605,10 @@ main {
 }
 .rail-body > .scoreboard th,
 .rail-body > .scoreboard td {
-  padding: 8px 10px;
+  padding: 8px 8px;
+}
+.rail-body > .scoreboard td {
+  white-space: nowrap;
 }
 .rail-body > .scoreboard thead th {
   padding-top: 10px;
@@ -656,6 +663,80 @@ main {
   }
 }
 
+/* ── Numbers at a glance ────────────────────────────────────────── */
+.stat-row {
+  border-color: var(--glass-line);
+  border-radius: var(--radius);
+  background: var(--glass-inset);
+}
+.stat-row > div {
+  padding: 7px 6px;
+  border-left-color: var(--glass-line);
+  min-width: 0;
+}
+.stat-row dt {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gates tbody tr {
+  transition: background-color 0.12s var(--ease);
+}
+.gates tbody tr:hover {
+  background: var(--hover-tint);
+}
+.verdict-line {
+  letter-spacing: -0.005em;
+}
+.feedback .agree button.on {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+kbd {
+  border-radius: 5px;
+  box-shadow: inset 0 -1px 0 var(--glass-line);
+}
+
+/* ── Panels that open over the map or the page ──────────────────── */
+.inspector,
+.info-pop,
+.keys-card > div,
+.keys-card > section {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-line);
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    var(--glass-shadow-lift);
+}
+.inspector {
+  border-radius: var(--radius-lg);
+  scrollbar-width: thin;
+  animation: glass-rise 0.25s var(--ease) both;
+}
+.inspector header {
+  border-bottom-color: var(--glass-line);
+}
+.keys-card {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.keys-card > div,
+.keys-card > section {
+  border-top: 4px solid var(--go);
+  border-radius: var(--radius-lg);
+  animation: glass-rise 0.25s var(--ease) both;
+}
+
+/* ── Officer console ────────────────────────────────────────────── */
+.oc-card {
+  border: 1px solid var(--glass-line);
+  border-left: 5px solid var(--info);
+  border-radius: var(--radius-lg);
+  background: var(--glass-card);
+  box-shadow: inset 0 1px 0 var(--glass-shine);
+}
+
 @media (prefers-reduced-motion: reduce) {
   button,
   select,
@@ -664,12 +745,16 @@ main {
   .command-bar,
   .plan-card,
   .start-map,
+  .gates tbody tr,
   .progress i {
     transition: none;
   }
   .map-cta,
   .demo-card,
-  .start-card {
+  .start-card,
+  .inspector,
+  .keys-card > div,
+  .keys-card > section {
     animation: none;
   }
   button.go:hover:not(:disabled),
