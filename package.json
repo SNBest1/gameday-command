@@ -18,6 +18,7 @@
     "format:check": "biome format .",
     "build": "npm run build --workspace @gameday/app",
     "dev": "npm run dev --workspace @gameday/app",
+    "stt": "whisper-server -m \"${WHISPER_MODEL:?Set WHISPER_MODEL to a ggml model file}\" --host 127.0.0.1 --port 8010 --inference-path /v1/audio/transcriptions",
     "serve": "node --env-file-if-exists=.env --watch server/src/index.ts",
     "fetch-map": "node --env-file-if-exists=.env world/scripts/fetch-map.ts",
     "warm": "node --env-file-if-exists=.env scripts/warm-cache.ts",

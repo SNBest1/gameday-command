@@ -27,7 +27,16 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { getMapGeo } from './api.ts';
 import type { CrowdViewProps } from './CrowdView.tsx';
 import { basemapImage } from './ops-basemap.ts';
-import { bowlBox, crowdColour, seatColumns, seatedByCell, turfColumns, type SeatColumn } from './ops-3d.ts';
+import {
+  bowlBox,
+  crowdColour,
+  seatColumns,
+  seatedByCell,
+  turfColumns,
+  vehicleBoxes,
+  type SeatColumn,
+  type VehicleBox,
+} from './ops-3d.ts';
 import { flatGeoref, lngLatToCell, mapBounds, metresToLngLat } from './ops-geo.ts';
 import {
   opsLayerProps,
@@ -323,6 +332,41 @@ export function OpsMap(props: CrowdViewProps) {
             pickable: false,
           } as unknown as ColumnLayerProps<SeatColumn>),
         );
+        // Vehicles as boxes their real size, once close enough to tell them apart.
+        if (props.showVehicles && zoomRef.current >= 15.5) {
+          layers.push(
+            new PolygonLayer({
+              id: 'ops-vehicle-boxes',
+              data: vehicleBoxes(bundle, georefRef.current, view.frame, props.showFlow, props.vehicleFocus),
+              extruded: true,
+              getPolygon: (d: VehicleBox) => d.polygon,
+              getElevation: (d: VehicleBox) => d.height,
+              getFillColor: (d: VehicleBox) => d.color,
+              material: { ambient: 0.6, diffuse: 0.55, shininess: 24 },
+              pickable: false,
+            } as unknown as PolygonLayerProps<VehicleBox>),
+          );
+        }
+        // Officers as tall markers, so a unit is findable between buildings.
+        const scene = live ? props.run.scene.current : null;
+        if (scene) {
+          layers.push(
+            new ColumnLayer({
+              id: 'ops-officer-posts',
+              data: scene.officers,
+              diskResolution: 12,
+              radius: 1.1,
+              extruded: true,
+              getPosition: (o: { x: number; y: number }) => metresToLngLat(georefRef.current, bundle.width, o.x, o.y),
+              getElevation: 9,
+              getFillColor: (o: { id: string }) =>
+                o.id === props.selectedOfficer ? [255, 255, 255, 255] : [37, 99, 235, 255],
+              updateTriggers: { getFillColor: props.selectedOfficer },
+              material: { ambient: 0.75, diffuse: 0.4, shininess: 10 },
+              pickable: false,
+            } as unknown as ColumnLayerProps<{ x: number; y: number; id: string }>),
+          );
+        }
         if (!(satelliteRef.current && canSatellite)) {
           layers.push(
             new ColumnLayer({
