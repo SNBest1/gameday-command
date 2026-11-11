@@ -492,9 +492,21 @@ live", a loop of `listen()`), or a pasted transcript.
   `audio/wav` beside webm and ogg and names the upload by its extension. Without
   `STT_URL` the file is played aloud while the browser's recogniser listens
   through the microphone: a stopgap, and it says so on screen.
-- Not yet verified with real audio: no speech service is set up on this Mac,
-  and the browser recogniser cannot run in the test browsers. The parser, the
-  clip cutting and the panel are tested; transcription of a recording is not.
+- **Checked with real audio (2026-11-11)** against a local whisper.cpp server
+  (`whisper-server --inference-path /v1/audio/transcriptions`, base English
+  model, `STT_URL=http://127.0.0.1:8010`): the two made-up stadium samples, clear
+  and under heavy static, read into the right reports, and three minutes of a
+  real police scanner feed produced no place and no suggestion. What that found
+  is now in `radio.ts`: a call split off as its own sentence ("Unit 12 to
+  command.") is joined to the report after it; "command copies, unit 12" is an
+  acknowledgement; "send back off" is backup; `[ Silence ]` and `>>` are
+  dropped; and a word one letter off a map name counts only when another word
+  of that name was heard exactly ("Woody Hays" yes, "909 Canyon" is not Cannon
+  Drive).
+- A recording's clips are read as one transcript, since a cut can fall between
+  a call and its report, and sent at most 24 a minute to stay under the route's
+  limit. Static leaves no quiet gap to cut in, so a unit's call at a clip edge
+  can still be lost. The play-aloud route without `STT_URL` is still untested.
 
 ## Current state
 

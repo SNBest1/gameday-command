@@ -77,6 +77,28 @@ describe('radio traffic', () => {
     });
   });
 
+  it('copes with what speech-to-text does to radio traffic', () => {
+    // The call split off as its own sentence, an acknowledgement, a misspelt street, "backup" misheard.
+    const reports = readRadio(
+      'Unit 12 to Command. The crowd is backing up at Gate 2, requesting 3 more units, over.\n Command copies, Unit 12.\n Command, Car 4. A stalled vehicle is blocking Plaza Lain.\n Command, Unit 9, there is a 5 at Gate 3, send back off.',
+      map,
+    );
+    expect(reports.map((r) => r.summary)).toEqual([
+      'Unit 12: crowd crush at Gate 2',
+      'Car 4: traffic on Plaza lane',
+      'Unit 9: backup at Gate 3',
+    ]);
+    expect(reports.map((r) => r.suggestion)).toEqual(['send 3 officers to Gate 2', null, 'send 2 officers to Gate 3']);
+  });
+
+  it("does not find this map in somebody else's radio traffic", () => {
+    // One letter off a name is not enough by itself, and recogniser marks are not speech.
+    expect(read('The address we are going to is 909 Plazo').place).toBeNull();
+    expect(transmissions('[ Silence ] >> Copy, thank you. >> 125, your case number is 2389.')).toEqual([
+      '125, your case number is 2389.',
+    ]);
+  });
+
   it('reads a whole transcript', () => {
     const reports = readRadio(
       'Unit 12, unattended backpack by gate 3. Copy. Unit 7, shoving in the line at gate 2, send help, over.',
