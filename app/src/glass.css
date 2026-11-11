@@ -1,0 +1,1063 @@
+/*
+ * The glass layer. Loaded after styles.css and built only from its tokens plus
+ * the few below, so the signage language stays: Overpass and Public Sans,
+ * guide green, warning yellow, stop red, team colours where the stadium is
+ * named. What changes is the material. The board becomes a deep, softly lit
+ * backdrop; the header, the controls, the command box and the rail become
+ * frosted panels that float over it; and everything that sits on the map
+ * (plan switch, view switch, tools, banners) becomes dark glass, so the map
+ * shows through what covers it.
+ *
+ * Rules of the layer:
+ * - Glass is translucent only where the browser can blur behind it; without
+ *   backdrop-filter every panel falls back to the solid paper it had before.
+ * - Text sits on glass that is at least 55% opaque over a quiet backdrop, so
+ *   the 4.5:1 rule of styles.css still holds in both themes.
+ * - Motion is short and stops under prefers-reduced-motion.
+ */
+
+:root {
+  --radius: 9px;
+  --radius-lg: 14px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* solid fallbacks, replaced below where blur is available */
+  --glass: var(--paper);
+  --glass-strong: var(--paper);
+  --glass-card: var(--paper-2);
+  --glass-inset: var(--paper-2);
+  --glass-blur: none;
+
+  --glass-line: rgba(21, 33, 45, 0.1);
+  --glass-shine: rgba(255, 255, 255, 0.75);
+  --glass-shadow: 0 1px 2px rgba(21, 33, 45, 0.06), 0 10px 30px rgba(21, 33, 45, 0.08);
+  --glass-shadow-lift: 0 2px 4px rgba(21, 33, 45, 0.08), 0 18px 44px rgba(21, 33, 45, 0.14);
+  --hover-tint: rgba(21, 33, 45, 0.06);
+
+  /* light backdrop: cool paper with three faint lamps */
+  --board: #e9eef2;
+  --lamp-team: color-mix(in srgb, var(--team) 16%, transparent);
+  --lamp-go: rgba(0, 112, 74, 0.13);
+  --lamp-info: rgba(31, 95, 168, 0.13);
+
+  /* glass on the map is dark in both themes; denser by day, over the pale basemap */
+  --well-glass: rgba(18, 24, 31, 0.82);
+  --well-glass-line: rgba(255, 255, 255, 0.16);
+  --well-glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="dark"] {
+  --board: #070b10;
+  --glass-line: rgba(255, 255, 255, 0.09);
+  --glass-shine: rgba(255, 255, 255, 0.07);
+  --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.38);
+  --glass-shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.4), 0 22px 52px rgba(0, 0, 0, 0.5);
+  --hover-tint: rgba(255, 255, 255, 0.07);
+  --lamp-team: color-mix(in srgb, var(--team) 22%, transparent);
+  --lamp-go: rgba(0, 150, 100, 0.16);
+  --lamp-info: rgba(56, 120, 220, 0.18);
+  --well-glass: rgba(16, 21, 27, 0.6);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --board: #070b10;
+    --glass-line: rgba(255, 255, 255, 0.09);
+    --glass-shine: rgba(255, 255, 255, 0.07);
+    --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.38);
+    --glass-shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.4), 0 22px 52px rgba(0, 0, 0, 0.5);
+    --hover-tint: rgba(255, 255, 255, 0.07);
+    --lamp-team: color-mix(in srgb, var(--team) 22%, transparent);
+    --lamp-go: rgba(0, 150, 100, 0.16);
+    --lamp-info: rgba(56, 120, 220, 0.18);
+    --well-glass: rgba(16, 21, 27, 0.6);
+  }
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --glass: rgba(255, 255, 255, 0.58);
+    --glass-strong: rgba(255, 255, 255, 0.8);
+    --glass-card: rgba(255, 255, 255, 0.62);
+    --glass-inset: rgba(21, 33, 45, 0.05);
+    --glass-blur: blur(22px) saturate(170%);
+  }
+  :root[data-theme="dark"] {
+    --glass: rgba(22, 30, 39, 0.58);
+    --glass-strong: rgba(19, 26, 34, 0.84);
+    --glass-card: rgba(255, 255, 255, 0.045);
+    --glass-inset: rgba(0, 0, 0, 0.28);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --glass: rgba(22, 30, 39, 0.58);
+      --glass-strong: rgba(19, 26, 34, 0.84);
+      --glass-card: rgba(255, 255, 255, 0.045);
+      --glass-inset: rgba(0, 0, 0, 0.28);
+    }
+  }
+}
+
+/* ── Backdrop ───────────────────────────────────────────────────── */
+body {
+  background:
+    radial-gradient(900px 520px at 8% -8%, var(--lamp-team), transparent 62%),
+    radial-gradient(1000px 640px at 104% 4%, var(--lamp-info), transparent 60%),
+    radial-gradient(900px 700px at 62% 118%, var(--lamp-go), transparent 62%), var(--board);
+  background-attachment: fixed;
+}
+:root {
+  background: var(--board);
+}
+
+/* ── Shared glass surface ───────────────────────────────────────── */
+header.top,
+.controls.transport,
+.command-bar,
+.command-card,
+.side,
+.replay,
+.band-bar {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-line);
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    var(--glass-shadow);
+}
+
+/* ── Top bar ────────────────────────────────────────────────────── */
+header.top {
+  position: relative;
+  z-index: 5;
+  margin: 10px 16px 0 20px;
+  padding: 10px 16px 10px 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.venue-stripe {
+  width: 7px;
+  border-radius: 0;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--team) 55%, transparent);
+}
+.venue h1 {
+  letter-spacing: -0.01em;
+}
+.clock strong {
+  letter-spacing: -0.01em;
+}
+.progress {
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+}
+.progress i {
+  border-radius: 3px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--go) 70%, var(--info)), var(--go));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--go) 60%, transparent);
+  transition: width 0.4s linear;
+}
+
+/* The data note: a quiet strip in the flow, tinted not filled. */
+.banner {
+  border-bottom: 0;
+}
+.banner.notice {
+  margin: 8px 16px 0 20px;
+  padding: 4px 8px 4px 12px;
+  border: 1px solid color-mix(in srgb, var(--caution) 45%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--caution-soft) 70%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+.banner.error {
+  margin: 10px 16px 0 20px;
+  border: 1px solid color-mix(in srgb, var(--stop) 45%, transparent);
+  border-radius: var(--radius);
+}
+
+/* ── Layout: panels float on the backdrop ───────────────────────── */
+main {
+  padding: 10px 14px 14px 20px;
+  gap: 8px;
+}
+.side {
+  margin: 10px 16px 14px 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.controls.transport {
+  padding: 6px;
+  border-radius: var(--radius-lg);
+}
+.replay,
+.band-bar {
+  padding: 6px 10px;
+  border-radius: var(--radius);
+}
+.band-bar {
+  gap: 6px;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────── */
+button {
+  background: var(--glass-strong);
+  border-color: var(--glass-line);
+  box-shadow: inset 0 1px 0 var(--glass-shine);
+  transition:
+    background-color 0.15s var(--ease),
+    border-color 0.15s var(--ease),
+    color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease),
+    transform 0.15s var(--ease);
+}
+button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ink) 35%, transparent);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+button.go,
+button.primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--go) 92%, #fff), var(--go) 60%, var(--go-hover));
+  border-color: color-mix(in srgb, var(--go-hover) 80%, #000);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 8px 20px color-mix(in srgb, var(--go) 38%, transparent);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+}
+button.go:hover:not(:disabled),
+button.primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--go), var(--go-hover));
+  border-color: color-mix(in srgb, var(--go-hover) 80%, #000);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 2px 4px rgba(0, 0, 0, 0.22),
+    0 12px 28px color-mix(in srgb, var(--go) 48%, transparent);
+  transform: translateY(-1px);
+}
+button.go:disabled,
+button.primary:disabled {
+  box-shadow: none;
+}
+button.ghost,
+button.link {
+  background: transparent;
+  box-shadow: none;
+}
+button.ghost:hover:not(:disabled) {
+  background: var(--hover-tint);
+}
+
+select,
+input:not([type]),
+input[type="number"],
+input[type="text"],
+input[type="url"],
+input[type="search"],
+textarea {
+  background: var(--glass-strong);
+  border-color: var(--glass-line);
+  border-radius: 7px;
+  transition:
+    border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease);
+}
+select:focus-visible,
+input:not([type]):focus-visible,
+input[type="number"]:focus-visible,
+input[type="text"]:focus-visible,
+input[type="url"]:focus-visible,
+input[type="search"]:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--info);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--info) 28%, transparent);
+}
+
+/* ── Segmented controls: one inset track, a raised thumb ────────── */
+.situations,
+.speed,
+.seg {
+  padding: 3px;
+  gap: 2px;
+  border-color: var(--glass-line);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--glass-inset);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+  overflow: visible;
+}
+.situations button,
+.speed button,
+.seg button,
+.seg button:first-child,
+.seg button:last-child {
+  border-left: 0;
+  border-radius: calc(var(--radius) - 2px);
+  box-shadow: none;
+}
+.situations button:hover:not(:disabled):not(.on),
+.speed button:hover:not(:disabled):not(.on),
+.seg button:hover:not(:disabled):not(.on) {
+  background: var(--hover-tint);
+}
+.situations button.on,
+.speed button.on,
+.seg button.on {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.14);
+}
+
+/* ── Command box ────────────────────────────────────────────────── */
+.command-bar {
+  padding: 7px 7px 7px 10px;
+  border-radius: var(--radius-lg);
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+.command-bar:focus-within {
+  border-color: color-mix(in srgb, var(--go) 70%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    0 0 0 3px color-mix(in srgb, var(--go) 24%, transparent),
+    var(--glass-shadow-lift);
+}
+.command-bar input,
+.command-bar input:focus-visible {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.command-mic {
+  width: 36px;
+  height: 36px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 6px 14px rgba(0, 0, 0, 0.18);
+}
+.command-mic:hover:not(:disabled) {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 0 0 4px color-mix(in srgb, var(--go) 26%, transparent);
+}
+.command-card {
+  border-radius: var(--radius-lg);
+  border-left-width: 5px;
+}
+
+/* ── Map well ───────────────────────────────────────────────────── */
+/* A little shorter on a laptop, so the replay bar and the key stay on screen. */
+.canvas-wrap.close,
+.canvas-wrap.ops {
+  min-height: clamp(400px, 50vh, 520px);
+}
+.canvas-wrap {
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 0 0 1px var(--glass-line),
+    var(--glass-shadow-lift);
+}
+.compare .canvas-wrap .maps-stack {
+  border-radius: var(--radius-lg);
+}
+
+/* Everything that floats on the map is dark glass. */
+.map-title,
+.view-toggle,
+.deciding,
+.replaying,
+.crowd-toggles,
+.ops-tools button,
+.map-legend,
+.alert-banner,
+.chip {
+  background: var(--well-glass);
+  -webkit-backdrop-filter: blur(16px) saturate(170%);
+  backdrop-filter: blur(16px) saturate(170%);
+  border: 1px solid var(--well-glass-line);
+  box-shadow: var(--well-glass-shadow);
+}
+.map-title,
+.view-toggle {
+  border-radius: calc(var(--radius) + 2px);
+}
+.view-toggle button,
+.plan-switch button {
+  border-radius: calc(var(--radius) - 2px);
+  box-shadow: none;
+}
+.view-toggle button.on {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.ops-tools button {
+  color: var(--well-ink);
+}
+.ops-tools button:hover:not(:disabled) {
+  background: rgba(40, 50, 62, 0.72);
+  border-color: rgba(255, 255, 255, 0.34);
+}
+.alert-banner {
+  color: var(--well-ink);
+  border-radius: var(--radius);
+}
+.alert-banner .muted {
+  color: var(--well-dim);
+}
+
+/* The card that opens each situation: the one bright pane on the map. */
+.map-cta {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  backdrop-filter: blur(26px) saturate(180%);
+  border: 1px solid var(--glass-line);
+  border-top: 0;
+  border-radius: var(--radius-lg);
+  padding: 22px 24px 20px;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    0 30px 80px rgba(0, 0, 0, 0.5);
+  animation: glass-rise 0.35s var(--ease) both;
+}
+.map-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--caution), color-mix(in srgb, var(--caution) 60%, var(--stop)));
+}
+.map-cta kbd {
+  border-radius: 5px;
+}
+
+/* ── The rail ───────────────────────────────────────────────────── */
+.rail-tabs {
+  background: transparent;
+  border-bottom: 1px solid var(--glass-line);
+  padding: 8px 6px 0;
+  gap: 1px;
+}
+.rail-tabs button {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 8px 8px 0 0;
+  padding: 9px 6px;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+.rail-tabs .tab-count,
+.rail-tabs .tab-dot {
+  margin-left: 4px;
+}
+.rail-tabs button:hover:not(:disabled):not(.on) {
+  background: var(--hover-tint);
+}
+.rail-tabs button.on {
+  background: var(--glass-card);
+  border-bottom-color: var(--go);
+}
+.rail-body {
+  padding: 2px 14px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink) 28%, transparent) transparent;
+}
+main {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink) 28%, transparent) transparent;
+}
+
+/* Each section of the rail is its own pane. */
+.rail-body > .block {
+  margin-top: 12px;
+  padding: 14px 14px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--radius-lg);
+  background: var(--glass-card);
+  box-shadow: inset 0 1px 0 var(--glass-shine);
+}
+.rail-body > .block:first-child,
+.rail-body > .pitch + .block {
+  border-top: 1px solid var(--glass-line);
+}
+.block h2 {
+  letter-spacing: -0.005em;
+}
+.pitch {
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--caution) 45%, transparent);
+  border-left: 4px solid var(--caution);
+  background: color-mix(in srgb, var(--caution-soft) 72%, transparent);
+}
+
+.plan-card {
+  border-color: var(--glass-line);
+  border-radius: var(--radius-lg);
+  background: var(--glass-card);
+  box-shadow: inset 0 1px 0 var(--glass-shine);
+  transition:
+    border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease),
+    transform 0.15s var(--ease);
+}
+.plan-card:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    var(--glass-shadow);
+}
+.plan-card.selected {
+  box-shadow:
+    inset 4px 0 0 var(--ink),
+    var(--glass-shadow);
+}
+.plan-card.best {
+  box-shadow:
+    inset 4px 0 0 var(--go),
+    0 0 0 1px color-mix(in srgb, var(--go) 35%, transparent),
+    var(--glass-shadow);
+}
+
+.hotspots button {
+  border-radius: var(--radius);
+  background: var(--glass-card);
+}
+.band-chip,
+.flow-key {
+  border-color: var(--glass-line);
+  background: var(--glass-card);
+}
+.band-chip {
+  padding-left: 7px;
+  padding-right: 7px;
+}
+
+.info-pop {
+  border-radius: var(--radius);
+  box-shadow: var(--glass-shadow-lift);
+}
+
+/* ── Sign-in ────────────────────────────────────────────────────── */
+.demo-access {
+  background:
+    radial-gradient(700px 460px at 50% 30%, var(--lamp-team), transparent 65%),
+    radial-gradient(900px 600px at 85% 90%, var(--lamp-info), transparent 60%),
+    radial-gradient(800px 600px at 10% 90%, var(--lamp-go), transparent 60%), var(--board);
+}
+.demo-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    var(--glass-shadow-lift);
+  animation: glass-rise 0.4s var(--ease) both;
+}
+/* The team stripe across the top of the card, as the header carries it down its side. */
+.demo-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--team) 0 62%, var(--team2) 62% 100%);
+}
+.demo-roles button {
+  border-radius: var(--radius-lg);
+  background: var(--glass-card);
+}
+.demo-roles button.on {
+  border-color: var(--go);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--go) 24%, transparent),
+    inset 0 1px 0 var(--glass-shine);
+}
+
+@keyframes glass-rise {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+    scale: 0.985;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+/* ── Scoreboard: its own pane at the top of the Plans tab ───────── */
+.rail-body > .scoreboard {
+  margin: 12px 0 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--radius-lg);
+  background: var(--glass-card);
+  box-shadow: inset 0 1px 0 var(--glass-shine);
+  overflow: hidden;
+}
+.rail-body > .scoreboard th,
+.rail-body > .scoreboard td {
+  padding: 8px 8px;
+}
+.rail-body > .scoreboard td {
+  white-space: nowrap;
+}
+.rail-body > .scoreboard thead th {
+  padding-top: 10px;
+}
+.rail-body > .scoreboard tbody tr:last-child th,
+.rail-body > .scoreboard tbody tr:last-child td {
+  border-bottom: 0;
+}
+.scoreboard td.best {
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+
+/* ── Start screen ───────────────────────────────────────────────── */
+.start-card {
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    var(--glass-shadow-lift);
+  animation: glass-rise 0.4s var(--ease) both;
+}
+.start-map {
+  border-radius: var(--radius-lg);
+  background: var(--glass-card);
+  transition:
+    transform 0.15s var(--ease),
+    box-shadow 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+.start-map:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    var(--glass-shadow);
+}
+.start {
+  background: transparent;
+  padding-top: clamp(32px, 9vh, 96px);
+}
+.start-card {
+  padding: 36px 40px 28px;
+}
+.start-card h1 {
+  letter-spacing: -0.02em;
+}
+@media (max-width: 600px) {
+  .start-card {
+    padding: 24px 20px 20px;
+  }
+}
+
+/* ── Numbers at a glance ────────────────────────────────────────── */
+.stat-row {
+  border-color: var(--glass-line);
+  border-radius: var(--radius);
+  background: var(--glass-inset);
+}
+.stat-row > div {
+  padding: 7px 6px;
+  border-left-color: var(--glass-line);
+  min-width: 0;
+}
+.stat-row dt {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gates tbody tr {
+  transition: background-color 0.12s var(--ease);
+}
+.gates tbody tr:hover {
+  background: var(--hover-tint);
+}
+.verdict-line {
+  letter-spacing: -0.005em;
+}
+.feedback .agree button.on {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+kbd {
+  border-radius: 5px;
+  box-shadow: inset 0 -1px 0 var(--glass-line);
+}
+
+/* ── Panels that open over the map or the page ──────────────────── */
+.inspector,
+.info-pop,
+.keys-card > div,
+.keys-card > section {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-line);
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    var(--glass-shadow-lift);
+}
+.inspector {
+  border-radius: var(--radius-lg);
+  scrollbar-width: thin;
+  animation: glass-rise 0.25s var(--ease) both;
+}
+.inspector header {
+  border-bottom-color: var(--glass-line);
+}
+.keys-card {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.keys-card > div,
+.keys-card > section {
+  border-top: 4px solid var(--go);
+  border-radius: var(--radius-lg);
+  animation: glass-rise 0.25s var(--ease) both;
+}
+
+/* ── Officer console ────────────────────────────────────────────── */
+.oc-card {
+  border: 1px solid var(--glass-line);
+  border-left: 5px solid var(--info);
+  border-radius: var(--radius-lg);
+  background: var(--glass-card);
+  box-shadow: inset 0 1px 0 var(--glass-shine);
+}
+
+/* ── Radio monitor ──────────────────────────────────────────────── */
+.radio {
+  flex: none;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    var(--glass-shadow);
+}
+.radio summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  list-style: none;
+}
+.radio summary::-webkit-details-marker {
+  display: none;
+}
+.radio summary::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s var(--ease);
+}
+.radio[open] summary::before {
+  transform: rotate(45deg);
+}
+.radio-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 9px;
+  background: var(--stop);
+  color: #fff;
+  font-family: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.radio-live::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: radio-pulse 1.2s ease-in-out infinite;
+}
+.radio-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--inverse-bg);
+  color: var(--inverse-ink);
+  font-family: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.radio-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 12px 10px;
+}
+.radio-tools button.on {
+  background: var(--stop);
+  border-color: var(--stop);
+  color: #fff;
+}
+.radio-file {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+.radio-file input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.radio-file span {
+  padding: 4px 9px;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--radius);
+  background: var(--glass-strong);
+  box-shadow: inset 0 1px 0 var(--glass-shine);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.radio-file:hover span {
+  border-color: color-mix(in srgb, var(--ink) 35%, transparent);
+}
+.radio-file input:focus-visible + span {
+  outline: 2px solid var(--info);
+  outline-offset: 2px;
+}
+.radio-paste {
+  flex: 1 1 320px;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+.radio-paste input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+}
+.radio-status,
+.radio-note {
+  margin: 0;
+  padding: 0 12px 8px;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.radio-status {
+  color: var(--ink-2);
+}
+.radio-log {
+  list-style: none;
+  margin: 0 12px 10px;
+  padding: 0;
+  max-height: 190px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--radius);
+  background: var(--glass-inset);
+}
+.radio-log li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-top: 1px solid var(--glass-line);
+}
+.radio-log li:first-child {
+  border-top: 0;
+}
+.radio-kind {
+  flex: none;
+  min-width: 96px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: var(--info-soft);
+  color: var(--info);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.radio-kind::first-letter {
+  text-transform: uppercase;
+}
+.radio-crowd-crush .radio-kind,
+.radio-fight .radio-kind,
+.radio-medical .radio-kind,
+.radio-suspicious-item .radio-kind {
+  background: var(--stop-soft);
+  color: var(--bad);
+}
+.radio-backup .radio-kind,
+.radio-traffic .radio-kind {
+  background: var(--caution-soft);
+  color: var(--caution-ink);
+}
+.radio-all-clear .radio-kind {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.radio-what {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+.radio-what strong {
+  font-size: 13.5px;
+}
+.radio-what em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.radio-log li > button {
+  flex: none;
+}
+@keyframes radio-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ── Early warning over the map ─────────────────────────────────── */
+.warning-banner {
+  position: absolute;
+  top: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  width: max-content;
+  max-width: min(640px, calc(100% - 32px));
+  background: var(--well-glass);
+  color: var(--well-ink);
+  border: 1px solid var(--well-line);
+  border-left: 6px solid var(--warn);
+  padding: 8px 10px 8px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.4);
+}
+.warning-banner.now {
+  border-left-color: var(--stop);
+}
+.warning-banner span {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.warning-banner strong {
+  font-family: Overpass, sans-serif;
+  white-space: nowrap;
+  color: var(--warn);
+}
+.warning-banner.now strong {
+  color: var(--stop);
+}
+
+/* ── My plans (saved in this browser) ───────────────────────────── */
+.saved-plans-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.saved-plans-save label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.saved-plans-save input {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.saved-plans-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.saved-plans-list li {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--glass-card);
+}
+.saved-name {
+  display: grid;
+  gap: 2px;
+}
+.saved-name em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.saved-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  select,
+  input,
+  textarea,
+  .command-bar,
+  .plan-card,
+  .start-map,
+  .gates tbody tr,
+  .radio summary::before,
+  .progress i {
+    transition: none;
+  }
+  .radio-live::before {
+    animation: none;
+  }
+  .map-cta,
+  .demo-card,
+  .start-card,
+  .inspector,
+  .keys-card > div,
+  .keys-card > section {
+    animation: none;
+  }
+  button.go:hover:not(:disabled),
+  button.primary:hover:not(:disabled),
+  .plan-card:hover,
+  .start-map:hover:not(:disabled) {
+    transform: none;
+  }
+}

@@ -2,6 +2,7 @@ import { Graphics } from 'pixi.js';
 import type { MapBundle } from '../../contracts.ts';
 import { CELL_SIZE_M } from '../../contracts.ts';
 import { isoProject } from './people.ts';
+import { bowlHeights, TIER_STEP } from './bowl-heights.ts';
 import { diagonalZ } from './depth.ts';
 
 /**
@@ -14,8 +15,6 @@ import { diagonalZ } from './depth.ts';
  * survey: about 16 m to the rim, stepping up in 1.5 m tiers.
  */
 
-const RIM_H = 16;
-const TIER_STEP = 1.5;
 const C = CELL_SIZE_M;
 
 export interface Bowl {
@@ -85,50 +84,9 @@ export function buildBowl(map: MapBundle): Bowl | null {
   const field = new Uint8Array(W * H);
   for (const c of map.field ?? []) field[c] = 1;
   const inBowl = (u: number, v: number) => u >= 0 && v >= 0 && u < W && v < H && cells[v * W + u] === 'stands';
-
-  // Distance from the outer edge, in cells, over the whole bowl polygon.
-  const dist = new Int32Array(W * H).fill(-1);
-  const queue: number[] = [];
-  for (let c = 0; c < cells.length; c++) {
-    if (cells[c] !== 'stands') continue;
-    const u = c % W;
-    const v = (c / W) | 0;
-    if (!inBowl(u + 1, v) || !inBowl(u - 1, v) || !inBowl(u, v + 1) || !inBowl(u, v - 1)) {
-      dist[c] = 1;
-      queue.push(c);
-    }
-  }
-  if (queue.length === 0) return null;
-  for (let head = 0; head < queue.length; head++) {
-    const c = queue[head]!;
-    const u = c % W;
-    const v = (c / W) | 0;
-    for (const [du, dv] of [
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1],
-    ] as const) {
-      if (!inBowl(u + du, v + dv)) continue;
-      const n = (v + dv) * W + u + du;
-      if (dist[n]! >= 0) continue;
-      dist[n] = dist[c]! + 1;
-      queue.push(n);
-    }
-  }
-  // How deep the seating runs: the deepest seat, short of the field.
-  let deepest = 1;
-  for (let c = 0; c < cells.length; c++) if (dist[c]! > 0 && !field[c]) deepest = Math.max(deepest, dist[c]!);
-
-  const height = new Float32Array(W * H);
-  const seats: number[] = [];
-  for (let c = 0; c < cells.length; c++) {
-    if (dist[c]! <= 0 || field[c]) continue;
-    // Highest at the rim, falling to the front row; stepped, like real tiers.
-    const t = 1 - (dist[c]! - 1) / deepest;
-    height[c] = Math.max(TIER_STEP, Math.round((1 + t * (RIM_H - 1)) / TIER_STEP) * TIER_STEP);
-    seats.push(c);
-  }
+  const heights = bowlHeights(map);
+  if (!heights) return null;
+  const { height, seats } = heights;
   seats.sort((a, b) => (a % W) + ((a / W) | 0) - ((b % W) + ((b / W) | 0)));
 
   // Bowl centre, for colouring sections by angle.

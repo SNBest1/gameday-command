@@ -36,11 +36,14 @@ import type { PlanState } from './PlanCards.tsx';
 import type { FocusBox, MapPick } from './ComparisonMaps.tsx';
 import type { EditRequest } from './Inspector.tsx';
 import { applyDisabled } from './PlanEditor.tsx';
+import { EarlyWarnings, type EarlyWarning } from './early-warning.ts';
+import { speakWarning } from './WarningBanner.tsx';
 import { AppHeader } from './AppHeader.tsx';
 import { TransportBar } from './TransportBar.tsx';
 import { MapWorkspace } from './MapWorkspace.tsx';
 import { Rail } from './Rail.tsx';
 import { CommandBar } from './CommandBar.tsx';
+import { RadioPanel } from './RadioPanel.tsx';
 import { StartScreen } from './StartScreen.tsx';
 import { applyTheme } from './theme.ts';
 import { rankByPriority, type HistorySample, type Priority } from './command.ts';
@@ -534,6 +537,45 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [standing, loaded, placeIndex]);
 
+  // Early warnings: once a sim minute, each plan's gate queues and packed areas
+  // go through a trend line; the plan on the map shows and says what is coming.
+  const warners = useRef([new EarlyWarnings(), new EarlyWarnings(), new EarlyWarnings()]);
+  const [warnings, setWarnings] = useState<(EarlyWarning | null)[]>([null, null, null]);
+  useEffect(() => {
+    for (const w of warners.current) w.reset();
+    setWarnings([null, null, null]);
+  }, [generation, incidentIndex]);
+  useEffect(() => {
+    if (!loaded || scrub !== null) return;
+    runs.forEach((run, i) => {
+      const scene = run.scene.current;
+      // Warnings start ten minutes before the incident, so a rush building toward it is caught.
+      if (!scene || scene.t % 60 !== 0 || (incident && scene.t < incident.at - 600)) return;
+      const raised = warners.current[i]!.observe({
+        t: scene.t,
+        gates: scene.gates.map((gate) => ({
+          name: loaded.map.places[gate.place]?.name ?? 'A gate',
+          open: gate.open,
+          waiting: gate.waiting,
+          capacityPerMin: gate.capacityPerMin,
+        })),
+        areas: (police[i] ?? [])
+          .filter((h) => h.kind !== 'traffic')
+          .map((h) => ({
+            where: h.where,
+            level: h.level,
+            crowdedPeople: h.crowdedPeople,
+            stoppedVehicles: h.stoppedVehicles,
+          })),
+      });
+      const top = raised[0];
+      if (!top) return;
+      setWarnings((prev) => prev.map((p, j) => (j === i ? top : p)));
+      if (i === closeRun && playing) speakWarning(top.text);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [police]);
+
   const commandBarProps = useCommandBarProps({
     loaded,
     planStates,
@@ -835,6 +877,7 @@ export function App() {
             onRestart={restart}
           />
           {commandBarProps && !officerRole && planStates.length === 3 && <CommandBar {...commandBarProps} />}
+          {commandBarProps && loaded && !officerRole && planStates.length === 3 && <RadioPanel map={loaded.map} />}
           {loaded && (
             <MapWorkspace
               loaded={loaded}
@@ -849,6 +892,8 @@ export function App() {
               showFlow={showFlow}
               setShowFlow={setShowFlow}
               playing={playing}
+              warning={warnings[closeRun] ?? null}
+              onDismissWarning={() => setWarnings((prev) => prev.map((p, j) => (j === closeRun ? null : p)))}
               setPlaying={setPlaying}
               started={started}
               zoneName={zoneName}

@@ -166,7 +166,7 @@ The app's replay scrubber draws kept frames while you drag, because that is inst
 - **Orders go to the plan on the map only** (`closeRun` in `App.tsx`). The other two runs keep to their written plan, which is the comparison the tool exists for: improvising against the plan as written. Never broadcast an order to all three.
 - **An order lands on the worker's next sim second, after the world hooks and before decisions** (`applyOrders()` in `sim.ts`). After the hooks means a live order beats a plan step on the same second; before decisions means an alert or release is answered in that same pause. Every order goes through `worldActions()` so the step order above stays true.
 - **Orders are kept for the life of the run and replayed after a rewind**, exactly like dot edits: `seek` drops the ones after the target (`dropOrdersAfter`) and the rest fire again at their own second. `SceneInfo.orders` is the log the app shows.
-- **A checkpoint carries the Simulation's own officer bookkeeping** (targets, exact positions, posts, recalls, told/followed, redirects, who heard an alert, situations raised but not yet decided). Without it a rewind to before a dispatch left the officer already walking there. The world hooks' own state (which plan steps fired) is still not rewound — that lives in `world/`.
+- **A checkpoint carries the Simulation's own officer bookkeeping** (targets, exact positions, posts, recalls, told/followed, redirects, who heard an alert, situations raised but not yet decided). Without it a rewind to before a dispatch left the officer already walking there. The world hooks' own state (which plan steps fired) is captured and restored with it (`world/src/hooks.ts`).
 - **A rewind forces `FlowMovement` to re-apply closures** by handing `restore()` a `closedKey` that matches nothing. Its restored key names the checkpoint's closures while its cached routes still held the abandoned future's, so a gate shut after the checkpoint stayed shut in every route. Calling `spawn()` again also fixed it but cost ~2.5 s per worker per seek on the stadium map; this costs 4 ms.
 - **A live barricade is a new closable on that worker's own copy of the map** (`ctx.map.closables`). Each worker gets a structured-clone copy, so this cannot leak into the other plans, and `FlowFields.setClosed` reads `map.closables` every time, so routes, admission and everything else treat it like a named street with no special case. Registration is idempotent (a replayed order does not add it twice) and survives a rewind; whether it is *up* comes back from the snapshot's `closed`. `app/src/barricade.ts` picks the cells: a named street closable if the click is on one, otherwise the road cells within ~40 m along the road.
 - **Recalled officers go back to standby, not on scene**: their post is kept only to route them home and cleared on arrival, and arriving home does not raise `officer_instruction` — they are not instructing anyone there.
@@ -208,6 +208,7 @@ Merged as PR #6 (`fe1987a`) and finished in `8a12cc0`. `docs/police-ops.md` has 
 
 **Visual language** (`styles.css` header comment): US road signage and incident-command boards. Overpass (open Highway Gothic) for headings and numbers, Public Sans for text, loaded from Google Fonts in `app/index.html`. Guide green is the primary action, warning yellow medium, stop red high; team colours appear only in the header stripe, plan letters and gate badges. Sentence case, no emoji or middle-dot strings in copy.
 
+- **The glass layer** (`app/src/glass.css`, imported after `styles.css` in `main.tsx`). It changes the material, not the language: the board is a deep backdrop lit by three faint lamps (team colour, guide green, info blue); the header, transport bar, command box, replay bar, density key and rail are frosted panels (`--glass`, `--glass-blur`) that float on it with rounded corners; rail sections, plan cards and the scoreboard are panes (`--glass-card`); everything on the map (plan switch, view switch, tools, chips, banners) is dark glass (`--well-glass`, denser in light mode over the pale basemap). Segmented controls are an inset track with a raised thumb. Glass is translucent only inside `@supports (backdrop-filter)`; elsewhere the tokens fall back to solid paper. Dark tokens are repeated for `[data-theme="dark"]` and the media query, like `styles.css`. Motion is switched off rule by rule under `prefers-reduced-motion`, at the end of the file so later rules cannot undo it. Put new surface styling there, not in `styles.css`, so merges stay small.
 - **Light and dark.** `ThemeToggle.tsx` sets `data-theme` on `<html>` and stores it as `gd-theme`; until someone picks, the stylesheet follows `prefers-color-scheme`. `index.html` applies a saved pick before first paint. Every colour is a token on `:root` with a dark set under `[data-theme='dark']` and the media query; selected tabs use `--inverse-bg`/`--inverse-ink` rather than `--ink` and white, which would invert badly. The map well is dark in both.
 - Text is 12px or larger and every text colour passes 4.5:1 in both modes (checked in the page); keep it that way when adding a colour.
 - The plan on the map is switched from the map itself (A/B/C in its top-left corner). The map key folds to a "Key" button and remembers it (`gd-legend`).
@@ -403,6 +404,25 @@ switch, and `?view=close|plan|compare` still selects them directly.
   empty hides the button). It appears only for a georeferenced map, is
   remembered as `gd-basemap`, ignores the light/dark theme, and draws map text
   in the dark-theme look (light text, dark outline) so labels read over imagery.
+- **3D view.** The **3D** button in the map's tools (remembered as `gd-ops-3d`,
+  only for a georeferenced map with tiles) tilts the camera, turns imagery on,
+  and adds a `fill-extrusion` layer of real building heights from the vector
+  tiles (`render_height`; the style's own `openmaptiles` source, or
+  `VITE_3D_TILES` over imagery), street names over imagery, a sky and a light.
+  Added layers are dropped by `setStyle`, so `applyThreeD` runs on every
+  `style.load`. The tile's stadium is one solid block that would bury the bowl:
+  `hideStadium` finds tile buildings whose centre falls in the bowl's box and
+  filters them out by feature id, and the bowl is drawn instead as one deck.gl
+  column per seat cell (`app/src/ops-3d.ts`, heights from
+  `app/src/bowl-heights.ts`, shared with the close-up), coloured by section and
+  lightened where people sit. Turf columns are drawn only on the street-map
+  look; over imagery the real field shows. **Flat** puts the camera back and the
+  2D map is unchanged.
+- **3D vehicles and officers.** In the 3D view at zoom 15.5 and closer, vehicles
+  are extruded boxes their `VEHICLE_TYPES` size, turned to their heading
+  (`vehicleBoxes` in `ops-3d.ts`: flow colours when moving, a paint colour when
+  parked), and each officer is a 9 m blue column. The flat scatter layers stay
+  underneath and still do the picking.
 - **One WebGL context.** MapLibre owns the context and deck.gl shares it through
   `MapboxOverlay({ interleaved: true })`. `MapWorkspace` mounts exactly one of
   `OpsMap`, `CrowdView` or `ComparisonMaps`.
@@ -467,6 +487,58 @@ Kev (optional — without it every decision is a fallback, by design):
 ```bash
 uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
 ```
+
+## Early warnings and saved plans
+
+Ported from `feat/fast-wins` onto the split app shell. `app/src/early-warning.ts`
+(pure, `EarlyWarnings.observe`) is fed once a sim minute per run from `App.tsx`,
+from ten minutes before the incident; `WarningBanner.tsx` shows the plan on the
+map's top warning in `MapWorkspace` and speaks it when read-back is on. A
+restart or a new situation resets the trackers. `SavedPlansPanel.tsx` sits at
+the end of the Plans tab in `Rail.tsx`; `saved-plans.ts` stores plans in
+localStorage by map and incident kind, and a loaded plan waits for "Restart
+with my changes" like any edit. The world hooks now capture and restore which
+plan steps fired, so a rewind replays them (`world/src/hooks.ts`). The
+after-action report and what-if from that branch are not ported yet.
+
+## Radio monitor
+
+`app/src/RadioPanel.tsx` sits under the command box (supervisor only). Radio
+traffic comes in three ways: a recording, the microphone or line-in ("Listen
+live", a loop of `listen()`), or a pasted transcript.
+
+- **Reading** (`app/src/radio.ts`, pure): `transmissions` cuts a transcript at
+  sentence ends and "over" and drops bare acknowledgements; `readTransmission`
+  finds the unit ("Unit 12", "Car 4", "OSU PD 5"; its number is removed before
+  the rest is read, so it is never a gate number or a head count), the kind (the
+  `officer_report` kinds plus `all clear`, most specific first) and the place
+  through the same `findChoice` lists the command box uses.
+- **Radio never orders.** A report that needs people at a place on the map
+  carries a suggestion in the command box's own words; its button dispatches
+  `RADIO_COMMAND_EVENT` (`radio-event.ts`) and `CommandBar` handles it as typed
+  text, so it is confirmed like any other command. Medical, traffic and
+  suspicious-item calls suggest officers only when the transmission asks.
+- **Recordings** (`app/src/radio-audio.ts`): decoded in the browser to mono
+  16 kHz, cut into clips of at most 20 s at the quietest moment in the last 5 s
+  of each span, and sent as WAV to `/api/speech/transcribe`, which now accepts
+  `audio/wav` beside webm and ogg and names the upload by its extension. Without
+  `STT_URL` the file is played aloud while the browser's recogniser listens
+  through the microphone: a stopgap, and it says so on screen.
+- **Checked with real audio (2026-11-11)** against a local whisper.cpp server
+  (`whisper-server --inference-path /v1/audio/transcriptions`, base English
+  model, `STT_URL=http://127.0.0.1:8010`): the two made-up stadium samples, clear
+  and under heavy static, read into the right reports, and three minutes of a
+  real police scanner feed produced no place and no suggestion. What that found
+  is now in `radio.ts`: a call split off as its own sentence ("Unit 12 to
+  command.") is joined to the report after it; "command copies, unit 12" is an
+  acknowledgement; "send back off" is backup; `[ Silence ]` and `>>` are
+  dropped; and a word one letter off a map name counts only when another word
+  of that name was heard exactly ("Woody Hays" yes, "909 Canyon" is not Cannon
+  Drive).
+- A recording's clips are read as one transcript, since a cut can fall between
+  a call and its report, and sent at most 24 a minute to stay under the route's
+  limit. Static leaves no quiet gap to cut in, so a unit's call at a clip edge
+  can still be lost. The play-aloud route without `STT_URL` is still untested.
 
 ## Current state
 

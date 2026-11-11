@@ -9,6 +9,13 @@ import { clientKey, takeRate, type RateBucket } from './rate-limit.ts';
  */
 
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
+const AUDIO_TYPES: Record<string, string> = {
+  'audio/webm': 'webm',
+  'audio/ogg': 'ogg',
+  'audio/wav': 'wav',
+  'audio/x-wav': 'wav',
+  'audio/wave': 'wav',
+};
 const MAX_INTERPRET_BYTES = 64 * 1024;
 const MAX_LOG_BYTES = 16 * 1024;
 const MAX_TEXT_CHARS = 500;
@@ -85,8 +92,10 @@ export function voiceRoutes(app: Hono, db: Db): void {
       if (!target) return c.json({ error: 'speech-to-text is not configured' }, 503);
 
       const type = (c.req.header('content-type') ?? '').split(';')[0]!.trim().toLowerCase();
-      if (type !== 'audio/webm' && type !== 'audio/ogg') {
-        return c.json({ error: 'send audio/webm or audio/ogg' }, 415);
+      // webm and ogg from the mic; wav from a radio recording cut into clips.
+      const extension = AUDIO_TYPES[type];
+      if (!extension) {
+        return c.json({ error: 'send audio/webm, audio/ogg or audio/wav' }, 415);
       }
 
       let audio: ArrayBuffer;
@@ -99,7 +108,8 @@ export function voiceRoutes(app: Hono, db: Db): void {
       if (audio.byteLength > MAX_AUDIO_BYTES) return c.json({ error: 'audio is too large' }, 413);
 
       const form = new FormData();
-      form.set('file', new Blob([audio], { type }), 'audio');
+      // Whisper servers pick the decoder from the file name.
+      form.set('file', new Blob([audio], { type }), `audio.${extension}`);
       form.set('model', env('STT_MODEL') || 'whisper-1');
       form.set('language', 'en');
       const headers: Record<string, string> = {};
