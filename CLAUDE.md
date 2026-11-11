@@ -404,6 +404,20 @@ switch, and `?view=close|plan|compare` still selects them directly.
   empty hides the button). It appears only for a georeferenced map, is
   remembered as `gd-basemap`, ignores the light/dark theme, and draws map text
   in the dark-theme look (light text, dark outline) so labels read over imagery.
+- **3D view.** The **3D** button in the map's tools (remembered as `gd-ops-3d`,
+  only for a georeferenced map with tiles) tilts the camera, turns imagery on,
+  and adds a `fill-extrusion` layer of real building heights from the vector
+  tiles (`render_height`; the style's own `openmaptiles` source, or
+  `VITE_3D_TILES` over imagery), street names over imagery, a sky and a light.
+  Added layers are dropped by `setStyle`, so `applyThreeD` runs on every
+  `style.load`. The tile's stadium is one solid block that would bury the bowl:
+  `hideStadium` finds tile buildings whose centre falls in the bowl's box and
+  filters them out by feature id, and the bowl is drawn instead as one deck.gl
+  column per seat cell (`app/src/ops-3d.ts`, heights from
+  `app/src/bowl-heights.ts`, shared with the close-up), coloured by section and
+  lightened where people sit. Turf columns are drawn only on the street-map
+  look; over imagery the real field shows. **Flat** puts the camera back and the
+  2D map is unchanged.
 - **One WebGL context.** MapLibre owns the context and deck.gl shares it through
   `MapboxOverlay({ interleaved: true })`. `MapWorkspace` mounts exactly one of
   `OpsMap`, `CrowdView` or `ComparisonMaps`.
