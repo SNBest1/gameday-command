@@ -240,3 +240,10 @@ The **Orders** tab drives the plan on the map while it runs. Orders go to that p
 - Every model is optional and replaceable. It runs fully on premises (Kev via MLX, the briefing via Apple's on-device `fm serve`, any local speech-to-text and LLM server), and hosted services can be configured instead. With none of them, every decision is a fallback and voice uses the plain-code parser.
 - No faces, no identities, ever. Future sensor input is people counts per zone only.
 - Fan behavior is labeled on screen as an assumption, not a forecast.
+
+## Radio monitor, 3D map, early warnings and saved plans
+
+- **Radio monitor** (under the command box): open a recording, listen live, or paste a transcript. Each transmission is read into a report (unit, kind, place). A report that asks for people offers a suggestion, which goes to the command box to be confirmed; radio never gives an order. Recordings need a speech service: see `docs/voice-setup.md` for a local Whisper in three commands.
+- **3D map**: the **3D** button on the map tilts it over satellite imagery with real building heights, a tiered stadium bowl that fills as fans sit, vehicles as boxes their real size and officers as tall markers. **Flat** returns to the 2D map.
+- **Early warnings**: once a simulated minute each plan's gate queues and packed areas are projected forward; the plan on the map shows a banner (and says it, with read-back on) when something is about to turn critical.
+- **My plans** (Plans tab): save A, B or C as edited, and load a saved plan into any slot. Saved in this browser only.

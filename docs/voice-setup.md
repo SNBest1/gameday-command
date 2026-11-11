@@ -85,3 +85,26 @@ It returns `{ "stt": true, "llm": true }` when both URLs are set. With neither,
 the box behaves exactly as before: typed commands and the browser's Web Speech
 recogniser. With `STT_URL` set, the mic records and sends audio to your
 speech-to-text server; without it, the browser recogniser is used.
+
+## Local speech-to-text on a Mac (whisper.cpp)
+
+Nothing leaves the machine, and it is what the radio monitor was checked with.
+
+```bash
+brew install whisper-cpp
+curl -L -o ggml-base.en.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
+WHISPER_MODEL=./ggml-base.en.bin npm run stt
+```
+
+Then in `.env`:
+
+```
+STT_URL=http://127.0.0.1:8010
+STT_MODEL=whisper-1
+STT_TIMEOUT_MS=60000
+```
+
+Restart `npm run serve`; `/api/speech/config` should answer `"stt": true`. The
+base English model is 148 MB and transcribes a 20 second clip in about a second
+on Apple silicon. Port 8080 is left for `fm serve`.
+

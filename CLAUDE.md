@@ -166,7 +166,7 @@ The app's replay scrubber draws kept frames while you drag, because that is inst
 - **Orders go to the plan on the map only** (`closeRun` in `App.tsx`). The other two runs keep to their written plan, which is the comparison the tool exists for: improvising against the plan as written. Never broadcast an order to all three.
 - **An order lands on the worker's next sim second, after the world hooks and before decisions** (`applyOrders()` in `sim.ts`). After the hooks means a live order beats a plan step on the same second; before decisions means an alert or release is answered in that same pause. Every order goes through `worldActions()` so the step order above stays true.
 - **Orders are kept for the life of the run and replayed after a rewind**, exactly like dot edits: `seek` drops the ones after the target (`dropOrdersAfter`) and the rest fire again at their own second. `SceneInfo.orders` is the log the app shows.
-- **A checkpoint carries the Simulation's own officer bookkeeping** (targets, exact positions, posts, recalls, told/followed, redirects, who heard an alert, situations raised but not yet decided). Without it a rewind to before a dispatch left the officer already walking there. The world hooks' own state (which plan steps fired) is still not rewound — that lives in `world/`.
+- **A checkpoint carries the Simulation's own officer bookkeeping** (targets, exact positions, posts, recalls, told/followed, redirects, who heard an alert, situations raised but not yet decided). Without it a rewind to before a dispatch left the officer already walking there. The world hooks' own state (which plan steps fired) is captured and restored with it (`world/src/hooks.ts`).
 - **A rewind forces `FlowMovement` to re-apply closures** by handing `restore()` a `closedKey` that matches nothing. Its restored key names the checkpoint's closures while its cached routes still held the abandoned future's, so a gate shut after the checkpoint stayed shut in every route. Calling `spawn()` again also fixed it but cost ~2.5 s per worker per seek on the stadium map; this costs 4 ms.
 - **A live barricade is a new closable on that worker's own copy of the map** (`ctx.map.closables`). Each worker gets a structured-clone copy, so this cannot leak into the other plans, and `FlowFields.setClosed` reads `map.closables` every time, so routes, admission and everything else treat it like a named street with no special case. Registration is idempotent (a replayed order does not add it twice) and survives a rewind; whether it is *up* comes back from the snapshot's `closed`. `app/src/barricade.ts` picks the cells: a named street closable if the click is on one, otherwise the road cells within ~40 m along the road.
 - **Recalled officers go back to standby, not on scene**: their post is kept only to route them home and cleared on arrival, and arriving home does not raise `officer_instruction` — they are not instructing anyone there.
@@ -418,6 +418,11 @@ switch, and `?view=close|plan|compare` still selects them directly.
   lightened where people sit. Turf columns are drawn only on the street-map
   look; over imagery the real field shows. **Flat** puts the camera back and the
   2D map is unchanged.
+- **3D vehicles and officers.** In the 3D view at zoom 15.5 and closer, vehicles
+  are extruded boxes their `VEHICLE_TYPES` size, turned to their heading
+  (`vehicleBoxes` in `ops-3d.ts`: flow colours when moving, a paint colour when
+  parked), and each officer is a 9 m blue column. The flat scatter layers stay
+  underneath and still do the picking.
 - **One WebGL context.** MapLibre owns the context and deck.gl shares it through
   `MapboxOverlay({ interleaved: true })`. `MapWorkspace` mounts exactly one of
   `OpsMap`, `CrowdView` or `ComparisonMaps`.
@@ -482,6 +487,19 @@ Kev (optional — without it every decision is a fallback, by design):
 ```bash
 uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
 ```
+
+## Early warnings and saved plans
+
+Ported from `feat/fast-wins` onto the split app shell. `app/src/early-warning.ts`
+(pure, `EarlyWarnings.observe`) is fed once a sim minute per run from `App.tsx`,
+from ten minutes before the incident; `WarningBanner.tsx` shows the plan on the
+map's top warning in `MapWorkspace` and speaks it when read-back is on. A
+restart or a new situation resets the trackers. `SavedPlansPanel.tsx` sits at
+the end of the Plans tab in `Rail.tsx`; `saved-plans.ts` stores plans in
+localStorage by map and incident kind, and a loaded plan waits for "Restart
+with my changes" like any edit. The world hooks now capture and restore which
+plan steps fired, so a rewind replays them (`world/src/hooks.ts`). The
+after-action report and what-if from that branch are not ported yet.
 
 ## Radio monitor
 

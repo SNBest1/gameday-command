@@ -1,8 +1,10 @@
-import type { MapBundle, TickFrame } from '../../contracts.ts';
-import { CELL_SIZE_M, DOT_STATES } from '../../contracts.ts';
+import type { MapBundle, TickFrame, VehicleKind } from '../../contracts.ts';
+import { CELL_SIZE_M, DOT_STATES, VEHICLE_KINDS } from '../../contracts.ts';
+import { VEHICLE_TYPES } from '../../world/src/vehicles.ts';
+import { flowLevel, FLOW_RGB, isDriving } from './congestion.ts';
 import type { MapGeoref } from '../../world/src/osm/georef.ts';
 import { bowlHeights, TIER_STEP } from './bowl-heights.ts';
-import { cellToLngLat } from './ops-geo.ts';
+import { cellToLngLat, metresToLngLat } from './ops-geo.ts';
 import type { Rgba } from './ops-layers.ts';
 import { bowlPalette } from './stadium3d.ts';
 
@@ -117,4 +119,86 @@ export function turfColumns(map: MapBundle, geo: MapGeoref): SeatColumn[] {
       color: (stripe ? [58, 128, 66, 255] : [50, 116, 58, 255]) as Rgba,
     };
   });
+}
+
+/** Roof heights in meters, as in the close-up. */
+const VEHICLE_H: Record<VehicleKind, number> = {
+  compact: 1.42,
+  sedan: 1.45,
+  suv: 1.8,
+  pickup: 1.9,
+  minivan: 1.78,
+  rideshare: 1.45,
+  motorcycle: 1.15,
+  rv: 3.6,
+  bus: 3.5,
+  police: 1.6,
+  ambulance: 2.7,
+};
+/** Parked paint, picked per vehicle so a lot does not read as one grey slab. */
+const PAINT: [number, number, number][] = [
+  [226, 228, 230],
+  [38, 41, 46],
+  [150, 156, 163],
+  [122, 28, 34],
+  [36, 62, 104],
+  [196, 198, 192],
+  [84, 90, 96],
+];
+
+export interface VehicleBox {
+  vehicle: number;
+  /** The footprint's four corners, turned to the vehicle's heading. */
+  polygon: [number, number][];
+  height: number;
+  color: Rgba;
+}
+
+/**
+ * Every vehicle on the map as a box its real size, turned the way it faces.
+ * Moving traffic keeps the flow colours (green, amber, red) when they are on;
+ * parked vehicles get a paint colour of their own.
+ */
+export function vehicleBoxes(
+  map: MapBundle,
+  geo: MapGeoref,
+  frame: TickFrame,
+  showFlow: boolean,
+  focus: VehicleKind | null,
+): VehicleBox[] {
+  const v = frame.vehicles;
+  if (!v) return [];
+  const out: VehicleBox[] = [];
+  const maxX = map.width * CELL_SIZE_M;
+  const maxY = map.height * CELL_SIZE_M;
+  for (let i = 0; i < v.x.length; i++) {
+    const x = v.x[i]!;
+    const y = v.y[i]!;
+    if (x < 0 || y < 0 || x >= maxX || y >= maxY) continue;
+    const kind = VEHICLE_KINDS[v.kind[i]!]!;
+    const type = VEHICLE_TYPES[kind];
+    const heading = v.heading[i]!;
+    const fx = (Math.cos(heading) * type.lengthM) / 2;
+    const fy = (Math.sin(heading) * type.lengthM) / 2;
+    const rx = (-Math.sin(heading) * type.widthM) / 2;
+    const ry = (Math.cos(heading) * type.widthM) / 2;
+    const corner = (a: number, b: number) => metresToLngLat(geo, map.width, x + a * fx + b * rx, y + a * fy + b * ry);
+    const driving = isDriving(v.state[i]!);
+    const rgb: [number, number, number] =
+      kind === 'police'
+        ? [30, 64, 175]
+        : kind === 'ambulance'
+          ? [240, 240, 236]
+          : driving && showFlow
+            ? ((FLOW_RGB[flowLevel(v.state[i]!, v.speed[i]!)] as [number, number, number] | undefined) ??
+              PAINT[i % PAINT.length]!)
+            : PAINT[i % PAINT.length]!;
+    out.push({
+      vehicle: i,
+      polygon: [corner(1, 1), corner(1, -1), corner(-1, -1), corner(-1, 1)],
+      height: VEHICLE_H[kind],
+      color: [...rgb, focus !== null && focus !== kind ? 70 : 255] as Rgba,
+    });
+  }
+  return out;
 }

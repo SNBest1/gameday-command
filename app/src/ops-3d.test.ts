@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DOT_STATES, type TickFrame } from '../../contracts.ts';
 import { makeTestMap } from '../../world/src/test-map.ts';
 import { bowlHeights, RIM_H, TIER_STEP } from './bowl-heights.ts';
-import { bowlBox, crowdColour, seatColumns, seatedByCell } from './ops-3d.ts';
+import { bowlBox, crowdColour, seatColumns, seatedByCell, vehicleBoxes } from './ops-3d.ts';
 import { flatGeoref } from './ops-geo.ts';
 import type { Rgba } from './ops-layers.ts';
 
@@ -56,5 +56,30 @@ describe('the 3D operations map', () => {
     const empty: Rgba = [156, 28, 36, 255];
     expect(crowdColour(empty, 0, seat.cell)).toEqual(empty);
     expect(crowdColour(empty, 6, seat.cell)).not.toEqual(empty);
+  });
+
+  it('draws a vehicle as a box its own size, turned to its heading', () => {
+    const frame = {
+      vehicles: {
+        x: Float32Array.from([10, -1]),
+        y: Float32Array.from([10, -1]),
+        heading: Float32Array.from([0, 0]),
+        speed: Float32Array.from([0, 0]),
+        kind: Uint8Array.from([0, 0]),
+        state: Uint8Array.from([0, 0]),
+        waitedS: Float32Array.from([0, 0]),
+      },
+    } as unknown as TickFrame;
+    const boxes = vehicleBoxes(map, geo, frame, true, null);
+    // The one off the map is left out.
+    expect(boxes.length).toBe(1);
+    const [a, b, c] = boxes[0]!.polygon;
+    const lon = (p: [number, number]) => p[0];
+    const lat = (p: [number, number]) => p[1];
+    // Heading east: the long side runs along longitude, the short side along latitude.
+    const long = Math.abs(lon(a!) - lon(c!));
+    const short = Math.abs(lat(a!) - lat(b!));
+    expect(long).toBeGreaterThan(short * 1.5);
+    expect(boxes[0]!.height).toBeGreaterThan(1);
   });
 });
