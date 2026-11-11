@@ -556,11 +556,29 @@ export function OpsMap(props: CrowdViewProps) {
       map.addControl(overlay);
       map.on('click', (event) => clickRef.current(event));
       zoomRef.current = map.getZoom();
-      (window as unknown as { gamedayMap?: { lookAt(xM: number, yM: number, zoom: number): void } }).gamedayMap = {
+      (
+        window as unknown as {
+          gamedayMap?: {
+            lookAt(xM: number, yM: number, zoom: number): void;
+            camera(xM: number, yM: number, zoom: number, bearing: number, pitch: number, ms: number): void;
+          };
+        }
+      ).gamedayMap = {
         lookAt: (xM, yM, zoom) => {
           map?.jumpTo({
             center: metresToLngLat(georefRef.current, bundle.width, xM, yM),
             zoom,
+          });
+        },
+        // A timed camera move, for unattended checks and recordings of the 3D view.
+        camera: (xM, yM, zoom, bearing, pitch, ms) => {
+          map?.easeTo({
+            center: metresToLngLat(georefRef.current, bundle.width, xM, yM),
+            zoom,
+            bearing,
+            pitch,
+            duration: ms,
+            easing: (t) => t,
           });
         },
       };
