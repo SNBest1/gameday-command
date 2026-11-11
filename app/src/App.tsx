@@ -41,6 +41,7 @@ import { TransportBar } from './TransportBar.tsx';
 import { MapWorkspace } from './MapWorkspace.tsx';
 import { Rail } from './Rail.tsx';
 import { CommandBar } from './CommandBar.tsx';
+import { RadioPanel } from './RadioPanel.tsx';
 import { StartScreen } from './StartScreen.tsx';
 import { applyTheme } from './theme.ts';
 import { rankByPriority, type HistorySample, type Priority } from './command.ts';
@@ -835,6 +836,7 @@ export function App() {
             onRestart={restart}
           />
           {commandBarProps && !officerRole && planStates.length === 3 && <CommandBar {...commandBarProps} />}
+          {commandBarProps && loaded && !officerRole && planStates.length === 3 && <RadioPanel map={loaded.map} />}
           {loaded && (
             <MapWorkspace
               loaded={loaded}

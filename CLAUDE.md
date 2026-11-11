@@ -469,6 +469,33 @@ Kev (optional — without it every decision is a fallback, by design):
 uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
 ```
 
+## Radio monitor
+
+`app/src/RadioPanel.tsx` sits under the command box (supervisor only). Radio
+traffic comes in three ways: a recording, the microphone or line-in ("Listen
+live", a loop of `listen()`), or a pasted transcript.
+
+- **Reading** (`app/src/radio.ts`, pure): `transmissions` cuts a transcript at
+  sentence ends and "over" and drops bare acknowledgements; `readTransmission`
+  finds the unit ("Unit 12", "Car 4", "OSU PD 5"; its number is removed before
+  the rest is read, so it is never a gate number or a head count), the kind (the
+  `officer_report` kinds plus `all clear`, most specific first) and the place
+  through the same `findChoice` lists the command box uses.
+- **Radio never orders.** A report that needs people at a place on the map
+  carries a suggestion in the command box's own words; its button dispatches
+  `RADIO_COMMAND_EVENT` (`radio-event.ts`) and `CommandBar` handles it as typed
+  text, so it is confirmed like any other command. Medical, traffic and
+  suspicious-item calls suggest officers only when the transmission asks.
+- **Recordings** (`app/src/radio-audio.ts`): decoded in the browser to mono
+  16 kHz, cut into clips of at most 20 s at the quietest moment in the last 5 s
+  of each span, and sent as WAV to `/api/speech/transcribe`, which now accepts
+  `audio/wav` beside webm and ogg and names the upload by its extension. Without
+  `STT_URL` the file is played aloud while the browser's recogniser listens
+  through the microphone: a stopgap, and it says so on screen.
+- Not yet verified with real audio: no speech service is set up on this Mac,
+  and the browser recogniser cannot run in the test browsers. The parser, the
+  clip cutting and the panel are tested; transcription of a recording is not.
+
 ## Current state
 
 Everything in `GOAL.md` is built and running, plus the police-ops work. The repo is five npm workspaces around the frozen `contracts.ts` (`gameday.v3`); the suite is **423 checks in 71 files (417 pass, 6 skip)** and `tsc` is clean. The demo runs end to end on the real Ohio Stadium map with the real models, and four incidents ship: gate surge, lightning, suspicious package and game end.

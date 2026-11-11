@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MapBundle, PlanAction } from '../../contracts.ts';
 import type { OfficerStatus, PoliceOrder } from '../../engine/src/index.ts';
 import { stepChoices } from './plan-steps.ts';
+import { RADIO_COMMAND_EVENT } from './radio-event.ts';
 import { listen, speechConfig, speechConfigReady, speechSupported, type Listening } from './speech.ts';
 import { TRANSCRIBING_WORDS } from './speech-recorded.ts';
 import { interpretVoice, logVoice, type VoiceLogEntry } from './api.ts';
@@ -365,6 +366,20 @@ export function CommandBar(props: CommandBarProps) {
     if (session.current) session.current.stop();
     else void startListening('command');
   };
+
+  // A radio report's suggested command arrives as if typed, so it is confirmed like any other.
+  const handleRef = useRef(handle);
+  handleRef.current = handle;
+  useEffect(() => {
+    const fromRadio = (e: Event) => {
+      const suggested = (e as CustomEvent<unknown>).detail;
+      if (typeof suggested !== 'string') return;
+      setText(suggested);
+      void handleRef.current(suggested, false);
+    };
+    window.addEventListener(RADIO_COMMAND_EVENT, fromRadio);
+    return () => window.removeEventListener(RADIO_COMMAND_EVENT, fromRadio);
+  }, []);
 
   // "/" jumps to the box; holding Space anywhere outside a field is push-to-talk.
   useEffect(() => {
