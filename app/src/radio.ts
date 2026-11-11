@@ -82,6 +82,16 @@ const UNIT_WORD =
 const UNIT = new RegExp(`\\b(${UNIT_WORD}) ?(\\d{1,3})\\b`);
 const COUNT = /\b(\d{1,2}) (?:more |additional |extra )?(?:units?|officers?|cops?|bodies|people|guys)\b/;
 
+const STATION = '(?:command|dispatch|control|base)';
+/** A call with no report in it: "Unit 12 to command", "Command, unit 9". */
+const HAIL = new RegExp(`^(?:${UNIT_WORD} ?\\d{1,3} to ${STATION}|${STATION} ${UNIT_WORD} ?\\d{1,3})$`);
+/** An acknowledgement: "copy that", "10-4", "command copies, unit 12". */
+const ACK = new RegExp(
+  `^(?:(?:\\w+ )?(?:copy|copies)(?: that)?(?: thanks| thank you)?|10 4|roger(?: that)?|go ahead|stand ?by|say again|affirmative|negative|received)(?: ${STATION})?(?: ${UNIT_WORD} ?\\d{1,3})?$`,
+);
+/** "Backup" is often heard as "back off" over static; after these words it can only be backup. */
+const BACK_OFF = /\b(send|sending|need|needs|request|requesting|cancel|cancel the|for) back off\b/g;
+
 const title = (s: string) =>
   s
     .replace(/\b[a-z]/g, (c) => c.toUpperCase())
@@ -94,33 +104,85 @@ const title = (s: string) =>
  * report ("copy", "10-4", "go ahead") is dropped.
  */
 export function transmissions(transcript: string): string[] {
-  return transcript
+  const pieces = transcript
+    // Speech-to-text marks of its own: "[ Silence ]", "(static)", ">>" for a new speaker.
+    .replace(/\[[^\]]*\]|\([^)]*\)|>>/g, ' ')
     .replace(/\s+/g, ' ')
     .split(/(?<=[.!?])\s+|\s*\b(?:over and out|over)\b[.,]?\s*|\s*\n+\s*/i)
     .map((s) => s.trim())
-    .filter((s) => {
-      const n = normalise(s);
-      if (n.split(' ').length < 3) return false;
-      return !/^(?:10 4|copy(?: that)?|roger(?: that)?|go ahead|stand ?by|say again|affirmative|negative|received)(?: (?:command|dispatch|control))?$/.test(
-        n,
-      );
-    });
+    .filter(Boolean);
+  // Speech-to-text often ends the call ("Unit 12 to command.") as its own
+  // sentence: it belongs to the report that follows it.
+  const joined: string[] = [];
+  let hail = '';
+  for (const piece of pieces) {
+    if (HAIL.test(normalise(piece))) {
+      hail = piece.replace(/[.!?]+$/, ',');
+      continue;
+    }
+    joined.push(hail ? `${hail} ${piece}` : piece);
+    hail = '';
+  }
+  return joined.filter((s) => {
+    const n = normalise(s);
+    return n.split(' ').length >= 3 && !ACK.test(n);
+  });
+}
+
+const edits1 = (a: string, b: string) => {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  const [x, y] = a.length >= b.length ? [a, b] : [b, a];
+  return x.slice(i + 1) === y.slice(x.length === y.length ? i + 1 : i);
+};
+
+/**
+ * Radio is noisier than a commander at the command box, so a word one letter
+ * off exactly one word of the map's names is read as that word ("Woody Hays"
+ * for Woody Hayes Drive). Short words and words the map already has are left.
+ */
+function nearNames(text: string, choices: Choice[]): string {
+  const known = new Set(choices.flatMap((c) => normalise(c.label).split(' ')).filter((w) => /^[a-z]{4,}$/.test(w)));
+  return text
+    .split(' ')
+    .map((w) => {
+      if (!/^[a-z]{4,}$/.test(w) || known.has(w)) return w;
+      const near = [...known].filter((k) => edits1(w, k));
+      return near.length === 1 ? near[0]! : w;
+    })
+    .join(' ');
+}
+
+const GENERIC = /^(?:street|avenue|road|drive|boulevard|lane|parkway|highway|north|south|east|west|gate|stadium)$/;
+
+/**
+ * A name found only after the one-letter correction counts when another of its
+ * own words was heard exactly: "Woody Hays" is Woody Hayes Drive, but "909
+ * Canyon" on somebody else's channel is not Cannon Drive.
+ */
+function nearChoice(text: string, choices: Choice[]): Choice | null {
+  const hit = findChoice(nearNames(text, choices), choices);
+  if (!hit) return null;
+  const said = new Set(text.split(' '));
+  const anchored = normalise(hit.label)
+    .split(' ')
+    .some((w) => /^[a-z]{4,}$/.test(w) && !GENERIC.test(w) && said.has(w));
+  return anchored ? hit : null;
 }
 
 /** The place a transmission names: a gate or named place first, then a street. */
 function placeIn(text: string, map: MapBundle): { place: Choice | null; street: boolean } {
   const c = stepChoices(map);
-  const place = findChoice(text, c.places);
+  const place = findChoice(text, c.places) ?? nearChoice(text, c.places);
   if (place) return { place, street: false };
-  const street = findChoice(
-    text,
-    c.closables.filter((x) => !x.id.endsWith('-door')),
-  );
+  const streets = c.closables.filter((x) => !x.id.endsWith('-door'));
+  const street = findChoice(text, streets) ?? nearChoice(text, streets);
   return { place: street, street: street !== null };
 }
 
 export function readTransmission(text: string, map: MapBundle): RadioReport {
-  const s = normalise(text).replace(/:/g, ' ').replace(/\s+/g, ' ').trim();
+  const s = normalise(text).replace(/:/g, ' ').replace(/\s+/g, ' ').trim().replace(BACK_OFF, '$1 backup');
   const u = UNIT.exec(s);
   // "Gate 2" is a place, never a unit; UNIT_WORD has no "gate" for that reason.
   const unit = u ? title(`${u[1]} ${u[2]}`) : null;

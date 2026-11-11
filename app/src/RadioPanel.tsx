@@ -8,6 +8,8 @@ import { listen, speechConfig, speechConfigReady, speechSupported, type Listenin
 import { TRANSCRIBING_WORDS } from './speech-recorded.ts';
 
 const KEPT = 30;
+/** Clips sent per minute, under the server's per-IP limit. */
+const PER_MINUTE = 24;
 
 interface Heard extends RadioReport {
   id: number;
@@ -102,11 +104,23 @@ export function RadioPanel({ map }: { map: MapBundle }) {
           setStatus(`${file.name} is silent.`);
           return;
         }
-        let found = 0;
+        // Read as one transcript: a cut can fall between a unit's call and its report.
+        const parts: string[] = [];
+        let batchStart = Date.now();
         for (let i = 0; i < clips.length; i++) {
+          // The transcribe route allows 30 requests a minute; a long recording keeps under it.
+          if (i > 0 && i % PER_MINUTE === 0) {
+            const wait = 60_000 - (Date.now() - batchStart);
+            if (wait > 0) {
+              setStatus(`Transcribing ${file.name}: pausing a moment before part ${i + 1} of ${clips.length}…`);
+              await new Promise((r) => window.setTimeout(r, wait));
+            }
+            batchStart = Date.now();
+          }
           setStatus(`Transcribing ${file.name}: part ${i + 1} of ${clips.length}…`);
-          found += add(await transcribeAudio(clips[i]!));
+          parts.push((await transcribeAudio(clips[i]!)).trim());
         }
+        const found = add(parts.join(' '));
         setStatus(
           found
             ? `${file.name}: ${found} ${found === 1 ? 'transmission' : 'transmissions'} read.`
